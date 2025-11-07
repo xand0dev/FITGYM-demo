@@ -1,0 +1,8 @@
+# .gitignore
+
+# Папки IDE
+.vscode/
+.idea/
+
+# Якщо ви будете використовувати Node.js
+/node_modules

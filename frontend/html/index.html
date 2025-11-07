@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FITGYM — Ваш шлях до сили (Дипломний проєкт)</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css" rel="stylesheet">
+    
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../css/style.css"> 
+
+    <style>
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(4px);
+            z-index: 1000; display: none; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: var(--surface); padding: 40px; border-radius: var(--radius);
+            max-width: 400px; width: 90%; position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); border-top: 3px solid var(--accent);
+        }
+        .modal-content h2 { color: var(--accent); margin-top: 0; }
+        .modal-content input[type="text"], .modal-content input[type="email"], .modal-content input[type="password"] {
+            width: 100%; padding: 12px; margin-bottom: 15px; background: #222;
+            border: 1px solid #444; color: var(--text); border-radius: 4px;
+        }
+        .modal-close {
+            position: absolute; top: 10px; right: 15px; font-size: 1.5rem;
+            background: none; border: none; color: var(--muted); cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <div class="logo">FIT<span>GYM</span></div> 
+            <nav class="nav-primary">
+                <a href="#advantages">Переваги</a>
+                <a href="#schedule">Розклад</a>
+                <a href="#trainers">Тренери</a>
+                <a href="#plans">Абонементи</a>
+                <a href="#reviews">Відгуки</a>
+                <a href="#contacts">Контакти</a>
+            </nav>
+            <div id="authArea">
+                <button class="btn btn-ghost" onclick="showModal('loginModal')">Вхід</button>
+                <button class="btn btn-primary" onclick="showModal('registerModal')">Реєстрація</button>
+            </div>
+            <button class="hamburger" aria-label="Toggle navigation">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </header>
+    <section class="hero">
+        <div class="hero-inner container" data-aos="fade-up" data-aos-duration="1000">
+            <h1>Ваша фітнесова подорож починається тут</h1>
+            <p>Приєднуйтесь до нашого клубу та досягайте цілей з професіоналами.</p>
+            <div class="hero-actions">
+                <a href="#plans" class="btn btn-primary">Обрати абонемент</a>
+                <a href="consult.html" class="btn btn-ghost">Консультація</a> 
+            </div>
+        </div>
+    </section>
+
+    <section id="advantages" class="section container">
+        <h2>Чому обирають FITGYM?</h2>
+        <div class="grid cols-3">
+            <div class="card" data-aos="fade-right" data-aos-delay="100">
+                <i class="fas fa-user-tie fa-2x" style="color: var(--accent); margin-bottom: 10px;"></i>
+                <div class="card-title">Професійні тренери</div>
+                <div class="card-text">Сертифіковані фахівці, готові розробити індивідуальну програму.</div>
+            </div>
+            <div class="card" data-aos="fade-up" data-aos-delay="200">
+                <i class="fas fa-dumbbell fa-2x" style="color: var(--accent); margin-bottom: 10px;"></i>
+                <div class="card-title">Сучасне обладнання</div>
+                <div class="card-text">Тренажери останнього покоління для ефективного тренування.</div>
+            </div>
+            <div class="card" data-aos="fade-left" data-aos-delay="300">
+                <i class="fas fa-clock fa-2x" style="color: var(--accent); margin-bottom: 10px;"></i>
+                <div class="card-title">Зручний розклад</div>
+                <div class="card-text">Групові заняття та індивідуальні тренування на будь-який час.</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="schedule" class="section container" data-aos="fade-up">
+        <h2>Актуальний розклад</h2>
+        <div id="calendar"></div>
+    </section>
+ 
+    <section id="trainers" class="section container">
+        <h2>Наші тренери</h2>
+        <div id="trainersGrid" class="grid cols-3">
+            </div>
+    </section>
+
+    <section id="plans" class="section container">
+        <h2>Абонементи</h2>
+        <div id="plansGrid" class="grid cols-3">
+            </div>
+    </section>
+
+    <section id="reviews" class="section container" data-aos="fade-up">
+        <h2>Відгуки клієнтів</h2>
+        <div id="reviewsList" class="reviews">
+            </div>
+        <div id="addReviewSection" class="add-review">
+            <h3>Залиш свій відгук</h3>
+            <form id="reviewForm">
+                <textarea id="reviewText" placeholder="Ваш відгук..." required></textarea>
+                <button type="submit" class="btn btn-primary">Надіслати</button>
+            </form>
+        </div>
+    </section>
+
+    <section id="contacts" class="section container" data-aos="fade-up">
+        <h2>Контакти</h2>
+        <p><b>Телефон:</b> +38 (097) 123-45-67</p>
+        <p><b>Email:</b> info@fitgym.ua</p>
+        <p><b>Адреса:</b> вул. Вінницька, 42, м. Бердичів</p>
+        <div class="map-wrap">
+            <iframe loading="lazy" title="Мапа" 
+                src="https://maps.google.com/maps?q=kyiv&t=&z=13&ie=UTF8&iwloc=&output=embed" class="map-iframe"></iframe>
+        </div>
+    </section>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <div>© 2025 FITGYM. Усі права захищено.</div>
+            <div><a href="#">Політика конфіденційності</a></div>
+        </div>
+    </footer>
+
+    <div id="loginModal" class="modal-overlay" onclick="closeModalOnOutsideClick(event)">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('loginModal')">×</button>
+            <h2>Вхід</h2>
+            <form id="loginForm">
+                <input type="email" id="loginEmail" placeholder="Email" required>
+                <input type="password" id="loginPassword" placeholder="Пароль" required>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Увійти</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="registerModal" class="modal-overlay" onclick="closeModalOnOutsideClick(event)">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('registerModal')">×</button>
+            <h2>Реєстрація</h2>
+            <form id="registerForm">
+                <input type="text" id="regName" placeholder="Ім'я" required>
+                <input type="email" id="regEmail" placeholder="Email" required>
+                <input type="password" id="regPassword" placeholder="Пароль" required>
+                <input type="password" id="regConfirm" placeholder="Підтвердіть пароль" required>
+                <div style="margin-bottom: 15px; color: var(--muted); font-size: 0.9rem;">
+                    <input type="checkbox" id="isTrainer" style="margin-right: 5px;">
+                    <label for="isTrainer">Я реєструюсь як тренер</label>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Зареєструватися</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.js"></script>
+    
+    <script>
+      /* ===========================
+   main.js — логіка сайту FITGYM
+   =========================== */
+
+/* === Toast === */
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  const el = document.createElement('div');
+  el.className = 'toast ' + (type === 'error' ? 'error' : 'success');
+  el.textContent = message;
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+/* === Modal Functions === */
+function showModal(id) {
+    document.getElementById(id).style.display = 'flex';
+}
+
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+}
+
+function closeModalOnOutsideClick(event) {
+    if (event.target.classList.contains('modal-overlay')) {
+        event.target.style.display = 'none';
+    }
+}
+
+/* === LocalStorage helpers === */
+function _get(key, def = []) {
+  try { return JSON.parse(localStorage.getItem(key)) || def; }
+  catch { return def; }
+}
+
+function _set(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+/* === Auth === */
+function _getUsers() { return _get('fp_users', []); }
+
+function _setUsers(u){ _set('fp_users', u); }
+
+function registerUser(name, email, password, role = "user") {
+  const users = _getUsers();
+  if (users.some(u => u.email === email.toLowerCase()))
+    return { ok: false, msg: 'Email вже існує' };
+
+  users.push({ name, email: email.toLowerCase(), password, role });
+  _setUsers(users);
+  return { ok: true };
+}
+
+function loginUser(email, password) {
+  const users = _getUsers();
+  const user = users.find(u => u.email === email.toLowerCase() && u.password === password);
+  if (!user) return { ok: false, msg: 'Невірний email або пароль' };
+  _set('fp_current', user);
+  return { ok: true, user };
+}
+
+function logoutUser() {
+  localStorage.removeItem('fp_current');
+  location.reload(); 
+}
+
+function getCurrentUser() {
+  try { return JSON.parse(localStorage.getItem('fp_current')) || null; }
+  catch { return null; }
+}
+
+/* === Auth Area Update === */
+function updateAuthArea() {
+  const area = document.getElementById('authArea');
+  if (!area) return;
+  const cur = getCurrentUser();
+
+  if (cur) {
+    area.innerHTML = `
+      <span style="margin-right:10px">Привіт, <b>${escapeHtml(cur.name)}</b></span>
+      <button id="logoutBtn" class="btn btn-ghost">Вихід</button>`;
+    document.getElementById('logoutBtn').onclick = logoutUser;
+  } else {
+    area.innerHTML = `
+        <button class="btn btn-ghost" onclick="showModal('loginModal')">Вхід</button>
+        <button class="btn btn-primary" onclick="showModal('registerModal')">Реєстрація</button>`;
+  }
+}
+
+/* === Тренери, Плани === */
+function populateTrainers() {
+  const grid = document.getElementById('trainersGrid');
+  if (!grid) return;
+  const trainers = [
+    { name: 'Іван Петров', spec: 'Кросфіт / Функціональний тренінг', photo: 'муж2.jpg' },
+    { name: 'Олена Коваль', spec: 'Фітнес / Йога / Стретчинг', photo: 'жін2.jpg' },
+    { name: 'Андрій Сидоренко', spec: 'Бодібілдинг / Персональні тренування', photo: 'муж1.png' },
+  ];
+  grid.innerHTML = trainers.map((p, i) => `
+    <div class="trainer-card" data-aos="flip-up" data-aos-delay="${i * 150}">
+      <img src="${p.photo}" alt="${p.name}">
+      <div class="meta">
+        <h3>${p.name}</h3>
+        <p>${p.spec}</p>
+      </div>
+    </div>`).join('');
+}
+
+function populatePlans() {
+  const grid = document.getElementById('plansGrid');
+  if (!grid) return;
+  const plans = [
+    { title: 'Місячний', price: '₴1 200', desc: 'Тривалість: 30 днів' },
+    { title: 'Річний', price: '₴10 000', desc: 'Тривалість: 365 днів. Економія!' },
+    { title: 'Одноразовий', price: '₴200', desc: '1 відвідування' },
+  ];
+  grid.innerHTML = plans.map((p, i) => `
+    <div class="plan" data-aos="zoom-in" data-aos-delay="${i * 150}">
+      <div class="plan-name">${p.title}</div>
+      <div class="plan-desc">${p.desc}</div>
+      <div class="plan-price">${p.price}</div>
+      <button class="btn btn-primary" onclick="handleBuyPlan('${p.title}')">Придбати</button>
+    </div>`).join('');
+}
+
+/* === Reviews === */
+function populateReviews() {
+  const el = document.getElementById('reviewsList');
+  if (!el) return;
+
+  const base = [
+    { text: 'Найкращий спортзал у місті! Тренери дуже уважні та професійні.', author: 'Олена, Київ', system: true },
+    { text: 'Обладнання сучасне, атмосфера чудова, мотивація на максимум!', author: 'Андрій, Львів', system: true },
+  ];
+  const stored = _get('fp_reviews', []);
+  const all = [...base, ...stored];
+  const user = getCurrentUser();
+
+  el.innerHTML = all.map((r, i) => {
+    const isOwn = user && r.author === user.name && !r.system;
+    return `
+      <blockquote class="review-item" data-aos="fade-up" data-aos-delay="${i * 50}">
+        “${escapeHtml(r.text)}” — <b>${escapeHtml(r.author)}</b>
+        ${isOwn ? `<button class="delete-review" data-index="${i}">🗑️</button>` : ''}
+      </blockquote>`;
+  }).join('');
+
+  document.querySelectorAll('.delete-review').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const idx = +e.target.dataset.index - base.length;
+      if (idx < 0) return;
+      const reviews = _get('fp_reviews', []);
+      reviews.splice(idx, 1);
+      _set('fp_reviews', reviews);
+      showToast('Відгук видалено', 'success');
+      populateReviews();
+    });
+  });
+  AOS.refreshHard();
+}
+
+function setupReviewForm() {
+  const form = document.getElementById('reviewForm');
+  const section = document.getElementById('addReviewSection');
+  if (!form || !section) return;
+
+  const user = getCurrentUser();
+  if (!user) {
+    section.style.display = 'none';
+    return;
+  }
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const text = document.getElementById('reviewText').value.trim();
+    if (!text) return showToast('Введіть текст відгуку', 'error');
+
+    const reviews = _get('fp_reviews', []);
+    reviews.push({ text, author: user.name });
+    _set('fp_reviews', reviews);
+    showToast('Відгук додано!', 'success');
+    document.getElementById('reviewText').value = '';
+    populateReviews();
+  });
+}
+
+/* === FullCalendar === */
+function initCalendar() {
+  const calendarEl = document.getElementById("calendar");
+  if (!calendarEl) return;
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+      locale: "uk",
+      initialView: "dayGridMonth",
+      headerToolbar: {
+          left: "prev,next today",
+          center: "title",
+          right: "dayGridMonth,timeGridWeek,timeGridDay"
+      },
+      buttonText: {
+          today: "Сьогодні",
+          month: "Місяць",
+          week: "Тиждень",
+          day: "День"
+      },
+      events: [
+          { title: "Йога — Олена", start: "2025-11-06T08:00:00", end: "2025-11-06T09:00:00" },
+          { title: "Кросфіт — Іван", start: "2025-11-06T18:00:00", end: "2025-11-06T19:00:00" },
+          { title: "Бодібілдинг — Андрій", start: "2025-11-07T09:00:00", end: "2025-11-07T10:00:00" },
+          { title: "Стретчинг — Олена", start: "2025-11-09T18:30:00", end: "2025-11-09T19:30:00" },
+          { title: "Функціональний тренінг — Іван", start: "2025-11-10T19:00:00", end: "2025-11-10T20:00:00" }
+      ],
+      eventClick(info) {
+          showToast(`Заняття: ${info.event.title}`);
+      }
+  });
+  calendar.render();
+}
+
+/* === Helpers === */
+function escapeHtml(s){
+  // Перевірка на null/undefined/порожній рядок
+  if (!s) return ''; 
+  
+  // Правильний мапінг HTML-спецсимволів на сутності
+  const replacements = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  };
+  
+  // Заміна за допомогою функції-коллбеку
+  return s.replace(/[&<>"']/g, c => replacements[c]);
+}
+
+function handleBuyPlan(plan){
+  const user = getCurrentUser();
+  if (!user) return showToast('Спершу увійдіть у систему, щоб придбати', 'error');
+  showToast(`Оформлення замовлення: ${plan}`, 'success');
+}
+
+/* NEW: Smooth Scrolling */
+function setupSmoothScrolling() {
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            document.querySelector(this.getAttribute('href')).scrollIntoView({
+                behavior: 'smooth'
+            });
+            const nav = document.querySelector('.nav-primary');
+            if (window.innerWidth <= 768) { 
+               nav.style.display = 'none';
+            }
+        });
+    });
+}
+
+/* === INIT === */
+document.addEventListener('DOMContentLoaded', () => {
+  // Ініціалізація AOS
+  AOS.init({
+    duration: 800,
+    once: true 
+  });
+  
+  updateAuthArea();
+  populateTrainers();
+  populatePlans();
+  populateReviews();
+  setupReviewForm();
+  initCalendar();
+  setupSmoothScrolling(); 
+
+  // hamburger
+  const hamb = document.querySelector('.hamburger');
+  if (hamb) hamb.addEventListener('click', () => {
+    const nav = document.querySelector('.nav-primary');
+    nav.style.display = (nav.style.display === 'flex' || !nav.style.display || nav.style.display === '') ? 'none' : 'flex';
+  });
+
+  // Register Form Handler
+  const regForm = document.getElementById('registerForm');
+  if (regForm) regForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const name = document.getElementById('regName').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const pass = document.getElementById('regPassword').value;
+    const conf = document.getElementById('regConfirm').value;
+    const isTrainer = document.getElementById('isTrainer')?.checked;
+
+    if (!name || !email || !pass) return showToast('Заповніть всі поля', 'error');
+    if (pass !== conf) return showToast('Паролі не співпадають', 'error');
+
+    const role = isTrainer ? 'trainer' : 'user';
+    const res = registerUser(name, email, pass, role);
+    if (!res.ok) return showToast(res.msg, 'error');
+
+    showToast('Реєстрація успішна!', 'success');
+    closeModal('registerModal');
+    document.getElementById('regForm').reset();
+  });
+
+  // Login Form Handler
+  const loginForm = document.getElementById('loginForm');
+  if (loginForm) loginForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim();
+    const pass = document.getElementById('loginPassword').value;
+    if (!email || !pass) return showToast('Заповніть всі поля', 'error');
+
+    const res = loginUser(email, pass);
+    if (!res.ok) return showToast(res.msg, 'error');
+
+    showToast('Вхід успішний', 'success');
+    closeModal('loginModal');
+    updateAuthArea(); 
+    populateReviews(); 
+    document.getElementById('loginForm').reset();
+  });
+});
+    </script>
+
+</body>
+</html>
