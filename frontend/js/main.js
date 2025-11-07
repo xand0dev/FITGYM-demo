@@ -1,5 +1,5 @@
 /* ===========================
-   main.js — логіка сайту FITGYM (Односторінкова версія з AOS та Modal)
+   main.js — логіка сайту FITGYM
    =========================== */
 
 /* === Toast === */
@@ -13,29 +13,32 @@ function showToast(message, type = 'success') {
   setTimeout(() => el.remove(), 3000);
 }
 
-/* === Modal Functions (замінює переходи на login.html/register.html) === */
+/* === Modal Functions === */
 function showModal(id) {
     document.getElementById(id).style.display = 'flex';
 }
+
 function closeModal(id) {
     document.getElementById(id).style.display = 'none';
 }
+
 function closeModalOnOutsideClick(event) {
     if (event.target.classList.contains('modal-overlay')) {
         event.target.style.display = 'none';
     }
 }
 
-
-/* === LocalStorage helpers === */
+/* === LocalStorage helpers (Фейкова база даних) === */
 function _get(key, def = []) {
   try { return JSON.parse(localStorage.getItem(key)) || def; }
   catch { return def; }
 }
+
 function _set(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
 
-/* === Auth === */
+/* === Auth (Фейкова автентифікація) === */
 function _getUsers() { return _get('fp_users', []); }
+
 function _setUsers(u){ _set('fp_users', u); }
 
 function registerUser(name, email, password, role = "user") {
@@ -58,7 +61,6 @@ function loginUser(email, password) {
 
 function logoutUser() {
   localStorage.removeItem('fp_current');
-  // Оновлення сторінки для відображення змін в хедері
   location.reload(); 
 }
 
@@ -67,7 +69,7 @@ function getCurrentUser() {
   catch { return null; }
 }
 
-/* === Auth Area Update (оновлено для роботи з модальними вікнами) === */
+/* === Auth Area Update (Оновлення блоку Вхід/Реєстрація) === */
 function updateAuthArea() {
   const area = document.getElementById('authArea');
   if (!area) return;
@@ -80,49 +82,56 @@ function updateAuthArea() {
     document.getElementById('logoutBtn').onclick = logoutUser;
   } else {
     area.innerHTML = `
-      <button class="btn btn-ghost" onclick="showModal('loginModal')">Вхід</button>
-      <button class="btn btn-primary" onclick="showModal('registerModal')">Реєстрація</button>`;
+        <button class="btn btn-ghost" onclick="showModal('loginModal')">Вхід</button>
+        <button class="btn btn-primary" onclick="showModal('registerModal')">Реєстрація</button>`;
   }
 }
 
-/* === Тренери (Дані FITGYM + AOS) === */
+/* === Тренери (Фейкові дані) === */
 function populateTrainers() {
   const grid = document.getElementById('trainersGrid');
   if (!grid) return;
+  
+  // TODO: Замінити ці дані на fetch() до '/api/instructors/'
   const trainers = [
-    { name: 'Іван Петров', spec: 'Кросфіт / Функціональний тренінг', photo: 'муж2.jpg' },
-    { name: 'Олена Коваль', spec: 'Фітнес / Йога / Стретчинг', photo: 'жін2.jpg' },
-    { name: 'Андрій Сидоренко', spec: 'Бодібілдинг / Персональні тренування', photo: 'муж1.png' },
+    // ВИПРАВЛЕНО: Додано правильні шляхи до 'img/'
+    { name: 'Іван Петров', spec: 'Кросфіт / Функціональний тренінг', photo: 'img/муж2.jpg' },
+    { name: 'Олена Коваль', spec: 'Фітнес / Йога / Стретчинг', photo: 'img/жін2.jpg' },
+    { name: 'Андрій Сидоренко', spec: 'Бодібілдинг / Персональні тренування', photo: 'img/муж1.png' },
   ];
+
   grid.innerHTML = trainers.map((p, i) => `
     <div class="trainer-card" data-aos="flip-up" data-aos-delay="${i * 150}">
-      <img src="${p.photo}" alt="${p.name}">
+      <img src="${escapeHtml(p.photo)}" alt="${escapeHtml(p.name)}">
       <div class="meta">
-        <h3>${p.name}</h3>
-        <p>${p.spec}</p>
+        <h3>${escapeHtml(p.name)}</h3>
+        <p>${escapeHtml(p.spec)}</p>
       </div>
     </div>`).join('');
 }
 
-/* === Плани (Дані FITGYM + AOS) === */
+/* === Абонементи (Фейкові дані) === */
 function populatePlans() {
   const grid = document.getElementById('plansGrid');
   if (!grid) return;
+
+  // TODO: Замінити ці дані на fetch() до '/api/membership-types/'
   const plans = [
     { title: 'Місячний', price: '₴1 200', desc: 'Тривалість: 30 днів' },
     { title: 'Річний', price: '₴10 000', desc: 'Тривалість: 365 днів. Економія!' },
     { title: 'Одноразовий', price: '₴200', desc: '1 відвідування' },
   ];
+
   grid.innerHTML = plans.map((p, i) => `
     <div class="plan" data-aos="zoom-in" data-aos-delay="${i * 150}">
-      <div class="plan-name">${p.title}</div>
-      <div class="plan-desc">${p.desc}</div>
-      <div class="plan-price">${p.price}</div>
-      <button class="btn btn-primary" onclick="handleBuyPlan('${p.title}')">Придбати</button>
+      <div class="plan-name">${escapeHtml(p.title)}</div>
+      <div class="plan-desc">${escapeHtml(p.desc)}</div>
+      <div class="plan-price">${escapeHtml(p.price)}</div>
+      <button class="btn btn-primary" onclick="handleBuyPlan('${escapeHtml(p.title)}')">Придбати</button>
     </div>`).join('');
 }
 
-/* === Reviews (Дані FITGYM + AOS) === */
+/* === Відгуки (Фейкові дані + localStorage) === */
 function populateReviews() {
   const el = document.getElementById('reviewsList');
   if (!el) return;
@@ -155,7 +164,6 @@ function populateReviews() {
       populateReviews();
     });
   });
-  // Оновлення AOS після динамічного завантаження контенту
   AOS.refreshHard();
 }
 
@@ -184,10 +192,20 @@ function setupReviewForm() {
   });
 }
 
-/* === FullCalendar (Дані FITGYM) === */
+/* === FullCalendar (Фейкові дані) === */
 function initCalendar() {
   const calendarEl = document.getElementById("calendar");
   if (!calendarEl) return;
+
+  // TODO: Замінити 'events' на fetch() до '/api/schedule/'
+  const events = [
+      { title: "Йога — Олена", start: "2025-11-06T08:00:00", end: "2025-11-06T09:00:00" },
+      { title: "Кросфіт — Іван", start: "2025-11-06T18:00:00", end: "2025-11-06T19:00:00" },
+      { title: "Бодібілдинг — Андрій", start: "2025-11-07T09:00:00", end: "2025-11-07T10:00:00" },
+      { title: "Стретчинг — Олена", start: "2025-11-09T18:30:00", end: "2025-11-09T19:30:00" },
+      { title: "Функціональний тренінг — Іван", start: "2025-11-10T19:00:00", end: "2025-11-10T20:00:00" }
+  ];
+
   const calendar = new FullCalendar.Calendar(calendarEl, {
       locale: "uk",
       initialView: "dayGridMonth",
@@ -202,34 +220,43 @@ function initCalendar() {
           week: "Тиждень",
           day: "День"
       },
-      events: [
-          { title: "Йога — Олена", start: "2025-11-06T08:00:00", end: "2025-11-06T09:00:00" },
-          { title: "Кросфіт — Іван", start: "2025-11-06T18:00:00", end: "2025-11-06T19:00:00" },
-          { title: "Бодібілдинг — Андрій", start: "2025-11-07T09:00:00", end: "2025-11-07T10:00:00" },
-          { title: "Стретчинг — Олена", start: "2025-11-09T18:30:00", end: "2025-11-09T19:30:00" },
-          { title: "Функціональний тренінг — Іван", start: "2025-11-10T19:00:00", end: "2025-11-10T20:00:00" }
-      ],
+      events: events,
       eventClick(info) {
+          // TODO: Замінити 'showToast' на модальне вікно з кнопкою "Записатися"
           showToast(`Заняття: ${info.event.title}`);
       }
   });
   calendar.render();
 }
 
-
+/* === Допоміжні функції === */
+function escapeHtml(s){
+  if (!s) return ''; 
+  const replacements = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  };
+  return s.replace(/[&<>"']/g, c => replacements[c]);
+}
 
 function handleBuyPlan(plan){
   const user = getCurrentUser();
   if (!user) return showToast('Спершу увійдіть у систему, щоб придбати', 'error');
+  // TODO: Замінити 'showToast' на реальний запит до API для покупки
   showToast(`Оформлення замовлення: ${plan}`, 'success');
 }
 
-/* 🌟 NEW: Smooth Scrolling 🌟 */
+/* Плавний скрол по якорях */
 function setupSmoothScrolling() {
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
             e.preventDefault();
-            document.querySelector(this.getAttribute('href')).scrollIntoView({
+            const targetEl = document.querySelector(this.getAttribute('href'));
+            if (!targetEl) return;
+            targetEl.scrollIntoView({
                 behavior: 'smooth'
             });
             // Закриття мобільного меню після кліку
@@ -241,31 +268,33 @@ function setupSmoothScrolling() {
     });
 }
 
-
-/* === INIT === */
+/* === ІНІЦІАЛІЗАЦІЯ (Запуск всіх функцій) === */
 document.addEventListener('DOMContentLoaded', () => {
-  // Ініціалізація AOS
+  // Ініціалізація AOS (анімації)
   AOS.init({
     duration: 800,
-    once: true // Анімація відбувається лише один раз
+    once: true 
   });
-
+  
+  // Запуск основних функцій
   updateAuthArea();
   populateTrainers();
   populatePlans();
   populateReviews();
   setupReviewForm();
   initCalendar();
-  setupSmoothScrolling(); // Налаштування плавного скролу
+  setupSmoothScrolling(); 
 
-  // hamburger
+  // Обробник для мобільного меню (гамбургер)
   const hamb = document.querySelector('.hamburger');
   if (hamb) hamb.addEventListener('click', () => {
     const nav = document.querySelector('.nav-primary');
     nav.style.display = (nav.style.display === 'flex' || !nav.style.display || nav.style.display === '') ? 'none' : 'flex';
   });
 
-  // Register Form Handler
+  // --- ОБРОБНИКИ ФОРМ (ЛОГІН / РЕЄСТРАЦІЯ) ---
+  
+  // Обробник форми Реєстрації
   const regForm = document.getElementById('registerForm');
   if (regForm) regForm.addEventListener('submit', e => {
     e.preventDefault();
@@ -278,16 +307,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!name || !email || !pass) return showToast('Заповніть всі поля', 'error');
     if (pass !== conf) return showToast('Паролі не співпадають', 'error');
 
+    // TODO: Замінити 'registerUser' на fetch() до '/api/register/'
     const role = isTrainer ? 'trainer' : 'user';
     const res = registerUser(name, email, pass, role);
     if (!res.ok) return showToast(res.msg, 'error');
 
     showToast('Реєстрація успішна!', 'success');
     closeModal('registerModal');
-    document.getElementById('regForm').reset();
+    document.getElementById('registerForm').reset();
   });
 
-  // Login Form Handler
+  // Обробник форми Логіну
   const loginForm = document.getElementById('loginForm');
   if (loginForm) loginForm.addEventListener('submit', e => {
     e.preventDefault();
@@ -295,6 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pass = document.getElementById('loginPassword').value;
     if (!email || !pass) return showToast('Заповніть всі поля', 'error');
 
+    // TODO: Замінити 'loginUser' на fetch() до '/api/login/'
     const res = loginUser(email, pass);
     if (!res.ok) return showToast(res.msg, 'error');
 

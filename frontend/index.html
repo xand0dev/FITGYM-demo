@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FITGYM — Ваш шлях до сили (Дипломний проєкт)</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="css/style.css"> 
+
+    </head>
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <div class="logo">FIT<span>GYM</span></div> 
+            <nav class="nav-primary">
+                <a href="#advantages">Переваги</a>
+                <a href="#schedule">Розклад</a>
+                <a href="#trainers">Тренери</a>
+                <a href="#plans">Абонементи</a>
+                <a href="#reviews">Відгуки</a>
+                <a href="#contacts">Контакти</a>
+            </nav>
+            <div id="authArea">
+                </div>
+            <button class="hamburger" aria-label="Toggle navigation">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </header>
+    
+    <section class="hero">
+        <div class="hero-inner container" data-aos="fade-up" data-aos-duration="1000">
+            <h1>Ваша фітнесова подорож починається тут</h1>
+            <p>Приєднуйтесь до нашого клубу та досягайте цілей з професіоналами.</p>
+            <div class="hero-actions">
+                <a href="#plans" class="btn btn-primary">Обрати абонемент</a>
+                <a href="#contacts" class="btn btn-ghost">Консультація</a> 
+            </div>
+        </div>
+    </section>
+
+    <section id="advantages" class="section container">
+        <h2>Чому обирають FITGYM?</h2>
+        <div class="grid cols-3">
+            <div class="card" data-aos="fade-right" data-aos-delay="100">
+                <i class="fas fa-user-tie fa-2x" style="color: var(--accent); margin-bottom: 10px;"></i>
+                <div class="card-title">Професійні тренери</div>
+                <div class="card-text">Сертифіковані фахівці, готові розробити індивідуальну програму.</div>
+            </div>
+            <div class="card" data-aos="fade-up" data-aos-delay="200">
+                <i class="fas fa-dumbbell fa-2x" style="color: var(--accent); margin-bottom: 10px;"></i>
+                <div class="card-title">Сучасне обладнання</div>
+                <div class="card-text">Тренажери останнього покоління для ефективного тренування.</div>
+            </div>
+            <div class="card" data-aos="fade-left" data-aos-delay="300">
+                <i class="fas fa-clock fa-2x" style="color: var(--accent); margin-bottom: 10px;"></i>
+                <div class="card-title">Зручний розклад</div>
+                <div class="card-text">Групові заняття та індивідуальні тренування на будь-який час.</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="schedule" class="section container" data-aos="fade-up">
+        <h2>Актуальний розклад</h2>
+        <div id="calendar"></div>
+    </section>
+ 
+    <section id="trainers" class="section container">
+        <h2>Наші тренери</h2>
+        <div id="trainersGrid" class="grid cols-3">
+            </div>
+    </section>
+
+    <section id="plans" class="section container">
+        <h2>Абонементи</h2>
+        <div id="plansGrid" class="grid cols-3">
+            </div>
+    </section>
+
+    <section id="reviews" class="section container" data-aos="fade-up">
+        <h2>Відгуки клієнтів</h2>
+        <div id="reviewsList" class="reviews">
+            </div>
+        <div id="addReviewSection" class="add-review">
+            <h3>Залиш свій відгук</h3>
+            <form id="reviewForm">
+                <textarea id="reviewText" placeholder="Ваш відгук..." required></textarea>
+                <button type="submit" class="btn btn-primary">Надіслати</button>
+            </form>
+        </div>
+    </section>
+
+    <section id="contacts" class="section container" data-aos="fade-up">
+        <h2>Контакти</h2>
+        <p><b>Телефон:</b> +38 (097) 123-45-67</p>
+        <p><b>Email:</b> info@fitgym.ua</p>
+        <p><b>Адреса:</b> вул. Вінницька, 42, м. Бердичів</p>
+        <div class="map-wrap">
+            <iframe 
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2600.311543886578!2d28.56385611569069!3d49.89326297940251!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x472d997a4a47a46b%3A0x60f38f45c36b32b0!2sBerdichevSKY!5e0!3m2!1sen!2sua!4v1678888888888!5m2!1sen!2sua" 
+                width="100%" height="300" style="border:0; border-radius: 8px;" allowfullscreen="" loading="lazy" 
+                referrerpolicy="no-referrer-when-downgrade" title="Мапа BerdichevSKY"></iframe>
+        </div>
+    </section>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <div>© 2025 FITGYM. Усі права захищено.</div>
+            <div><a href="#">Політика конфіденційності</a></div>
+        </div>
+    </footer>
+
+    <div id="loginModal" class="modal-overlay" onclick="closeModalOnOutsideClick(event)">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('loginModal')">×</button>
+            <h2>Вхід</h2>
+            <form id="loginForm">
+                <input type="email" id="loginEmail" placeholder="Email" required>
+                <input type="password" id="loginPassword" placeholder="Пароль" required>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Увійти</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="registerModal" class="modal-overlay" onclick="closeModalOnOutsideClick(event)">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('registerModal')">×</button>
+            <h2>Реєстрація</h2>
+            <form id="registerForm">
+                <input type="text" id="regName" placeholder="Ім'я" required>
+                <input type="email" id="regEmail" placeholder="Email" required>
+                <input type="password" id="regPassword" placeholder="Пароль" required>
+                <input type="password" id="regConfirm" placeholder="Підтвердіть пароль" required>
+                <div style="margin-bottom: 15px; color: var(--muted); font-size: 0.9rem;">
+                    <input type="checkbox" id="isTrainer" style="margin-right: 5px;">
+                    <label for="isTrainer">Я реєструюсь як тренер</label>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Зареєструватися</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.js"></script>
+    
+    <script src="js/main.js"></script>
+
+</body>
+</html>

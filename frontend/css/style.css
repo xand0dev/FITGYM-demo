@@ -1,4 +1,3 @@
-
 :root {
   --bg: #0a0a0a;
   --surface: #141414;
@@ -219,3 +218,33 @@ a { color: inherit; text-decoration: none; }
 .fc .fc-daygrid-day-number, .fc-col-header-cell-cushion { color: #fff; }
 .fc .fc-event { background: var(--accent); border: none; border-radius: 6px; color: #fff; }
 .fc .fc-day-today { background: rgba(255,0,0,0.2) !important; }
+
+/* === СТИЛІ, ПЕРЕНЕСЕНІ З INDEX.HTML === 
+*/
+
+.modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(4px);
+    z-index: 1000; display: none; justify-content: center; align-items: center;
+}
+.modal-content {
+    background: var(--surface); padding: 40px; border-radius: var(--radius);
+    max-width: 400px; width: 90%; position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); border-top: 3px solid var(--accent);
+}
+.modal-content h2 { color: var(--accent); margin-top: 0; }
+.modal-content input[type="text"], .modal-content input[type="email"], .modal-content input[type="password"] {
+    width: 100%; padding: 12px; margin-bottom: 15px; background: #222;
+    border: 1px solid #444; color: var(--text); border-radius: 4px;
+}
+.modal-close {
+    position: absolute; top: 10px; right: 15px; font-size: 1.5rem;
+    background: none; border: none; color: var(--muted); cursor: pointer;
+}
+/* Стилі для форми відгуків */
+.add-review { margin-top: 2rem; }
+.add-review textarea {
+    width: 100%; min-height: 80px; background: #222;
+    border: 1px solid #444; color: var(--text); border-radius: 4px;
+    padding: 10px; margin-bottom: 10px;
+}
