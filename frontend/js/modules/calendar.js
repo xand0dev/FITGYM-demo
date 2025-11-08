@@ -14,7 +14,14 @@ export function initCalendar() {
 
     const calendar = new FullCalendar.Calendar(calendarEl, {
         locale: "uk",
-        initialView: "dayGridMonth",
+
+        // --- 🌟 ЗМІНИ ТУТ 🌟 ---
+        initialView: "timeGridWeek", // <--- 1. ОСНОВНА ЗМІНА
+        allDaySlot: false,           // <--- 2. Прибираємо слот "весь день"
+        slotMinTime: "08:00:00",     // <--- 3. Починаємо о 8:00
+        slotMaxTime: "21:00:00",     // <--- 4. Закінчуємо о 21:00
+        // --- 🌟 КІНЕЦЬ ЗМІН 🌟 ---
+
         headerToolbar: {
             left: "prev,next today",
             center: "title",
@@ -45,6 +52,7 @@ export function initCalendar() {
         loading: function(isLoading) {
             // Обробка помилки (якщо бекенд вимкнено)
             if (!isLoading) {
+                // @ts-ignore
                 if (calendar.getEvents().length === 0) {
                     showToast('Не вдалося завантажити розклад з API.', 'error');
                 }

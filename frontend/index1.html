@@ -1,14 +1,37 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Frontend Test</title>
+    <title>Calendar Test</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background: #222;
+            padding: 20px;
+            font-family: sans-serif;
+            color: white;
+        }
+        #calendar {
+            min-height: 600px;
+            background: #fff;
+            color: #000;
+            border-radius: 8px;
+            padding: 10px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Список наших тренерів</h1>
-    <ul id="instructor-list">
-        </ul>
 
-    <script src="main1.js"></script>
+<h1>Тест FullCalendar</h1>
+<p>Якщо ти бачиш календар нижче, значить бібліотека працює.</p>
+
+<div id="calendar"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
+<script src="main1.js"></script>
+
 </body>
 </html>
