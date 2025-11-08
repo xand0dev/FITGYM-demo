@@ -2,10 +2,11 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    WorkoutViewSet, 
-    InstructorViewSet, 
-    MembershipTypeViewSet, 
-    ClassSessionViewSet
+    WorkoutViewSet,
+    InstructorViewSet,
+    MembershipTypeViewSet,
+    ClassSessionViewSet,
+    RegisterView
 )
 
 # "Router" автоматично створює всі URL для ViewSet
@@ -16,5 +17,9 @@ router.register(r'membership-types', MembershipTypeViewSet, basename='membership
 router.register(r'schedule', ClassSessionViewSet, basename='classsession')
 
 urlpatterns = [
+    # Всі URL з роутера (workouts, instructors...)
     path('', include(router.urls)),
+
+    # НОВИЙ КОД: Окрема адреса для реєстрації
+    path('register/', RegisterView.as_view(), name='register'),
 ]

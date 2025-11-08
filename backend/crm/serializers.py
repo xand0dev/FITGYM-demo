@@ -1,6 +1,6 @@
 # crm/serializers.py
 from rest_framework import serializers
-from .models import Workout, Instructor, ClassSession, MembershipType, Class
+from .models import Workout, Instructor, ClassSession, MembershipType, Class, Member
 from django.contrib.auth.models import User
 
 
@@ -41,3 +41,40 @@ class ClassSessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClassSession
         fields = ['id', 'class_name', 'instructor_name', 'start_at', 'end_at', 'capacity']
+
+
+# --- НОВИЙ КОД ДЛЯ РЕЄСТРАЦІЇ ---
+
+class RegisterSerializer(serializers.ModelSerializer):
+    """
+    Серіалізатор для реєстрації нового користувача (і створення профілю Member).
+    """
+    # Ми додаємо поля, яких немає в моделі User, але які нам потрібні
+    name = serializers.CharField(write_only=True, required=True)
+    password = serializers.CharField(write_only=True, required=True, min_length=8)
+
+    class Meta:
+        model = User
+        # Вказуємо поля, які очікуємо від фронтенду
+        fields = ('email', 'username', 'password', 'name')
+        extra_kwargs = {
+            'username': {'required': True},
+            'email': {'required': True}
+        }
+
+    def create(self, validated_data):
+        # Використовуємо .pop(), щоб витягнути наше кастомне поле 'name'
+        name = validated_data.pop('name')
+
+        # Створюємо User
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password'],
+            first_name=name  # Запишемо ім'я в first_name
+        )
+
+        # Створюємо прив'язаний профіль Member
+        Member.objects.create(user=user)
+
+        return user

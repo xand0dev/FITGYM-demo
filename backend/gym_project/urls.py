@@ -7,4 +7,7 @@ urlpatterns = [
 
     # Всі маршрути з crm/urls.py будуть починатися з 'api/'
     path('api/', include('crm.urls')),
+
+    # АДРЕСА ДЛЯ ЛОГІНУ
+    path('api/login/', authtoken_views.obtain_auth_token),
 ]
