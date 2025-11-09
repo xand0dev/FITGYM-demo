@@ -30,6 +30,9 @@ import {
 // Імпортуємо логіку Календаря
 import { initCalendar } from './modules/calendar.js';
 
+// Імпорт нового модуля ІМТ-калькулятора
+import { setupImtCalculator } from './modules/calculator.js'; // ⬅️ Імпорт
+
 /* === INIT (Ініціалізація) === */
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -40,26 +43,30 @@ document.addEventListener('DOMContentLoaded', () => {
             once: true
         });
     }
-    initModalLogic(); // Налаштовує кнопки закриття модалок
+    initModalLogic(); 
     setupSmoothScrolling();
     setupHamburger();
 
     // 2. Автентифікація (форми та хедер)
-    updateAuthArea(); // Оновлює хедер (Привіт, ... / Вхід)
-    initAuth(); // Налаштовує слухачі форм (loginForm, registerForm)
+    updateAuthArea(); 
+    initAuth(); 
 
     // 3. Завантаження контенту
-    populateTrainers(); // Завантажує тренерів з API
-    populatePlans();    // Завантажує абонементи з API
+    populateTrainers(); 
+    populatePlans();   
+    
+    // 💥 4. ІНІЦІАЛІЗАЦІЯ КАЛЬКУЛЯТОРА ІМТ
+    setupImtCalculator(); 
 
-    // 4. Відгуки
+    // 5. Відгуки
     populateReviews();
     setupReviewForm();
 
-    // 5. Календар
+    // 6. Календар
     if (typeof FullCalendar !== 'undefined') {
         initCalendar();
     } else {
         console.error("FullCalendar не завантажено!");
     }
+    
 });

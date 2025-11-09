@@ -165,7 +165,7 @@ a { color: inherit; text-decoration: none; }
 
 /* --- HERO SECTION --- */
 .hero {
-    background-image: url('../img/bg1.jpg');
+    background-image: url('../img/bg1.png');
     background-size: cover;
     background-position: center center;
     padding: 120px 0;
@@ -717,6 +717,127 @@ a { color: inherit; text-decoration: none; }
     margin-bottom: 30px;
     border-bottom: 1px solid #ddd;
     padding-bottom: 10px;
+}
+/* --- СТИЛІ КАЛЬКУЛЯТОРА ІМТ --- */
+.imt-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 50px;
+    align-items: flex-start;
+}
+
+/* ІМТ Таблиця (Ліва колонка) */
+.imt-table-container {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+.imt-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+}
+.imt-table th {
+    background: var(--accent);
+    color: #fff;
+    padding: 15px 10px;
+    text-align: left;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+.imt-table tr {
+    border-bottom: 1px solid #333;
+    transition: background 0.3s;
+}
+.imt-table tr:hover {
+    background: #181818;
+}
+.imt-table td {
+    padding: 12px 10px;
+    font-size: 1rem;
+    color: var(--muted);
+}
+.imt-table td:first-child {
+    color: var(--text);
+    font-weight: 600;
+}
+
+/* Виділення активного статусу (зробимо через JS) */
+.imt-table tr.active {
+    background: var(--accent) !important;
+    color: #fff;
+}
+.imt-table tr.active td {
+    color: #fff;
+}
+
+.imt-note {
+    font-size: 0.85rem;
+    color: var(--muted);
+    padding-left: 10px;
+    margin: 10px 0 0;
+}
+
+/* ІМТ Форма (Права колонка) */
+.imt-form-container {
+    padding: 20px 0;
+}
+.imt-form input[type="number"],
+.imt-form select {
+    width: 100%;
+    padding: 12px;
+    background: var(--surface);
+    border: 1px solid #333;
+    color: var(--text);
+    border-radius: 4px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    font-size: 1rem;
+    margin-bottom: 15px;
+}
+.imt-form input:focus,
+.imt-form select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 8px rgba(230, 0, 0, 0.3);
+    outline: none;
+}
+
+.imt-form .form-row {
+    display: flex;
+    gap: var(--gap);
+}
+.imt-form .form-row input,
+.imt-form .form-row select {
+    flex: 1;
+}
+
+/* Результат */
+.imt-result-box {
+    background: #1a1a1a;
+    border: 1px solid var(--accent);
+    padding: 15px;
+    border-radius: 4px;
+    min-height: 50px;
+    margin-bottom: 25px;
+    color: var(--text);
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-weight: 600;
+}
+.imt-result-box.normal { border-color: #0aa84b; color: #0aa84b; }
+.imt-result-box.overweight { border-color: #ff9900; color: #ff9900; }
+.imt-result-box.obese { border-color: var(--accent); color: var(--accent); }
+
+
+/* Адаптивність для ІМТ */
+@media (max-width: 880px) {
+    .imt-wrapper {
+        grid-template-columns: 1fr;
+    }
 }
 /* Стилі полів анкети */
 .review-modal-content .form-label { display: block; font-weight: 700; color: #333; margin-bottom: 10px; font-size: 1.1rem; }
