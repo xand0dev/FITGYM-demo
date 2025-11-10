@@ -132,3 +132,17 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        # Це каже DRF "шукати" токени в хедері 'Authorization: Token ...'
+        'rest_framework.authentication.TokenAuthentication',
+
+        # Це залишаємо, щоб адмінка Django працювала
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        # За замовчуванням, нікуди не пускати без "пропуску"
+        'rest_framework.permissions.IsAuthenticated',
+    ]
+}

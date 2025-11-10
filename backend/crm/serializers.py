@@ -1,6 +1,7 @@
 # crm/serializers.py
 from rest_framework import serializers
-from .models import Workout, Instructor, ClassSession, MembershipType, Class, Member
+# 👇 Додано 'Booking' в кінець імпорту
+from .models import Workout, Instructor, ClassSession, MembershipType, Class, Member, Booking
 from django.contrib.auth.models import User
 
 
@@ -12,12 +13,12 @@ class WorkoutSerializer(serializers.ModelSerializer):
 
 
 # ---
-# СЕРІАЛІЗАТОРИ ДЛЯ ФРОНТЕНДУ
+# СЕРІАЛІЗАТОРИ ДЛЯ ФРОНТЕНДУ (ПУБЛІЧНІ)
 # ---
 
 # Серіалізатор для Тренерів
 class InstructorSerializer(serializers.ModelSerializer):
-    # Хочемо показувати не 'user_id', а нормальне ім'я
+    # 'source' дозволяє взяти дані з іншої моделі (user.get_full_name)
     full_name = serializers.CharField(source='user.get_full_name', read_only=True)
 
     class Meta:
@@ -34,7 +35,7 @@ class MembershipTypeSerializer(serializers.ModelSerializer):
 
 # Серіалізатор для Розкладу
 class ClassSessionSerializer(serializers.ModelSerializer):
-    # Хочемо показувати імена, а не ID
+    # 'source' дозволяє взяти дані з іншої моделі (user.get_full_name)
     class_name = serializers.CharField(source='class_type.name', read_only=True)
     instructor_name = serializers.CharField(source='instructor.user.get_full_name', allow_null=True, read_only=True)
 
@@ -43,19 +44,22 @@ class ClassSessionSerializer(serializers.ModelSerializer):
         fields = ['id', 'class_name', 'instructor_name', 'start_at', 'end_at', 'capacity']
 
 
-# --- НОВИЙ КОД ДЛЯ РЕЄСТРАЦІЇ ---
+# ---
+# ЕТАП 2: СЕРІАЛІЗАТОР ДЛЯ РЕЄСТРАЦІЇ
+# ---
 
 class RegisterSerializer(serializers.ModelSerializer):
     """
-    Серіалізатор для реєстрації нового користувача (і створення профілю Member).
+    Серіалізатор для реєстрації. Створює User + Member.
     """
-    # Ми додаємо поля, яких немає в моделі User, але які нам потрібні
+    # Додаткові поля, яких нема в User, але потрібні для форми.
+    # 'write_only' = поле можна тільки надіслати, але не отримати у відповіді.
     name = serializers.CharField(write_only=True, required=True)
     password = serializers.CharField(write_only=True, required=True, min_length=8)
 
     class Meta:
         model = User
-        # Вказуємо поля, які очікуємо від фронтенду
+        # Поля, які очікуємо з фронту
         fields = ('email', 'username', 'password', 'name')
         extra_kwargs = {
             'username': {'required': True},
@@ -63,18 +67,69 @@ class RegisterSerializer(serializers.ModelSerializer):
         }
 
     def create(self, validated_data):
-        # Використовуємо .pop(), щоб витягнути наше кастомне поле 'name'
+        # 'create' - це тут головне. Перевизначаємо, щоб створити 2 об'єкти.
+
+        # 'pop' name, бо його нема в 'create_user' напряму.
         name = validated_data.pop('name')
 
-        # Створюємо User
+        # Використовуємо 'create_user', він сам хешує пароль.
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
             password=validated_data['password'],
-            first_name=name  # Запишемо ім'я в first_name
+            first_name=name  # Запишемо 'name' у 'first_name'
         )
 
-        # Створюємо прив'язаний профіль Member
+        # ВАЖЛИВО: одразу створюємо пустий профіль Member і прив'язуємо його.
         Member.objects.create(user=user)
 
         return user
+
+
+# ---
+# ЕТАП 2: СЕРІАЛІЗАТОР ДЛЯ ОСОБИСТОГО КАБІНЕТУ (/api/me/)
+# ---
+
+class MemberSerializer(serializers.ModelSerializer):
+    """
+    Серіалізатор для профілю Клієнта (Member).
+    Використовується для /api/me/
+    """
+    # Беремо дані з прив'язаної моделі User
+    username = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.EmailField(source='user.email', read_only=True)
+    full_name = serializers.CharField(source='user.get_full_name', read_only=True)
+
+    class Meta:
+        model = Member
+        # Вказуємо всі поля, які хочемо повернути фронтенду
+        fields = [
+            'id',
+            'username',
+            'email',
+            'full_name',
+            'contact',
+            'gender',
+            'birth_date',
+            'status'
+        ]
+
+
+# ---
+# ЕТАП 2: СЕРІАЛІЗАТОР ДЛЯ "МОЇХ ЗАПИСІВ" (/api/my-bookings/)
+# ---
+
+class BookingSerializer(serializers.ModelSerializer):
+    """
+    Серіалізатор для записів (Bookings) користувача.
+    """
+    # "Вкладаємо" серіалізатор сесії, щоб бачити повну інфу про заняття
+    # 'read_only=True' означає, що ми не можемо *створювати* сесію через цей API,
+    # а можемо тільки *читати* її.
+    session = ClassSessionSerializer(read_only=True)
+
+    class Meta:
+        model = Booking
+        # Повертаємо ID самого запису, статус, час запису,
+        # і "вкладений" об'єкт 'session'
+        fields = ['id', 'session', 'booked_at', 'status']
