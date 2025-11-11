@@ -2,8 +2,11 @@
    auth.js — "Охоронець" (Автентифікація)
    =========================== */
 
+// Імпортуємо 'api.js' для 'postApiData'
 import { postApiData } from './api.js';
-import { showToast, closeModal, escapeHtml, updateAuthArea } from './ui.js';
+// Імпортуємо 'ui.js' для 'showToast', 'closeModal', 'escapeHtml'
+import { showToast, closeModal, escapeHtml } from './ui.js';
+// Імпортуємо 'reviews.js' для оновлення списку відгуків після логіну
 import { populateReviews } from './reviews.js';
 
 // --- LocalStorage Helpers ---
@@ -42,9 +45,48 @@ export function logoutUser() {
     location.reload();
 }
 
-// --- UI Updates ---
 
-export { updateAuthArea }; // Експортуємо функцію, яку імпортували з ui.js
+/**
+ * Оновлює хедер (Привіт, Юзер / Вхід / РЕЄСТРАЦІЯ)
+ * Тепер вона показує кнопку "Кабінет", якщо юзер залогінений.
+ */
+export function updateAuthArea() {
+    const area = document.getElementById('authArea');
+    const reviewBtn = document.getElementById('openReviewModalBtn');
+    if (!area) return;
+
+    const token = getToken();
+    const userName = getUserName();
+
+    if (token && userName) {
+        // === ЮЗЕР ЗАЛОГІНЕНИЙ ===
+        area.innerHTML = `
+            <span style="margin-right:10px; color: var(--muted);">
+                Привіт, <b>${escapeHtml(userName)}</b>
+            </span>
+            <a href="cabinet.html" class="btn btn-ghost">
+                <i class="fas fa-user-circle"></i> Кабінет
+            </a>
+            <button id="logoutBtn" class="btn btn-primary">
+                <i class="fas fa-sign-out-alt"></i> Вихід
+            </button>`;
+
+        // Навішуємо подію на кнопку "Вихід"
+        document.getElementById('logoutBtn').addEventListener('click', logoutUser);
+
+        // Показуємо кнопку "Залишити відгук"
+        if (reviewBtn) reviewBtn.style.display = 'inline-block';
+
+    } else {
+        // === ЮЗЕР - ГІСТЬ ===
+        area.innerHTML = `
+            <button class="btn btn-ghost" onclick="showModal('loginModal')">ВХІД</button>
+            <button class="btn btn-primary" onclick="showModal('registerModal')">РЕЄСТРАЦІЯ</button>`;
+
+        // Ховаємо кнопку "Залишити відгук"
+        if (reviewBtn) reviewBtn.style.display = 'none';
+    }
+}
 
 // --- Event Listeners (Ініціалізація) ---
 
@@ -60,6 +102,13 @@ export function initAuth() {
     if (loginForm) {
         loginForm.addEventListener('submit', handleLogin);
     }
+
+    // Прив'язуємо 'showModal' до window, щоб onclick="showModal(...)" працював
+    // (Це потрібно, бо 'updateAuthArea' створює ці кнопки динамічно)
+    window.showModal = (id) => {
+        const modal = document.getElementById(id);
+        if (modal) modal.style.display = 'flex';
+    };
 }
 
 // --- Form Handlers ---

@@ -337,3 +337,122 @@
 .star-rating-controls { display: flex; justify-content: flex-end; gap: 5px; color: #ccc; }
 .star-rating-controls i.fas { color: var(--accent); }
 .star-rating-controls i { font-size: 1.4rem; cursor: pointer; }
+
+
+/* ========================================================== */
+/* 3-pages.css: (ДОДАНО В КІНЕЦЬ ФАЙЛУ) */
+/* --- CABINET PAGE --- */
+/* ========================================================== */
+
+.cabinet-grid {
+    display: grid;
+    /* Використовуємо таку ж логіку, як в ІМТ калькуляторі: 1fr 1.5fr */
+    grid-template-columns: 1fr 1.5fr;
+    gap: var(--gap);
+    align-items: flex-start;
+}
+
+/* Створюємо загальний стиль для карток кабінету,
+   використовуючи стилі з інших компонентів (напр. .review-item)
+*/
+.profile-card,
+.schedule-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    height: 100%; /* Додамо, щоб картки були однакової висоти (якщо знадобиться) */
+}
+
+/* --- Ліва картка: Профіль --- */
+.profile-header {
+    text-align: center;
+    padding-bottom: 25px;
+    margin-bottom: 25px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 3px solid var(--accent);
+    margin-bottom: 15px;
+    object-fit: cover;
+}
+
+.profile-header h3 {
+    margin: 0 0 5px;
+    font-size: 1.5rem;
+    color: var(--text);
+}
+
+.user-role {
+    color: var(--muted);
+    font-weight: 600;
+    margin: 0;
+    font-size: 1rem;
+}
+
+.profile-details p {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    font-size: 0.95rem;
+}
+.profile-details p i {
+    color: var(--accent);
+    width: 20px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+.profile-details p span {
+    color: var(--muted);
+    font-weight: 300;
+}
+
+/* --- Права картка: Розклад --- */
+.schedule-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* СТИЛІ ДЛЯ .booking-card (ЯКІ ГЕНЕРУЄ JS) */
+.booking-card {
+    background: var(--bg); /* Трохи темніше за --surface */
+    padding: 15px 20px;
+    border-radius: 8px;
+    border-left: 4px solid var(--accent);
+    transition: background 0.3s;
+}
+.booking-card:hover {
+    background: #1a1a1a;
+}
+.booking-card h4 {
+    margin: 0 0 8px;
+    color: var(--text);
+    font-size: 1.1rem;
+}
+.booking-card p,
+.booking-card span {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin: 4px 0;
+}
+.booking-card p strong {
+    color: var(--accent);
+    text-transform: uppercase;
+    font-size: 0.85rem;
+}

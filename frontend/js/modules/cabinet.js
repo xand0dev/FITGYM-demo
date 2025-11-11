@@ -1,107 +1,149 @@
 /* ===========================
-   modules/cabinet.js — Логіка Особистого Кабінету
+   modules/cabinet.js — "Диригент" Особистого Кабінету
    =========================== */
 
-import { getCurrentUser } from './auth.js'; 
-import { showToast } from './ui.js';       
-import { escapeHtml } from './ui.js'; 
+// Імпортуємо потрібні нам функції з інших модулів
+import { getToken, getUserName, logoutUser, updateAuthArea, initAuth } from './auth.js';
+import { showToast, escapeHtml, initModalLogic, setupHamburger, setupSmoothScrolling } from './ui.js';
 
-const BASE_URL = 'http://127.0.0.1:8000'; 
+// Адреса нашого бекенду
+const BASE_URL = 'http://127.0.0.1:8000';
 
-//  ФУНКЦІЯ РЕНДЕРИНГУ РОЗКЛАДУ КОРИСТУВАЧА
+/**
+ * 🌟 "Охоронець" (Guard) 🌟
+ * Ця функція - точка входу. Вона запускається одразу.
+ */
+document.addEventListener('DOMContentLoaded', () => {
+
+    const token = getToken();
+    const userName = getUserName();
+
+    // 1. Перевірка "фейс-контролю"
+    if (!token) {
+        alert("Доступ заборонено! Будь ласка, увійдіть.");
+        window.location.href = 'index.html'; // Перекидаємо на головну
+        return; // Зупиняємо виконання
+    }
+
+    // 2. Якщо токен є - заповнюємо сторінку
+    console.log("Доступ дозволено. Завантажую дані кабінету...");
+
+    // 3. Ініціалізуємо UI (Хедер, гамбургер)
+    initModalLogic();      // Налаштовує кнопки закриття модалок (на випадок, якщо вони нам знадобляться)
+    setupSmoothScrolling();  // Плавний скрол (для посилань на index.html)
+    setupHamburger();      // Меню-гамбургер
+    updateAuthArea();      // Оновлює хедер (показує "Привіт, ... / Вихід")
+    initAuth();            // (Потрібно, щоб "showModal" працював, якщо він в хедері)
+
+    // 4. Миттєво заповнюємо тим, що маємо (щоб не було "Завантаження...")
+    document.getElementById('user-name').textContent = userName;
+    document.getElementById('user-role').textContent = 'Клієнт'; // (Поки що так)
+    document.getElementById('user-avatar').src = 'img/муж1.png'; // (Заглушка)
+
+    // Навішуємо "прослушку" на кнопку виходу
+    document.getElementById('logoutButton').addEventListener('click', logoutUser);
+
+    // 5. Запускаємо асинхронне завантаження даних з API
+    loadProfileData(token);
+    populateUserSchedule(token);
+
+    // 6. Ініціалізуємо AOS (анімації)
+    if (typeof AOS !== 'undefined') {
+        AOS.init({
+            duration: 800,
+            once: true
+        });
+    }
+});
+
+
+/**
+ * ФУНКЦІЯ РЕНДЕРИНГУ ПРОФІЛЮ
+ * (Бере токен, йде на /api/me/ і заповнює деталі)
+ */
+async function loadProfileData(token) {
+    const infoDiv = document.getElementById('profile-info');
+    if (!infoDiv) return;
+
+    try {
+        const headers = { 'Authorization': `Token ${token}` };
+        const response = await fetch(`${BASE_URL}/api/me/`, { headers });
+
+        if (!response.ok) {
+            // Якщо 401 (Unauthorized), токен "протух", виходимо
+            if (response.status === 401) {
+                showToast('Сесія застаріла. Будь ласка, увійдіть знову.', 'error');
+                logoutUser();
+                return;
+            }
+            throw new Error(`Помилка: ${response.status}`);
+        }
+
+        const profileData = await response.json();
+
+        // 'profileData' - це масив [{}]. Нам потрібен перший елемент.
+        const userProfile = profileData[0];
+
+        if (!userProfile) throw new Error('API повернув порожній профіль');
+
+        // Вставляємо детальні дані в HTML
+        infoDiv.innerHTML = `
+            <p><i class="fas fa-envelope"></i> Email: <span>${escapeHtml(userProfile.email)}</span></p>
+            <p><i class="fas fa-id-card"></i> Username: <span>${escapeHtml(userProfile.username)}</span></p>
+            <p><i class="fas fa-phone"></i> Контакт: <span>${escapeHtml(userProfile.contact || 'Не вказано')}</span></p>
+            <p><i class="fas fa-dumbbell"></i> Статус: <span>${escapeHtml(userProfile.status)}</span></p>
+        `;
+
+        // Також оновлюємо ім'я в хедері картки
+        document.getElementById('user-name').textContent = userProfile.full_name;
+
+    } catch (err) {
+        console.error('API Error (Profile):', err);
+        showToast(`Помилка завантаження профілю.`, 'error');
+        infoDiv.innerHTML = `<p class="text-muted">Не вдалося завантажити дані профілю.</p>`;
+    }
+}
+
+
+/**
+ * ФУНКЦІЯ РЕНДЕРИНГУ ЗАПИСІВ КОРИСТУВАЧА
+ * (Бере токен, йде на /api/my-bookings/ і малює список)
+ */
 async function populateUserSchedule(token) {
     const list = document.getElementById('bookings-list');
     if (!list) return;
     list.innerHTML = `<p class="text-muted">Завантаження записів...</p>`;
 
-    let bookings = [];
     try {
         const headers = { 'Authorization': `Token ${token}` };
-        const response = await fetch(`${BASE_URL}/api/my-bookings/`, { headers }); 
-        
-        if (!response.ok) throw new Error(`Немає доступу до записів (${response.status})`);
-        
-        bookings = await response.json();
-        
+        const response = await fetch(`${BASE_URL}/api/my-bookings/`, { headers });
+
+        if (!response.ok) throw new Error(`Не вдалося завантажити записи (${response.status})`);
+
+        const bookings = await response.json();
+
+        if (bookings.length === 0) {
+            list.innerHTML = "<p>У вас поки що немає записів на заняття.</p>";
+            return;
+        }
+
+        // Малюємо картки записів
+        list.innerHTML = bookings.map(booking => {
+            // 'booking.session' - це вкладений об'єкт ClassSessionSerializer
+            const session = booking.session;
+            return `
+            <div class="booking-card">
+                <h4>${escapeHtml(session.class_name)}</h4>
+                <span>Тренер: ${escapeHtml(session.instructor_name || 'Н/Д')}</span>
+                <p>Коли: ${new Date(session.start_at).toLocaleString('uk-UA', {dateStyle: 'short', timeStyle: 'short'})}</p>
+                <p>Статус: <strong>${escapeHtml(booking.status)}</strong></p>
+            </div>
+            `
+        }).join('');
+
     } catch (error) {
         console.error("API Error (User Bookings):", error);
         showToast('Помилка API: Не вдалося завантажити записи.', 'error');
-        // Демонстраційні дані
-        bookings = [
-            { session: { class_name: "Йога", instructor_name: "Олена", start_at: "2025-11-15T14:00:00" }, status: "Підтверджено" },
-            { session: { class_name: "Кросфіт", instructor_name: "Іван", start_at: "2025-11-18T18:00:00" }, status: "Очікується" },
-        ];
+        list.innerHTML = `<p class="text-muted">Помилка завантаження.</p>`;
     }
-
-    if (bookings.length === 0) {
-        list.innerHTML = "<p>У вас поки що немає записів на заняття.</p>";
-        return;
-    }
-
-    list.innerHTML = bookings.map(booking => `
-        <div class="booking-card">
-            <h4>${escapeHtml(booking.session.class_name)}</h4>
-            <span>Тренер: ${escapeHtml(booking.session.instructor_name)}</span>
-            <p>Коли: ${new Date(booking.session.start_at).toLocaleString('uk-UA')}</p>
-            <p>Статус: <strong>${escapeHtml(booking.status)}</strong></p>
-        </div>
-    `).join('');
-}
-
-// ФУНКЦІЯ РЕНДЕРИНГУ ПРОФІЛЮ
-async function loadProfileData(token, staticProfile) {
-    const infoDiv = document.getElementById('profile-info');
-    const nameEl = document.getElementById('user-name');
-    const roleEl = document.getElementById('user-role');
-
-    try {
-        const headers = { 'Authorization': `Token ${token}` };
-        const response = await fetch(`${BASE_URL}/api/me/`, { headers });
-        
-        if (!response.ok) throw new Error(`Не вдалося завантажити профіль (${response.status})`);
-        
-        const profile = await response.json(); 
-        const userProfile = profile.user || profile[0]; // Адаптація під можливий формат API
-
-        // Оновлення статичних даних
-        nameEl.textContent = profile.full_name || staticProfile.name;
-        roleEl.textContent = profile.role === 'trainer' ? 'Професійний Тренер' : 'Клієнт';
-
-        // Вставляємо детальні дані в HTML
-        infoDiv.innerHTML = `
-            <p><i class="fas fa-envelope"></i> Email: <span>${escapeHtml(profile.email || staticProfile.email)}</span></p>
-            <p><i class="fas fa-id-card"></i> Username: <span>${escapeHtml(profile.username || staticProfile.username)}</span></p>
-            <p><i class="fas fa-dumbbell"></i> Абонемент: <span>${escapeHtml(profile.membership_status || 'Річний (PLUS)')}</span></p>
-        `;
-
-    } catch (err) {
-        console.error('API Error (Profile):', err);
-        showToast(`Помилка: ${err.message}. Відображаються локальні дані.`, 'error');
-        // Якщо API недоступний, відображаємо дані з LocalStorage
-        infoDiv.innerHTML = `
-            <p><i class="fas fa-envelope"></i> Email: <span>${staticProfile.email}</span></p>
-            <p><i class="fas fa-user"></i> Роль: <span>${staticProfile.role || 'Клієнт'}</span></p>
-            <p><i class="fas fa-exclamation-circle"></i> Статус: <span>API Недоступний</span></p>
-        `;
-    }
-}
-
-
-//  ОСНОВНА ФУНКЦІЯ РЕНДЕРИНГУ КАБІНЕТУ
-export function renderUserCabinet() {
-    const user = getCurrentUser();
-    
-    if (!user || !user.token) { 
-        window.location.href = 'index.html'; 
-        return; 
-    }
-    
-    // Оновлення статичних полів (миттєво)
-    document.getElementById('user-avatar').src = user.avatar || '../img/default-avatar.png';
-    document.getElementById('user-name').textContent = user.name || 'Користувач';
-    document.getElementById('user-role').textContent = user.role === 'trainer' ? 'Професійний Тренер' : 'Клієнт';
-
-    // Завантаження динамічних даних з API
-    loadProfileData(user.token, user);
-    populateUserSchedule(user.token);
 }
