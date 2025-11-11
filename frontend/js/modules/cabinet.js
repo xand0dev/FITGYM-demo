@@ -8,7 +8,7 @@ import { escapeHtml } from './ui.js';
 
 const BASE_URL = 'http://127.0.0.1:8000'; 
 
-// 💥 ФУНКЦІЯ РЕНДЕРИНГУ РОЗКЛАДУ КОРИСТУВАЧА
+//  ФУНКЦІЯ РЕНДЕРИНГУ РОЗКЛАДУ КОРИСТУВАЧА
 async function populateUserSchedule(token) {
     const list = document.getElementById('bookings-list');
     if (!list) return;

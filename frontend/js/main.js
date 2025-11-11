@@ -2,71 +2,76 @@
    main.js — "Диригент" сайту FITGYM
    =========================== */
 
-// Імпортуємо UI-функції (тости, модалки, скрол)
+// 1. Імпортуємо UI-функції (тости, модалки, скрол, гамбургер)
 import {
     initModalLogic,
     setupSmoothScrolling,
     setupHamburger
 } from './modules/ui.js';
 
-// Імпортуємо логіку Автентифікації (форми, оновлення хедера)
+// 2. Імпортуємо логіку Автентифікації (форми, оновлення хедера)
 import {
     initAuth,
     updateAuthArea
 } from './modules/auth.js';
 
-// Імпортуємо логіку Контенту (тренери, абонементи)
+// 3. Імпортуємо логіку Контенту (тренери, абонементи)
 import {
     populateTrainers,
     populatePlans
 } from './modules/content.js';
 
-// Імпортуємо логіку Відгуків
+// 4. Імпортуємо логіку Відгуків
 import {
     populateReviews,
     setupReviewForm
 } from './modules/reviews.js';
 
-// Імпортуємо логіку Календаря
+// 5. Імпортуємо логіку Календаря
 import { initCalendar } from './modules/calendar.js';
 
-// Імпорт нового модуля ІМТ-калькулятора
-import { setupImtCalculator } from './modules/calculator.js'; // ⬅️ Імпорт
+// 6. Імпортуємо логіку ІМТ-калькулятора
+import { setupImtCalculator } from './modules/calculator.js'; 
 
-/* === INIT (Ініціалізація) === */
+
+/* =========================================
+   INIT (Ініціалізація, виконується після завантаження DOM)
+   ========================================= */
 document.addEventListener('DOMContentLoaded', () => {
 
-    // 1. Ініціалізація UI
+    // 1. UI та Анімація
+    // Ініціалізація AOS (якщо бібліотека завантажена)
     if (typeof AOS !== 'undefined') {
         AOS.init({
             duration: 800,
             once: true
         });
     }
-    initModalLogic(); 
-    setupSmoothScrolling();
-    setupHamburger();
+    initModalLogic();         // Логіка модальних вікон
+    setupSmoothScrolling();   // Плавний скрол до секцій
+    setupHamburger();         // Меню-гамбургер
 
-    // 2. Автентифікація (форми та хедер)
-    updateAuthArea(); 
-    initAuth(); 
+    // 2. Автентифікація
+    updateAuthArea();         // Оновлення хедера (Вхід/Кабінет)
+    initAuth();               // Обробка форм входу/реєстрації
 
-    // 3. Завантаження контенту
-    populateTrainers(); 
-    populatePlans();   
+    // 3. Контент
+    populateTrainers();       // Завантаження карток тренерів
+    populatePlans();          // Завантаження абонементів
     
-    // 💥 4. ІНІЦІАЛІЗАЦІЯ КАЛЬКУЛЯТОРА ІМТ
-    setupImtCalculator(); 
-
+    // 4. Функціональні модулі
+    setupImtCalculator();     // ІМТ-калькулятор
+    
     // 5. Відгуки
-    populateReviews();
-    setupReviewForm();
+    populateReviews();        // Завантаження і відображення відгуків
+    setupReviewForm();        // Обробка форми відгуку
 
-    // 6. Календар
+    // 6. Розклад (Calendar)
     if (typeof FullCalendar !== 'undefined') {
-        initCalendar();
+        initCalendar();       // Ініціалізація FullCalendar
     } else {
-        console.error("FullCalendar не завантажено!");
+        // Виводимо помилку, якщо FullCalendar не завантажено
+        console.error("Помилка: FullCalendar не завантажено або недоступний.");
     }
     
 });
