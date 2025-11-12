@@ -50,14 +50,6 @@
 
 /* --- ВИПРАВЛЕННЯ СТИЛЮ ТА МАКЕТУ КАРУСЕЛІ --- */
 
-/* 1. Колір "ГАЛЕРЕЯ" */
-.gallery-title {
-    /* Зміна кольору на червоний або той, що відповідає стилю сайту (раніше був #AD00FF пурпуровий) */
-    color: var(--accent); /* Якщо --accent червоний, або встановіть #E00000 */
-    text-align: left; /* Залишаємо зліва */
-    /* ... інші стилі залишаємо ... */
-    margin: 0 30px 0 0; /* Важливо: забираємо вертикальні відступи */
-}
 
 /* 2. Вертикальне розташування -> Горизонтальне */
 /* Це найважливіший блок для горизонтального макета */
@@ -74,42 +66,67 @@
 
 /* -- Секція Каруселі (Батьківський контейнер для заголовка та слайдера) -- */
 .carousel-section {
-    padding: 40px 0;
-    width: 100%;
-    max-width: 1400px; 
-    margin: 0 auto;
-    overflow: hidden; 
-    
-    /* ВИПРАВЛЕННЯ: Горизонтальний макет */
-    display: flex; 
-    align-items: center; /* Вирівнювання по вертикалі */
-    justify-content: flex-start;
-    padding-left: 20px;
-    padding-right: 20px;
+ padding: 40px 0;
+ width: 100%;
+ max-width: 1400px; 
+ margin: 0 auto;
+ overflow: hidden; 
+ 
+  /* ЖОРСТКЕ ВИПРАВЛЕННЯ: Гарантуємо, що це Flex-контейнер */ display: flex !important; 
+ align-items: center; 
+ justify-content: flex-start;
+ padding-left: 20px;
+ padding-right: 20px;
 }
 
-/* Заголовок "ГАЛЕРЕЯ" */
-.gallery-title {
-    /* ВИПРАВЛЕННЯ: Колір на білий */
-    color: #fff; /* Білий колір */
-    text-align: left; 
-    font-size: 3.5em; 
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    
-    flex-shrink: 0; 
-    width: 150px; 
-    margin: 0 30px 0 0; /* Правильний відступ від каруселі */
-    z-index: 10; /* На всякий випадок, щоб був поверх всього */
+
+
+/* Контейнер для прокрутки (сам слайдер) */
+.carousel-container {
+ flex-grow: 1; 
+ max-width: 100%; 
+ margin: 0; 
+ overflow: hidden; 
+ border-radius: 12px;
+ box-shadow: none; 
+ padding: 0; 
+ background-color: transparent; 
+ position: relative; 
+}
+
+/* Обгортка, яка буде рухатися */
+.carousel-wrapper {
+ /* ЖОРСТКЕ ВИПРАВЛЕННЯ: ГАРАНТОВАНО горизонтальний ряд */
+display: flex !important; 
+    flex-wrap: nowrap !important; /* Гарантуємо, що вони не переноситимуться */
+ transition: transform 0.5s ease-in-out; 
+ width: fit-content; 
+    min-width: 100%;
+}
+
+.carousel-slide {
+ /* Фіксовані розміри, щоб Flex працював коректно */
+ flex: 0 0 240px; 
+    max-width: 240px; 
+ margin: 0 10px; 
+ border-radius: 8px;
+ overflow: hidden; 
+ box-shadow: 0 2px 8px rgba(0,0,0,0.5); 
+ 
+ /* Фон та Висота */
+background-color: #000; 
+ height: 350px; 
+ 
+ display: flex;
+ justify-content: center;
+ align-items: center;
 }
 
 .carousel-slide img {
-    /* Зображення займає всю площу слайда */
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
+ width: 100%;
+ height: 100%; 
+ object-fit: cover; 
+ border-radius: 8px; 
 }
 /* BUTTONS */
 .btn {
