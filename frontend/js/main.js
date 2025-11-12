@@ -33,6 +33,9 @@ import { initCalendar } from './modules/calendar.js';
 // 6. Імпортуємо логіку ІМТ-калькулятора
 import { setupImtCalculator } from './modules/calculator.js'; 
 
+// 7. НОВИЙ ІМПОРТ: Логіка Каруселі
+import { initCarousel } from './modules/carousel.js'; 
+
 
 /* =========================================
    INIT (Ініціалізація, виконується після завантаження DOM)
@@ -65,6 +68,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 5. Відгуки
     populateReviews();        // Завантаження і відображення відгуків
     setupReviewForm();        // Обробка форми відгуку
+
+    // НОВИЙ ВИКЛИК: Карусель має запускатися відразу
+    initCarousel(); 
 
     // 6. Розклад (Calendar)
     if (typeof FullCalendar !== 'undefined') {
