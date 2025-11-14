@@ -1,9 +1,11 @@
 # crm/views.py
+
 from rest_framework import viewsets, permissions, generics
+from rest_framework import serializers  # <-- НОВЕ: Додано для 'ValidationError'
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
-# 👇 Додано 'Booking' в кінець імпорту
+# 👇 'Booking' та 'Member' вже імпортовані
 from .models import Workout, Instructor, ClassSession, MembershipType, Member, Booking
 from .serializers import (
     WorkoutSerializer,
@@ -12,7 +14,8 @@ from .serializers import (
     MembershipTypeSerializer,
     RegisterSerializer,
     MemberSerializer,
-    BookingSerializer  # <--- 👇 Додав BookingSerializer
+    BookingSerializer,
+    BookingCreateSerializer  # <-- НОВЕ: Імпорт нашого серіалайзера
 )
 
 
@@ -131,3 +134,52 @@ class MyBookingsViewSet(viewsets.ReadOnlyModelViewSet):
         # 1. Знаходимо профіль 'Member' поточного юзера
         # 2. Фільтруємо 'Booking' по 'member=...'
         return Booking.objects.filter(member__user=self.request.user).order_by('-booked_at')
+
+
+# ---
+# ЕТАП 3: VIEW ДЛЯ СТВОРЕННЯ ЗАПИСУ (/api/book/)
+# ---
+
+class BookingCreateView(generics.CreateAPIView):  # <-- НОВИЙ КЛАС
+    """
+    (POST) /api/book/
+    Створює новий запис (Booking) для поточного користувача.
+    Очікує тіло: { "session": ID }
+    """
+    serializer_class = BookingCreateSerializer
+    # Доступ тільки по токену
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        """
+        Цей метод викликається ПЕРЕД збереженням об'єкта.
+        Ми використовуємо його, щоб додати логіку та прив'язати Member.
+        """
+
+        # 1. Отримуємо об'єкт ClassSession, який юзер хоче забронювати
+        # (він вже пройшов валідацію в серіалайзері)
+        session = serializer.validated_data.get('session')
+
+        # 2. Отримуємо профіль Member поточного юзера
+        try:
+            member = Member.objects.get(user=self.request.user)
+        except Member.DoesNotExist:
+            # Цього не має статись, якщо реєстрація працює вірно, але це захист
+            raise serializers.ValidationError("Профіль Member для цього користувача не знайдено.")
+
+        # 3. (ВАЛІДАЦІЯ 1) Перевіряємо, чи юзер вже не записаний
+        if Booking.objects.filter(member=member, session=session).exists():
+            raise serializers.ValidationError("Ви вже записані на це заняття.")
+
+        # 4. (ВАЛІДАЦІЯ 2) Перевіряємо, чи є вільні місця
+        #    (Використовуємо поле 'capacity' з вашої моделі ClassSession)
+        current_bookings_count = Booking.objects.filter(session=session).count()
+        if current_bookings_count >= session.capacity:
+            raise serializers.ValidationError("На жаль, на це заняття вже немає вільних місць.")
+
+        # 5. (Опціонально) Тут можна додати перевірку,
+        #    чи є у 'member' активний абонемент ('member.status == 'active'')
+
+        # 6. Все добре. Зберігаємо запис,
+        #    "вручну" додавши в нього поточного Member
+        serializer.save(member=member)

@@ -1,4 +1,5 @@
 # crm/urls.py
+
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
@@ -8,7 +9,8 @@ from .views import (
     ClassSessionViewSet,
     RegisterView,
     MeViewSet,
-    MyBookingsViewSet # <--- 1. Додав цей імпорт
+    MyBookingsViewSet,
+    BookingCreateView  # <-- НОВЕ: Імпорт нашого View
 )
 
 # "Router" автоматично створює всі URL для ViewSet
@@ -18,7 +20,6 @@ router.register(r'instructors', InstructorViewSet, basename='instructor')
 router.register(r'membership-types', MembershipTypeViewSet, basename='membershiptype')
 router.register(r'schedule', ClassSessionViewSet, basename='classsession')
 router.register(r'me', MeViewSet, basename='me')
-# 2. Додаю новий роут для /api/my-bookings/
 router.register(r'my-bookings', MyBookingsViewSet, basename='mybooking')
 
 urlpatterns = [
@@ -27,4 +28,9 @@ urlpatterns = [
 
     # Окрема адреса для реєстрації
     path('register/', RegisterView.as_view(), name='register'),
+
+    # ---
+    # ЕТАП 3: АДРЕСА ДЛЯ СТВОРЕННЯ ЗАПИСУ
+    # ---
+    path('book/', BookingCreateView.as_view(), name='book-create'),  # <-- НОВЕ
 ]

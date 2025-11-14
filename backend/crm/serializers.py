@@ -1,6 +1,7 @@
 # crm/serializers.py
+
 from rest_framework import serializers
-# 👇 Додано 'Booking' в кінець імпорту
+# 👇 'Booking' та 'ClassSession' вже імпортовані, чудово
 from .models import Workout, Instructor, ClassSession, MembershipType, Class, Member, Booking
 from django.contrib.auth.models import User
 
@@ -133,3 +134,32 @@ class BookingSerializer(serializers.ModelSerializer):
         # Повертаємо ID самого запису, статус, час запису,
         # і "вкладений" об'єкт 'session'
         fields = ['id', 'session', 'booked_at', 'status']
+
+
+# ---
+# ЕТАП 3: СЕРІАЛІЗАТОР ДЛЯ СТВОРЕННЯ ЗАПИСУ (/api/book/)
+# ---
+
+class BookingCreateSerializer(serializers.ModelSerializer):  # <-- НОВИЙ КЛАС
+    """
+    Серіалізатор для POST /api/book/
+    Приймає 'session' (ID сесії) і автоматично додає 'member'.
+    """
+
+    # PrimaryKeyRelatedField - це найкращий спосіб прийняти ID
+    # і автоматично перевірити, що об'єкт (ClassSession) з таким ID існує.
+    session = serializers.PrimaryKeyRelatedField(
+        queryset=ClassSession.objects.all(),
+        label="ID Заняття"
+    )
+
+    class Meta:
+        model = Booking
+        # 'member' буде додано автоматично у view
+        # 'booked_at' (якщо auto_now_add=True) і 'status' (якщо default='active')
+        # додадуться автоматично при збереженні.
+        fields = ['id', 'session', 'booked_at', 'status']
+
+        # 'id', 'booked_at', 'status' ми не очікуємо від юзера,
+        # вони встановлюються сервером.
+        read_only_fields = ['id', 'booked_at', 'status']
