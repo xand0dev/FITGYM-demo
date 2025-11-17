@@ -9,7 +9,7 @@ let slideWidth = 0;
 let visibleSlidesCount = 0; 
 
 // Встановлюємо нову, швидшу швидкість прокручування (2 секунди)
-const CAROUSEL_SPEED = 6000; 
+const CAROUSEL_SPEED = 2000; 
 const TRANSITION_DURATION = 50; 
 
 /**
