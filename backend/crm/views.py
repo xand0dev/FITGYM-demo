@@ -1,12 +1,11 @@
 # crm/views.py
 
-from rest_framework import viewsets, permissions, generics
+from rest_framework import viewsets, permissions, generics, mixins  # <-- 1. Додано 'mixins'
 from rest_framework import serializers
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
 
-# 👇 Додаємо MembershipHistory в імпорти
 from .models import (
     Workout,
     Instructor,
@@ -14,7 +13,7 @@ from .models import (
     MembershipType,
     Member,
     Booking,
-    MembershipHistory  # <-- НОВЕ
+    MembershipHistory
 )
 from .serializers import (
     WorkoutSerializer,
@@ -28,8 +27,7 @@ from .serializers import (
 )
 
 
-# "ViewSet" - це набір логіки, який автоматично
-# обробляє запити GET (отримати список) та POST (створити)
+# --- ПУБЛІЧНІ VIEWS ---
 
 class WorkoutViewSet(viewsets.ReadOnlyModelViewSet):
     """(GET) /api/workouts/"""
@@ -37,10 +35,6 @@ class WorkoutViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = WorkoutSerializer
     permission_classes = [permissions.AllowAny]
 
-
-# ---
-# "КУХАРІ" ДЛЯ ФРОНТЕНДУ (ПУБЛІЧНІ)
-# ---
 
 class InstructorViewSet(viewsets.ReadOnlyModelViewSet):
     """(GET) /api/instructors/"""
@@ -63,14 +57,10 @@ class ClassSessionViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.AllowAny]
 
 
-# ---
-# ЕТАП 2: VIEW ДЛЯ РЕЄСТРАЦІЇ
-# ---
+# --- AUTH VIEWS ---
 
 class RegisterView(generics.CreateAPIView):
-    """
-    (POST) /api/register/
-    """
+    """(POST) /api/register/"""
     queryset = User.objects.all()
     permission_classes = (permissions.AllowAny,)
     serializer_class = RegisterSerializer
@@ -87,14 +77,8 @@ class RegisterView(generics.CreateAPIView):
         }, status=201)
 
 
-# ---
-# ЕТАП 2: VIEW ДЛЯ ОСОБИСТОГО КАБІНЕТУ (/api/me/)
-# ---
-
 class MeViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    (GET) /api/me/
-    """
+    """(GET) /api/me/"""
     serializer_class = MemberSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -103,67 +87,58 @@ class MeViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 # ---
-# ЕТАП 2: VIEW ДЛЯ "МОЇХ ЗАПИСІВ" (/api/my-bookings/)
+# ОНОВЛЕНИЙ VIEW ДЛЯ "МОЇХ ЗАПИСІВ" (GET + DELETE)
 # ---
 
-class MyBookingsViewSet(viewsets.ReadOnlyModelViewSet):
+class MyBookingsViewSet(mixins.ListModelMixin,  # Дозволяє GET (список)
+                        mixins.RetrieveModelMixin,  # Дозволяє GET (конкретний запис)
+                        mixins.DestroyModelMixin,  # Дозволяє DELETE <-- НОВЕ
+                        viewsets.GenericViewSet):  # Базовий клас
     """
-    (GET) /api/my-bookings/
+    (GET) /api/my-bookings/      - список моїх записів
+    (GET) /api/my-bookings/{id}/ - деталі одного запису
+    (DELETE) /api/my-bookings/{id}/ - скасувати запис
     """
     serializer_class = BookingSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        """
+        Ця функція критична для безпеки DELETE.
+        Вона повертає ТІЛЬКИ записи поточного користувача.
+        Якщо спробувати видалити чужий ID, Django його тут не знайде
+        і поверне 404.
+        """
         return Booking.objects.filter(member__user=self.request.user).order_by('-booked_at')
 
 
-# ---
-# ЕТАП 3: VIEW ДЛЯ СТВОРЕННЯ ЗАПИСУ (/api/book/) з БІЗНЕС-ЛОГІКОЮ
-# ---
-
 class BookingCreateView(generics.CreateAPIView):
-    """
-    (POST) /api/book/
-    """
+    """(POST) /api/book/"""
     serializer_class = BookingCreateSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        """
-        Тут відбувається вся магія валідації.
-        """
-
-        # 1. Отримуємо об'єкт сесії (заняття)
         session = serializer.validated_data.get('session')
 
-        # 2. Отримуємо профіль Member
         try:
             member = Member.objects.get(user=self.request.user)
         except Member.DoesNotExist:
             raise serializers.ValidationError("Профіль Member не знайдено.")
 
-        # --- ЛОГІКА 1: ПЕРЕВІРКА НА ДУБЛІКАТ ---
         if Booking.objects.filter(member=member, session=session).exists():
             raise serializers.ValidationError("Ви вже записані на це заняття.")
 
-        # --- ЛОГІКА 2: ПЕРЕВІРКА МІСТКОСТІ (CAPACITY) ---
         current_bookings_count = Booking.objects.filter(session=session).count()
         if current_bookings_count >= session.capacity:
             raise serializers.ValidationError("На жаль, на це заняття вже немає вільних місць.")
 
-        # --- ЛОГІКА 3: ПЕРЕВІРКА АБОНЕМЕНТА (НОВЕ) ---
-        # Ми шукаємо хоча б один абонемент, який:
-        # а) Належить цьому клієнту
-        # б) Має статус 'active'
-        # в) Дата заняття потрапляє в діапазон [start_date ... end_date]
-
-        session_date = session.start_at.date()  # Беремо дату заняття
+        session_date = session.start_at.date()
 
         has_active_membership = MembershipHistory.objects.filter(
             member=member,
             status='active',
-            start_date__lte=session_date,  # Абонемент почався ДО або В день заняття
-            end_date__gte=session_date  # Абонемент закінчується В день або ПІСЛЯ заняття
+            start_date__lte=session_date,
+            end_date__gte=session_date
         ).exists()
 
         if not has_active_membership:
@@ -171,5 +146,4 @@ class BookingCreateView(generics.CreateAPIView):
                 "У вас немає активного абонемента на дату проведення цього заняття. Будь ласка, придбайте абонемент."
             )
 
-        # 4. Якщо всі перевірки пройшли успішно — зберігаємо
         serializer.save(member=member)
