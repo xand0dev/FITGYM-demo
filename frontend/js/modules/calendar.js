@@ -6,6 +6,7 @@ import { BASE_URL } from './api.js';
 import { showToast, showModal, escapeHtml } from './ui.js';
 import { getToken } from './auth.js';
 
+
 export function initCalendar() {
     const calendarEl = document.getElementById("calendar");
     if (!calendarEl) return;
@@ -103,9 +104,7 @@ export function initCalendar() {
                 confirmBtn.setAttribute('data-event-title', eventTitle);
 
                 // 3. Викликаємо модальне вікно запису
-                showModal('bookingModal'); // Припускаємо, що ID вашого модального вікна — 'bookingModal'
-
-            } else {
+                showModal('bookingModal'); // Припускаємо, що ID вашого модального вікна — 'bookingModal'            } else {
                 showToast('Помилка: Не знайдено елементів модального вікна запису.', 'error');
             }
             // ---------------------------------------------------
