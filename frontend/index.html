@@ -85,7 +85,7 @@
             <div class="card-text">Групові заняття та індивідуальні тренування на будь-який час.</div>
         </div>
     </div>
-</section>
+</section> 
 
 <section id="schedule" class="section container" data-aos="fade-up">
     <h2>Актуальний розклад занять</h2>
@@ -170,19 +170,19 @@
 
 <div class="carousel-container js-carousel-container">
 
-        <!-- ТІЛЬКИ ОДНА обгортка для прокручування -->
-        <div class="carousel-wrapper js-carousel-wrapper">
+    <!-- ТІЛЬКИ ОДНА обгортка для прокручування -->
+    <div class="carousel-wrapper js-carousel-wrapper">
 
- <!-- Використовуйте свої файли, я залишаю приклади -->
- <div class="carousel-slide"><img src="img/training_1.jpg" alt="Тренування"></div>
- <div class="carousel-slide"><img src="img/training_2.jpg" alt="Тренування"></div>
- <div class="carousel-slide"><img src="img/training_3.jpg" alt="Тренування"></div>
- <div class="carousel-slide"><img src="img/training_4.jpg" alt="Тренування"></div>
- <div class="carousel-slide"><img src="img/training_5.jpg" alt="Тренування"></div>
- <div class="carousel-slide"><img src="img/training_1.jpg" alt="Тренування"></div>
- <div class="carousel-slide"><img src="img/training_2.jpg" alt="Тренування"></div>
- 
-        </div>
+<!-- Використовуйте свої файли, я залишаю приклади -->
+<div class="carousel-slide"><img src="img/training_1.jpg" alt="Тренування"></div>
+<div class="carousel-slide"><img src="img/training_2.jpg" alt="Тренування"></div>
+<div class="carousel-slide"><img src="img/training_3.jpg" alt="Тренування"></div>
+<div class="carousel-slide"><img src="img/training_4.jpg" alt="Тренування"></div>
+<div class="carousel-slide"><img src="img/training_5.jpg" alt="Тренування"></div>
+<div class="carousel-slide"><img src="img/training_1.jpg" alt="Тренування"></div>
+<div class="carousel-slide"><img src="img/training_2.jpg" alt="Тренування"></div>
+
+    </div>
 </div>
 </section>
 
@@ -377,27 +377,28 @@
     </div>
 </div>
 
-<div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalTitle" aria-hidden="true">
-  <div class="modal-dialog">
+<div id="bookingModal" class="modal-overlay">
     <div class="modal-content">
+        <!-- Заголовок -->
+        <button class="modal-close" onclick="closeModal('bookingModal')">×</button>
+        <h2 id="bookingModalTitle">Запис на тренування</h2>
 
-      <div class="modal-header">
-        <h5 class="modal-title" id="bookingModalTitle"></h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-
-      <div class="modal-body" id="bookingModalBody">
+        <!-- Тіло модалки -->
+        <div class="modal-body" id="bookingModalBody">
+            <!-- Вміст буде заповнено через JavaScript -->
         </div>
 
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
-        <button type="button" class="btn btn-primary" id="confirmBookingButton">Записатися</button>
-      </div>
-      
+        <!-- Футер з кнопками -->
+        <div class="booking-footer">
+            <!-- Кнопка Скасувати закриває модалку через JS -->
+            <button type="button" class="btn btn-ghost modal-close" onclick="closeModal('bookingModal')">Скасувати</button>
+            <!-- Кнопка Записатися запускає логіку з calendar.js -->
+            <button type="button" class="btn btn-primary" id="confirmBookingButton">Записатися</button>
+        </div>
     </div>
-  </div>
 </div>
 <div id="toast-container"></div>
+
 
 <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 
