@@ -9,12 +9,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
 
+    <link rel="stylesheet" href="css/0-critical.css">
     <link rel="stylesheet" href="css/0-base.css">
     <link rel="stylesheet" href="css/1-layout.css">
     <link rel="stylesheet" href="css/2-components.css">
     <link rel="stylesheet" href="css/3-pages.css">
     <link rel="stylesheet" href="css/4-utilities.css">
-
 </head>
 <body>
 
@@ -27,8 +27,7 @@
             <a href="index.html#trainers">Тренери</a>
             <a href="index.html#plans">Абонементи</a>
         </nav>
-        <div id="authArea">
-        </div>
+        <div id="authArea"></div>
         <button class="hamburger" aria-label="Toggle navigation">
             <span></span><span></span><span></span>
         </button>
@@ -39,100 +38,44 @@
     <h2 class="section-title" data-aos="fade-up">Особистий Кабінет</h2>
 
     <div class="cabinet-grid">
-
         <div class="profile-card" data-aos="fade-right">
             <div class="profile-header">
-                <img id="user-avatar" src="img/" alt="Аватар користувача" class="user-avatar">
+                <img id="user-avatar" src="img/муж1.png" alt="User" class="user-avatar">
                 <h3 id="user-name">Завантаження...</h3>
-                <p id="user-role" class="user-role">...</p>
+                <p id="user-role" class="user-role">Учасник клубу</p>
             </div>
             <div class="profile-details" id="profile-info">
-                <p class="text-muted">Завантаження даних профілю...</p>
+                <div class="text-center">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
             </div>
-            <button id="logoutButton" class="btn btn-primary" style="width: 100%;">Вийти з кабінету</button>
+            <button id="logoutButton" class="btn btn-primary" style="margin-top: 20px; width: 100%;">
+                <i class="fas fa-sign-out-alt"></i> Вийти
+            </button>
         </div>
 
         <div class="schedule-card" data-aos="fade-left">
-            <h3 class="schedule-title">Мої найближчі записи</h3>
+            <h3 class="schedule-title">Мої тренування</h3>
             <div id="bookings-list" class="user-schedule-list">
-                <p class="text-muted">Завантаження записів...</p>
+                <div class="text-center">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
             </div>
-            <a href="index.html#schedule" class="btn btn-ghost" style="width: 100%; margin-top: 20px;">Перейти до повного розкладу</a>
+            <a href="index.html#schedule" class="btn btn-ghost" style="width: 100%; margin-top: 20px;">
+                <i class="fas fa-calendar-plus"></i> Записатись ще
+            </a>
         </div>
     </div>
 </section>
 
 <footer class="site-footer" id="footer-main">
-    <div class="container footer-grid">
-
-        <div class="footer-col footer-branding">
-            <div class="logo-footer">FIT<span>GYM</span></div>
-            <p class="tagline">фітнес для всіх і кожного</p>
-
-            <div class="social-links">
-                <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
-                <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-                <a href="#" aria-label="Telegram"><i class="fab fa-telegram-plane"></i></a>
-                <a href="#" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
-                <a href="#" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
-            </div>
-
-            <div class="app-buttons">
-                <a href="#" class="app-btn">
-                    <i class="fab fa-apple"></i>
-                    <span>Завантажити <br> З APP STORE</span>
-                </a>
-                <a href="#" class="app-btn">
-                    <i class="fab fa-google-play"></i>
-                    <span>Завантажити <br> З GOOGLE PLAY</span>
-                </a>
-            </div>
-        </div>
-
-        <div class="footer-col">
-            <h3>Про клуб</h3>
-            <ul>
-                <li><a href="#">Клуби</a></li>
-                <li><a href="#trainers">Тренери</a></li>
-                <li><a href="#">Про нас</a></li>
-            </ul>
-        </div>
-
-        <div class="footer-col">
-            <h3>Новини</h3>
-            <ul>
-                <li><a href="#">Блог</a></li>
-                <li><a href="#">Вакансії</a></li>
-                <li><a href="#">Співпраця</a></li>
-            </ul>
-        </div>
-
-        <div class="footer-col">
-            <h3>Для користувачів</h3>
-            <ul>
-                <li><a href="#">Корпоративний спорт</a></li>
-                <li><a href="#">Запропонувати приміщення</a></li>
-                <li><a href="#">Служба підтримки</a></li>
-                <li><a href="#">Публічна оферта</a></li>
-            </ul>
-        </div>
-    </div>
-
     <div class="container footer-bottom">
-        <div class="copyright">
-            © 2025 FITGYM. Усі права захищено.
-        </div>
-        <div class="payment-systems">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png" alt="Visa" class="payment-icon">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/2000px-Mastercard-logo.svg.png" alt="Mastercard" class="payment-icon">
-        </div>
+        <div class="copyright">© 2025 FITGYM.</div>
     </div>
 </footer>
 
 <div id="toast-container"></div>
-
 <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-
 <script src="js/modules/cabinet.js" type="module"></script>
 
 </body>
