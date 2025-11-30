@@ -2,15 +2,11 @@
    auth.js — "Охоронець" (Автентифікація)
    =========================== */
 
-// Імпортуємо 'api.js' для 'postApiData'
 import { postApiData } from './api.js';
-// Імпортуємо 'ui.js' для 'showToast', 'closeModal', 'escapeHtml'
-import { showToast, closeModal, escapeHtml } from './ui.js';
-// Імпортуємо 'reviews.js' для оновлення списку відгуків після логіну
+import { showToast, closeModal, openModal, escapeHtml } from './ui.js';
 import { populateReviews } from './reviews.js';
 
 // --- LocalStorage Helpers ---
-
 function _get(key, def = null) {
     try {
         const item = localStorage.getItem(key);
@@ -24,8 +20,7 @@ function _set(key, val) {
     localStorage.setItem(key, JSON.stringify(val));
 }
 
-// --- Token & User Management ---
-
+// --- Token Management ---
 export function saveToken(token, userName) {
     _set('fp_token', token);
     _set('fp_user_name', userName);
@@ -45,77 +40,90 @@ export function logoutUser() {
     location.reload();
 }
 
-
 /**
- * Оновлює хедер (Привіт, Юзер / Вхід / РЕЄСТРАЦІЯ)
- * Тепер вона показує кнопку "Кабінет", якщо юзер залогінений.
+ * Оновлює зону авторизації і ВРУЧНУ вішає події (Event Listeners).
+ * Це надійніше, ніж onclick="" в HTML.
  */
 export function updateAuthArea() {
     const area = document.getElementById('authArea');
     const reviewBtn = document.getElementById('openReviewModalBtn');
+
     if (!area) return;
 
     const token = getToken();
     const userName = getUserName();
 
     if (token && userName) {
-        // === ЮЗЕР ЗАЛОГІНЕНИЙ ===
+        // === LOGGED IN ===
         area.innerHTML = `
-            <span style="margin-right:10px; color: var(--muted);">
+            <span style="margin-right:10px; color: var(--text-color);">
                 Привіт, <b>${escapeHtml(userName)}</b>
             </span>
-            <a href="cabinet.html" class="btn btn-ghost">
-                <i class="fas fa-user-circle"></i> Кабінет
+            <a href="cabinet.html" class="btn btn-ghost" style="margin-right: 5px;">
+                <i class="fas fa-user-circle"></i>
             </a>
             <button id="logoutBtn" class="btn btn-primary">
-                <i class="fas fa-sign-out-alt"></i> Вихід
+                <i class="fas fa-sign-out-alt"></i>
             </button>`;
 
-        // Навішуємо подію на кнопку "Вихід"
-        document.getElementById('logoutBtn').addEventListener('click', logoutUser);
+        // Слухач на Вихід
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) logoutBtn.addEventListener('click', logoutUser);
 
-        // Показуємо кнопку "Залишити відгук"
         if (reviewBtn) reviewBtn.style.display = 'inline-block';
 
     } else {
-        // === ЮЗЕР - ГІСТЬ ===
+        // === GUEST (ГІСТЬ) ===
+        // Зверни увагу: ми прибрали onclick і додали ID
         area.innerHTML = `
-            <button class="btn btn-ghost" onclick="showModal('loginModal')">ВХІД</button>
-            <button class="btn btn-primary" onclick="showModal('registerModal')">РЕЄСТРАЦІЯ</button>`;
+            <button id="authLoginBtn" class="btn btn-ghost">ВХІД</button>
+            <button id="authRegisterBtn" class="btn btn-primary">РЕЄСТРАЦІЯ</button>`;
 
-        // Ховаємо кнопку "Залишити відгук"
+        // ВРУЧНУ вішаємо події (Це 100% працює)
+        const loginBtn = document.getElementById('authLoginBtn');
+        const regBtn = document.getElementById('authRegisterBtn');
+
+        if (loginBtn) {
+            loginBtn.addEventListener('click', () => {
+                console.log('Login Clicked'); // Для перевірки в консолі
+                openModal('loginModal');
+            });
+        }
+
+        if (regBtn) {
+            regBtn.addEventListener('click', () => {
+                openModal('registerModal');
+            });
+        }
+
         if (reviewBtn) reviewBtn.style.display = 'none';
     }
 }
 
-// --- Event Listeners (Ініціалізація) ---
-
+// --- Init Listeners ---
 export function initAuth() {
-    // Обробник форми Реєстрації
+    // 1. Спочатку малюємо кнопки
+    // (Подія DOMContentLoaded вже відбулася в main.js, тому можна викликати тут)
+    // Але main.js викликає updateAuthArea() окремо, тому тут тільки слухачі форм.
+
+    // Форма реєстрації
     const regForm = document.getElementById('registerForm');
     if (regForm) {
-        regForm.addEventListener('submit', handleRegister);
+        const newRegForm = regForm.cloneNode(true);
+        regForm.parentNode.replaceChild(newRegForm, regForm);
+        newRegForm.addEventListener('submit', handleRegister);
     }
 
-    // Обробник форми Логіну
+    // Форма входу
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
+        const newLoginForm = loginForm.cloneNode(true);
+        loginForm.parentNode.replaceChild(newLoginForm, loginForm);
+        newLoginForm.addEventListener('submit', handleLogin);
     }
-
-    // Прив'язуємо 'showModal' до window, щоб onclick="showModal(...)" працював
-    // (Це потрібно, бо 'updateAuthArea' створює ці кнопки динамічно)
-    window.showModal = (id) => {
-        const modal = document.getElementById(id);
-        if (modal) modal.style.display = 'flex';
-    };
 }
 
-// --- Form Handlers ---
-
-/**
- * Обробляє відправку форми реєстрації
- */
+// --- Handlers ---
 async function handleRegister(e) {
     e.preventDefault();
     const name = document.getElementById('regName').value.trim();
@@ -124,66 +132,53 @@ async function handleRegister(e) {
     const pass = document.getElementById('regPassword').value;
     const conf = document.getElementById('regConfirm').value;
 
-    if (!name || !username || !email || !pass) return showToast('Заповніть всі поля', 'error');
+    if (!name || !username || !email || !pass) return showToast('Всі поля обов\'язкові', 'error');
     if (pass !== conf) return showToast('Паролі не співпадають', 'error');
-    if (pass.length < 8) return showToast('Пароль має бути не менше 8 символів', 'error');
+    if (pass.length < 8) return showToast('Пароль від 8 символів', 'error');
 
     try {
         const data = await postApiData('/api/register/', {
-            name: name,
-            username: username,
-            email: email,
-            password: pass
+            name, username, email, password: pass
         });
 
-        // УСПІХ!
-        showToast('Реєстрація успішна! Ви автоматично увійшли.', 'success');
-        saveToken(data.token, data.name); // Зберігаємо токен і ім'я
+        showToast('Акаунт створено!', 'success');
+        saveToken(data.token, data.name);
 
         closeModal('registerModal');
-        updateAuthArea(); // Оновлюємо хедер
-        populateReviews(); // Оновлюємо відгуки
-        document.getElementById('registerForm').reset();
+        updateAuthArea();
+        populateReviews();
+        e.target.reset();
 
     } catch (err) {
         console.error('Register Error:', err);
-        showToast(err.message, 'error');
+        showToast(err.message || 'Помилка реєстрації', 'error');
     }
 }
 
-/**
- * Обробляє відправку форми логіну
- */
 async function handleLogin(e) {
     e.preventDefault();
     const username = document.getElementById('loginUsername').value.trim();
     const pass = document.getElementById('loginPassword').value;
-    if (!username || !pass) return showToast('Заповніть всі поля', 'error');
+
+    if (!username || !pass) return showToast('Введіть дані', 'error');
 
     try {
-        // ЕТАП 1: Отримуємо токен
         const data = await postApiData('/api/login/', {
-            username: username,
-            password: pass
+            username, password: pass
         });
 
-        const token = data.token;
-        if (!token) throw new Error('Токен не отримано');
+        if (!data.token) throw new Error('Сервер не надіслав токен');
 
-        // УСПІХ!
         showToast('Вхід успішний', 'success');
-
-        // TODO: Замінити 'username' на fetch() до /api/me/ (Етап 3)
-        saveToken(token, username); // Тимчасово зберігаємо 'username'
+        saveToken(data.token, username);
 
         closeModal('loginModal');
-        updateAuthArea(); // Оновлюємо хедер
-        populateReviews(); // Оновлюємо відгуки
-        document.getElementById('loginForm').reset();
+        updateAuthArea();
+        populateReviews();
+        e.target.reset();
 
     } catch (err) {
         console.error('Login Error:', err);
-        showToast(err.message, 'error');
+        showToast(err.message || 'Невірний логін/пароль', 'error');
     }
-    
 }

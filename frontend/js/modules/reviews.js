@@ -1,11 +1,14 @@
 /* ===========================
-   reviews.js — Логіка Відгуків та Анкет
+   reviews.js — Reviews & Rating Logic
+   ---------------------------
+   Відповідає за: Відображення списку відгуків,
+   Роботу форми "Залишити відгук", Рейтинг зірочками.
    =========================== */
 
-import { showToast, showModal, closeModal, escapeHtml } from './ui.js';
+import { showToast, openModal, closeModal, escapeHtml } from './ui.js';
 import { getToken, getUserName } from './auth.js';
 
-// --- LocalStorage Helpers (Тільки для відгуків) ---
+// --- LocalStorage Helpers (Private) ---
 function _get(key, def = []) {
     try {
         const item = localStorage.getItem(key);
@@ -17,15 +20,15 @@ function _get(key, def = []) {
 function _set(key, val) {
     localStorage.setItem(key, JSON.stringify(val));
 }
-// ---
 
-/* --- Логіка для зірочок в анкеті --- */
+/* --- Star Rating Logic (UI) --- */
 function setupMultipleRatingInputs() {
     document.querySelectorAll('.star-rating-controls').forEach(container => {
         const name = container.getAttribute('data-name');
         const initialRating = parseInt(container.getAttribute('data-rating')) || 5;
         const input = document.querySelector(`input[name="${name}"]`);
 
+        // Генеруємо зірочки
         let starsHtml = '';
         for (let i = 1; i <= 5; i++) {
             const starClass = i <= initialRating ? 'fas' : 'far';
@@ -34,6 +37,7 @@ function setupMultipleRatingInputs() {
         container.innerHTML = starsHtml;
 
         const stars = container.querySelectorAll('.fa-star');
+
         const fillStars = (rating) => {
             stars.forEach(star => {
                 const starRating = parseInt(star.getAttribute('data-rating'));
@@ -41,46 +45,54 @@ function setupMultipleRatingInputs() {
                 else star.classList.replace('fas', 'far');
             });
         };
+
+        // Інтерактивність
         stars.forEach(star => {
             star.addEventListener('click', () => {
                 const rating = parseInt(star.getAttribute('data-rating'));
-                input.value = rating;
+                if (input) input.value = rating;
                 fillStars(rating);
             });
             star.addEventListener('mouseover', () => fillStars(parseInt(star.getAttribute('data-rating'))));
-            star.addEventListener('mouseout', () => fillStars(parseInt(input.value)));
+            star.addEventListener('mouseout', () => fillStars(parseInt(input ? input.value : 5)));
         });
+
         fillStars(initialRating);
     });
 }
 
-/* --- Логіка "Показати ще" --- */
+/* --- "Show More" Logic --- */
 const SHOW_COUNT = 3;
+
 function toggleReviews() {
     const hiddenReviews = document.querySelectorAll('#reviewsList .review-hidden');
     const button = document.getElementById('toggleReviewsBtn');
     if (!button) return;
 
     if (button.dataset.expanded === 'true') {
+        // Ховаємо
         hiddenReviews.forEach(el => el.style.display = 'none');
         const totalCount = document.querySelectorAll('#reviewsList .review-item').length;
         button.innerHTML = `Показати всі ${totalCount} відгуків`;
         button.dataset.expanded = 'false';
-        document.getElementById('reviews').scrollIntoView({ behavior: 'smooth' });
+
+        const reviewsSection = document.getElementById('reviews');
+        if(reviewsSection) reviewsSection.scrollIntoView({ behavior: 'smooth' });
     } else {
+        // Показуємо
         hiddenReviews.forEach(el => el.style.display = 'block');
         button.innerHTML = 'Приховати додаткові відгуки';
         button.dataset.expanded = 'true';
     }
 }
 
-/* --- Заповнення відгуків (Фейкові дані) --- */
+/* --- Populate Reviews (Main Function) --- */
 export function populateReviews() {
     const el = document.getElementById('reviewsList');
     const toggleBtnContainer = document.getElementById('toggleReviewsContainer');
     if (!el || !toggleBtnContainer) return;
 
-    // TODO: Замінити 'base' та 'stored' на fetch() до API /api/reviews/
+    // TODO: Замінити на fetch API
     const base = [
         { text: 'Найкращий спортзал у місті!', author: 'Олена, Київ', rating: 5, avatar: 'img/жін1.png', system: true },
         { text: 'Обладнання сучасне, атмосфера чудова.', author: 'Андрій, Львів', rating: 4, avatar: 'img/муж1.png', system: true },
@@ -88,6 +100,7 @@ export function populateReviews() {
         { text: 'Трохи замало місця у роздягальнях.', author: 'Сергій П.', rating: 4, avatar: 'img/муж2.jpg', system: true },
         { text: 'Ходжу півроку, все супер.', author: 'Вікторія О.', rating: 5, avatar: 'img/жін1.png', system: true },
     ];
+
     const stored = _get('fp_reviews', []);
     const all = [...base, ...stored];
     const user = { name: getUserName() };
@@ -100,12 +113,16 @@ export function populateReviews() {
         return `<div class="review-rating">${starsHtml}</div>`;
     };
 
+    // Рендеринг
     el.innerHTML = all.map((r, i) => {
         const isOwn = user.name && r.author === user.name && !r.system;
         const avatarSrc = r.avatar || 'img/муж1.png';
+        // Перші 3 показуємо, інші ховаємо класом
         const isHidden = i >= SHOW_COUNT ? 'review-hidden' : '';
+        const style = i >= SHOW_COUNT ? 'display: none;' : '';
+
         return `
-            <div class="review-item ${isHidden}" data-aos="fade-up" data-aos-delay="${i * 100}">
+            <div class="review-item ${isHidden}" style="${style}" data-aos="fade-up" data-aos-delay="${(i % 3) * 100}">
                 <div class="review-header">
                     <img src="${escapeHtml(avatarSrc)}" alt="${escapeHtml(r.author)}" class="review-avatar">
                     <div class="reviewer-meta">
@@ -118,76 +135,100 @@ export function populateReviews() {
             </div>`;
     }).join('');
 
+    // Кнопка "Показати ще"
     if (all.length > SHOW_COUNT) {
-        toggleBtnContainer.innerHTML = `<button id="toggleReviewsBtn" class="btn btn-ghost">Показати всі ${all.length} відгуків</button>`;
+        toggleBtnContainer.innerHTML = `<button id="toggleReviewsBtn" class="btn btn-ghost" data-expanded="false">Показати всі ${all.length} відгуків</button>`;
         document.getElementById('toggleReviewsBtn').addEventListener('click', toggleReviews);
     } else {
         toggleBtnContainer.innerHTML = '';
     }
 
+    // Логіка видалення своїх відгуків
     document.querySelectorAll('.delete-review').forEach(btn => {
         btn.addEventListener('click', e => {
             const idx = +e.target.dataset.index - base.length;
-            if (idx < 0) return;
+            if (idx < 0) return; // Не можна видаляти системні відгуки
+
             const reviews = _get('fp_reviews', []);
             reviews.splice(idx, 1);
             _set('fp_reviews', reviews);
-            showToast('Відгук видалено', 'success');
+
+            showToast('Ваш відгук видалено', 'success');
             populateReviews();
         });
     });
-    if (typeof AOS !== 'undefined') AOS.refreshHard();
+
+    // Оновлюємо анімації, якщо AOS підключено
+    if (typeof AOS !== 'undefined') AOS.refresh();
 }
 
-/* --- Налаштування форми відгуків (Анкета) --- */
+/* --- Review Form Logic --- */
 export function setupReviewForm() {
     const form = document.getElementById('reviewForm');
     const modal = document.getElementById('reviewFormModal');
+
     if (!form || !modal) return;
 
     setupMultipleRatingInputs();
 
+    // Кнопка відкриття модалки відгуку
     const openBtn = document.getElementById('openReviewModalBtn');
     if (openBtn) {
-        openBtn.addEventListener('click', () => {
+        // Клонуємо кнопку, щоб уникнути дублювання подій при перезавантаженні модуля
+        const newBtn = openBtn.cloneNode(true);
+        openBtn.parentNode.replaceChild(newBtn, openBtn);
+
+        newBtn.addEventListener('click', () => {
             const token = getToken();
             if (!token) {
                 showToast('Будь ласка, увійдіть, щоб залишити відгук', 'error');
-                showModal('loginModal');
+                openModal('loginModal'); // <--- ТУТ БУЛА ПОМИЛКА (showModal -> openModal)
                 return;
             }
-            showModal('reviewFormModal');
+            openModal('reviewFormModal'); // <--- ТУТ БУЛА ПОМИЛКА (showModal -> openModal)
         });
-        openBtn.style.display = 'none';
+
+        // Початковий стан кнопки (прихована/показана) контролюється в auth.js,
+        // але тут можна задати дефолт
+        newBtn.style.display = 'none';
     }
 
-    form.addEventListener('submit', e => {
+    // Обробка відправки форми
+    // Видаляємо старі лісенери через клонування форми
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+
+    newForm.addEventListener('submit', e => {
         e.preventDefault();
         const text = document.getElementById('reviewText').value.trim();
-        if (!text) return showToast('Введіть ваш детальний відгук', 'error');
+        if (!text) return showToast('Напишіть текст відгуку', 'error');
 
         const user = { name: getUserName() };
-        if (!user.name) return showToast('Помилка сесії, увійдіть знову', 'error');
+        if (!user.name) return showToast('Помилка авторизації', 'error');
 
         const trainer = document.getElementById('staffName').value.trim();
-        const prof_rating = parseInt(form.querySelector('input[name="trainer_prof"]').value) || 5;
-        const clean_rating = parseInt(form.querySelector('input[name="gym_cleanliness"]').value) || 5;
-        const reception_rating = parseInt(form.querySelector('input[name="reception_speed"]').value) || 5;
-        const avg_rating = Math.round((prof_rating + clean_rating + reception_rating) / 3);
-        const reviewDetails = `${text} (Тренер: ${trainer || 'N/A'}, Оцінки: Проф:${prof_rating}, Чистота:${clean_rating}, Рецепція:${reception_rating})`;
 
+        // Збираємо рейтинги
+        const prof_rating = parseInt(newForm.querySelector('input[name="trainer_prof"]').value) || 5;
+        const clean_rating = parseInt(newForm.querySelector('input[name="gym_cleanliness"]').value) || 5;
+        const reception_rating = parseInt(newForm.querySelector('input[name="reception_speed"]').value) || 5;
+
+        const avg_rating = Math.round((prof_rating + clean_rating + reception_rating) / 3);
+        const reviewDetails = `${text} (Тренер: ${trainer || '-'}, Рейтинг: ${avg_rating}/5)`;
+
+        // Зберігаємо (поки що в LocalStorage)
         const reviews = _get('fp_reviews', []);
         reviews.push({
             text: reviewDetails,
             author: user.name,
             rating: avg_rating,
-            avatar: 'img/муж1.png'
+            avatar: 'img/муж1.png' // заглушка аватара
         });
         _set('fp_reviews', reviews);
 
-        showToast('Анкету успішно надіслано! Дякуємо.', 'success');
+        showToast('Дякуємо за ваш відгук!', 'success');
         closeModal('reviewFormModal');
-        form.reset();
+        newForm.reset();
         populateReviews();
     });
 }

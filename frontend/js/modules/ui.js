@@ -1,11 +1,15 @@
 /* ===========================
-   ui.js — "Декоратор" (Логіка UI)
+   ui.js — UI Components & Helpers
+   ---------------------------
+   Відповідає за: Модалки, Тости, Скрол, Гамбургер.
+   ВАЖЛИВО: Функції модалок (openModal) експортуються,
+   але щоб працювати в HTML onclick, вони мають бути
+   прив'язані до window у main.js.
    =========================== */
 
-// --- Security Helper ---
+// --- Security: Санітизація ---
 export function escapeHtml(str) {
     if (typeof str !== 'string') return str;
-    // ВИПРАВЛЕНО: '&#39;' - це правильний код для апострофа
     return str.replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
@@ -13,105 +17,84 @@ export function escapeHtml(str) {
         .replace(/'/g, '&#39;');
 }
 
-// --- Toast Notifications ---
+// --- UI: Toast Notifications (Спливаючі повідомлення) ---
 export function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
-    if (!container) return;
+    if (!container) return; // Якщо контейнера немає в HTML, виходимо
+
     const el = document.createElement('div');
     el.className = 'toast ' + (type === 'error' ? 'error' : 'success');
     el.textContent = message;
+
     container.appendChild(el);
+
+    // Автоматичне видалення через 3 сек
     setTimeout(() => el.remove(), 3000);
 }
 
-// --- Modal Logic ---
-export function showModal(id) {
+// --- UI: Modals (Core Logic) ---
+
+// 1. Відкриття (використовується в HTML як openModal('id'))
+export function openModal(id) {
     const modal = document.getElementById(id);
-    if (modal) modal.style.display = 'flex';
+    if (modal) {
+        modal.style.display = 'flex';
+    } else {
+        console.warn(`[UI] Modal with ID "${id}" not found.`);
+    }
 }
 
+// 2. Закриття конкретного вікна
 export function closeModal(id) {
     const modal = document.getElementById(id);
     if (modal) modal.style.display = 'none';
 }
 
+// 3. Закриття ВСІХ вікон (корисно при ресетах)
+export function closeAllModals() {
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.style.display = 'none';
+    });
+}
+
+// Хелпер: Закриття по кліку на темний фон
 function closeModalOnOutsideClick(event) {
     if (event.target.classList.contains('modal-overlay')) {
         event.target.style.display = 'none';
     }
 }
 
-/**
- * Налаштовує всі кнопки закриття модалок
- */
+// --- INIT: Global UI Listeners ---
 export function initModalLogic() {
-    // Кнопки "X"
+    // 1. Слухач на кнопки "Хрестик" (class="modal-close")
     document.querySelectorAll('.modal-close').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const modal = e.target.closest('.modal-overlay');
             if (modal) modal.style.display = 'none';
         });
     });
-    // Клік поза вікном
+
+    // 2. Слухач на клік по фону (Overlay)
     document.querySelectorAll('.modal-overlay').forEach(modal => {
         modal.addEventListener('click', closeModalOnOutsideClick);
     });
 }
 
-// --- Header / Nav Logic ---
-
-/**
- * Оновлює хедер (Привіт, Юзер / Вхід)
- */
-export function updateAuthArea() {
-    const area = document.getElementById('authArea');
-    const reviewBtn = document.getElementById('openReviewModalBtn');
-    if (!area) return;
-
-    // Ми імпортуємо функції з auth.js, щоб уникнути циклічної залежності
-    const token = JSON.parse(localStorage.getItem('fp_token') || 'null');
-    const userName = JSON.parse(localStorage.getItem('fp_user_name') || 'null');
-
-    if (token && userName) {
-        area.innerHTML = `
-            <span style="margin-right:10px">Привіт, <b>${escapeHtml(userName)}</b></span>
-            <button id="logoutBtn" class="btn btn-ghost">Вихід</button>`;
-        // Нам треба "руками" навісити подію, бо window.logoutUser не існує в модулях
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            localStorage.removeItem('fp_token');
-            localStorage.removeItem('fp_user_name');
-            location.reload();
-        });
-        if (reviewBtn) reviewBtn.style.display = 'inline-block';
-    } else {
-        area.innerHTML = `
-            <button class="btn btn-ghost" onclick="showModal('loginModal')">Вхід</button>
-            <button class="btn btn-primary" onclick="showModal('registerModal')">Реєстрація</button>`;
-        if (reviewBtn) reviewBtn.style.display = 'none';
-    }
-
-    // Прив'язуємо 'showModal' до window, щоб onclick="showModal(...)" працював
-    // (Це не ідеально, але це найпростіший спосіб полагодити код, не переписуючи весь HTML)
-    window.showModal = showModal;
-}
-
-/**
- * Налаштовує мобільне меню (гамбургер)
- */
+// --- UI: Hamburger Menu (Mobile) ---
 export function setupHamburger() {
     const hamb = document.querySelector('.hamburger');
-    if (hamb) {
+    const nav = document.querySelector('.nav-primary');
+
+    if (hamb && nav) {
         hamb.addEventListener('click', () => {
-            const nav = document.querySelector('.nav-primary');
             const isVisible = nav.style.display === 'flex';
             nav.style.display = isVisible ? 'none' : 'flex';
+            // Можна додати анімацію іконки тут, якщо потрібно
         });
     }
 }
 
-/**
- * Налаштовує плавний скрол по якорях
- */
+// --- UI: Smooth Scroll ---
 export function setupSmoothScrolling() {
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
@@ -121,11 +104,12 @@ export function setupSmoothScrolling() {
 
             if (targetElement) {
                 targetElement.scrollIntoView({ behavior: 'smooth' });
-            }
 
-            const nav = document.querySelector('.nav-primary');
-            if (window.innerWidth <= 768 && nav) {
-                nav.style.display = 'none';
+                // Закриваємо меню на мобільному після кліку
+                const nav = document.querySelector('.nav-primary');
+                if (window.innerWidth <= 768 && nav) {
+                    nav.style.display = 'none';
+                }
             }
         });
     });

@@ -1,28 +1,24 @@
 /* ===========================
-    calendar.js — Логіка FullCalendar
+    calendar.js — FullCalendar Integration
+    ---------------------------
+    Відповідає за: Відображення розкладу, Клік по події,
+    Бронювання тренування (Booking).
     =========================== */
 
 import { BASE_URL } from './api.js';
 import { showToast, escapeHtml } from './ui.js';
 import { getToken } from './auth.js';
 
-
-// 💡 Викликаємо showModal/closeModal з window, оскільки вони прив'язані до глобальної області видимості
-// @ts-ignore
-const openModal = window.showModal; 
-// @ts-ignore
-const hideModal = window.closeModal; 
-
-
-// Функція для обробки запису (приклад AJAX-запиту)
+// --- Logic: Booking (Запис на заняття) ---
 async function handleBooking(eventId, eventTitle) {
     const token = getToken();
-    const url = `${BASE_URL}/api/bookings/`; 
 
     if (!token) {
-        showToast('Помилка автентифікації. Увійдіть знову.', 'error');
+        showToast('Сесія втрачена. Увійдіть знову.', 'error');
         return;
     }
+
+    const url = `${BASE_URL}/api/bookings/`;
 
     try {
         const response = await fetch(url, {
@@ -31,122 +27,114 @@ async function handleBooking(eventId, eventTitle) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({
-                schedule_id: eventId 
-            })
+            body: JSON.stringify({ schedule_id: eventId })
         });
 
         if (response.ok) {
-            showToast(`Успішний запис на: ${eventTitle}!`, 'success');
+            showToast(`Ви успішно записані на: ${eventTitle}`, 'success');
         } else {
             const errorData = await response.json();
-            showToast(`Помилка запису: ${errorData.detail || 'Невідома помилка'}`, 'error');
+            // Обробка помилки (наприклад, "Вже записані" або "Немає місць")
+            showToast(`Помилка: ${errorData.detail || 'Не вдалося записатися'}`, 'error');
         }
     } catch (error) {
-        showToast('Помилка мережі. Не вдалося зв\'язатися з сервером.', 'error');
-        console.error('Booking error:', error);
+        console.error('[Calendar] Booking Failed:', error);
+        showToast('Помилка з\'єднання з сервером', 'error');
     }
 }
 
-
+// --- Main Init Function ---
 export function initCalendar() {
     const calendarEl = document.getElementById("calendar");
-    if (!calendarEl) return;
+    if (!calendarEl) return; // Якщо на сторінці немає календаря, виходимо
 
     const eventSourceUrl = `${BASE_URL}/api/schedule/`;
 
+    // Ініціалізація FullCalendar
     const calendar = new FullCalendar.Calendar(calendarEl, {
-        // ... (Налаштування календаря)
         locale: "uk",
         initialView: "timeGridWeek",
         allDaySlot: false,
         slotMinTime: "08:00:00",
         slotMaxTime: "21:00:00",
+        height: 'auto', // Адаптивна висота
+
         headerToolbar: {
             left: "prev,next today",
             center: "title",
-            right: "dayGridMonth,timeGridWeek,timeGridDay"
+            right: "dayGridMonth,timeGridWeek"
         },
         buttonText: {
             today: "Сьогодні",
             month: "Місяць",
-            week: "Тиждень",
-            day: "День"
+            week: "Тиждень"
         },
-        // ... (Кінець налаштувань календаря)
 
+        // Джерело подій (GET запит робить сама бібліотека)
         events: eventSourceUrl,
 
+        // Трансформація даних з API у формат FullCalendar
         eventDataTransform: function(apiEvent) {
             return {
                 id: apiEvent.id,
                 title: `${apiEvent.class_name} (${apiEvent.instructor_name || 'Зал'})`,
                 start: apiEvent.start_at,
                 end: apiEvent.end_at,
-                extendedProps: {
-                    capacity: apiEvent.capacity
-                }
+                backgroundColor: 'var(--accent)', // Стилізація під наш дизайн
+                borderColor: 'var(--accent)'
             };
         },
 
-        loading: function(isLoading) {
-            if (!isLoading) {
-                // @ts-ignore
-                if (calendar.getEvents().length === 0) {
-                    showToast('Не вдалося завантажити розклад з API.', 'error');
-                }
-            }
-        },
-
+        // Обробка кліку по події
         eventClick(info) {
-            info.jsEvent.preventDefault();
+            info.jsEvent.preventDefault(); // Зупиняємо перехід за посиланням, якщо є
 
             const event = info.event;
-            const eventId = event.id;
-            const eventTitle = event.title;
-            const eventStart = event.start;
-            const eventEnd = event.end;
-            
-            const dateStr = eventStart.toLocaleDateString('uk-UA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            const timeStr = eventStart.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' }) 
-                             + ' – ' + eventEnd.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
-
             const token = getToken();
+
+            // 1. Якщо не залогінений -> Відкриваємо логін
             if (!token) {
-                showToast('Будь ласка, увійдіть, щоб записатися на заняття', 'error');
-                if(openModal) openModal('loginModal'); 
+                showToast('Увійдіть, щоб записатися на тренування', 'error');
+                if (window.openModal) window.openModal('loginModal');
                 return;
             }
 
-            // --- 🚀 ЛОГІКА ПОКАЗУ МОДАЛЬНОГО ВІКНА ЗАПИСУ 🚀 ---
-            
+            // 2. Якщо залогінений -> Відкриваємо модалку підтвердження
             const modalTitleEl = document.getElementById('bookingModalTitle');
             const modalBodyEl = document.getElementById('bookingModalBody');
             const confirmBtn = document.getElementById('confirmBookingButton');
-            const bookingModalEl = document.getElementById('bookingModal'); 
 
-            if (modalTitleEl && modalBodyEl && confirmBtn && bookingModalEl && openModal) {
-                
-                // 1. Заповнюємо контент
-                modalTitleEl.textContent = `Запис на: ${escapeHtml(eventTitle)}`; 
+            // Перевіряємо наявність елементів модалки в DOM
+            if (modalTitleEl && modalBodyEl && confirmBtn) {
+                // Заповнюємо даними
+                modalTitleEl.textContent = `Запис: ${event.title}`;
+
+                const dateStr = event.start.toLocaleDateString('uk-UA');
+                const timeStr = `${event.start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${event.end.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+
                 modalBodyEl.innerHTML = `
-                    <p><strong>${escapeHtml(eventTitle)}</strong></p>
-                    <p>🗓️ <b>Дата:</b> ${dateStr}</p>
-                    <p>⏰ <b>Час:</b> ${timeStr}</p>
-                    <p>Ви впевнені, що хочете забронювати місце?</p>
+                    <div style="text-align: center; font-size: 1.1em;">
+                        <p><strong>📅 Дата:</strong> ${dateStr}</p>
+                        <p><strong>⏰ Час:</strong> ${timeStr}</p>
+                        <p style="margin-top: 10px; color: var(--muted);">Підтвердіть бронювання місця.</p>
+                    </div>
                 `;
-                
-                // 2. Навішуємо обробник події на кнопку "Записатися"
-                confirmBtn.onclick = async () => {
-                    if(hideModal) hideModal('bookingModal'); 
-                    await handleBooking(eventId, eventTitle);
+
+                // Перестворюємо кнопку (cloneNode), щоб зняти попередні onclick і не записати 10 разів
+                const newBtn = confirmBtn.cloneNode(true);
+                confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
+
+                // Вішаємо нову подію
+                newBtn.onclick = async () => {
+                    if (window.closeModal) window.closeModal('bookingModal');
+                    await handleBooking(event.id, event.title);
                 };
 
-                // 3. Відкриваємо модалку за допомогою вашої системи
-                openModal('bookingModal');
+                // Відкриваємо
+                if (window.openModal) window.openModal('bookingModal');
 
             } else {
-                showToast('Помилка: Не знайдено елементів модального вікна запису.', 'error');
+                console.error('[Calendar] Booking Modal elements not found in HTML.');
             }
         }
     });

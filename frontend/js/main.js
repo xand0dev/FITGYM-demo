@@ -1,83 +1,92 @@
 /* ===========================
-   main.js — "Диригент" сайту FITGYM
+   main.js — Entry Point (Точка входу)
+   ---------------------------
+   Цей файл збирає всі модулі докупи і запускає їх.
+   Також він "експортує" важливі функції у window,
+   щоб HTML (onclick attributes) міг їх бачити.
    =========================== */
 
-// 1. Імпортуємо UI-функції (тости, модалки, скрол, гамбургер)
+// 1. IMPORT (Підключаємо всі запчастини)
 import {
     initModalLogic,
     setupSmoothScrolling,
-    setupHamburger
+    setupHamburger,
+    openModal,       // <--- Критично важливо
+    closeModal,      // <--- Критично важливо
+    closeAllModals
 } from './modules/ui.js';
 
-// 2. Імпортуємо логіку Автентифікації (форми, оновлення хедера)
 import {
     initAuth,
     updateAuthArea
 } from './modules/auth.js';
 
-// 3. Імпортуємо логіку Контенту (тренери, абонементи)
 import {
     populateTrainers,
     populatePlans
 } from './modules/content.js';
 
-// 4. Імпортуємо логіку Відгуків
 import {
     populateReviews,
     setupReviewForm
 } from './modules/reviews.js';
 
-// 5. Імпортуємо логіку Календаря
+import { setupImtCalculator } from './modules/calculator.js';
+import { initCarousel } from './modules/carousel.js';
 import { initCalendar } from './modules/calendar.js';
 
-// 6. Імпортуємо логіку ІМТ-калькулятора
-import { setupImtCalculator } from './modules/calculator.js'; 
-
-// 7. НОВИЙ ІМПОРТ: Логіка Каруселі
-import { initCarousel } from './modules/carousel.js'; 
+/* =========================================
+   GLOBAL EXPORTS (GLUE LAYER)
+   -----------------------------------------
+   Оскільки type="module" має свою ізольовану область видимості,
+   змінні звідси не видно в HTML атрибутах (onclick).
+   Ми вручну додаємо їх в глобальний об'єкт window.
+   ========================================= */
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.closeAllModals = closeAllModals;
 
 
 /* =========================================
-   INIT (Ініціалізація, виконується після завантаження DOM)
+   APP INITIALIZATION
+   -----------------------------------------
+   Виконується, коли браузер завантажив HTML (DOM).
    ========================================= */
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 FITGYM System Starting...');
 
-    // 1. UI та Анімація
-    // Ініціалізація AOS (якщо бібліотека завантажена)
+    // 1. UI LAYER (Інтерфейс)
+    initModalLogic();         // Кнопки закриття, клік по фону
+    setupHamburger();         // Мобільне меню
+    setupSmoothScrolling();   // Якірні посилання
+
+    // AOS (Animate On Scroll) - бібліотека анімацій
     if (typeof AOS !== 'undefined') {
-        AOS.init({
-            duration: 800,
-            once: true
-        });
+        AOS.init({ duration: 800, once: true });
     }
-    initModalLogic();         // Логіка модальних вікон
-    setupSmoothScrolling();   // Плавний скрол до секцій
-    setupHamburger();         // Меню-гамбургер
 
-    // 2. Автентифікація
-    updateAuthArea();         // Оновлення хедера (Вхід/Кабінет)
-    initAuth();               // Обробка форм входу/реєстрації
+    // 2. AUTH LAYER (Автентифікація)
+    updateAuthArea();         // Перевіряємо токен, малюємо "Вхід" або "Кабінет"
+    initAuth();               // Вішаємо обробники на форми (Login/Register)
 
-    // 3. Контент
-    populateTrainers();       // Завантаження карток тренерів
-    populatePlans();          // Завантаження абонементів
-    
-    // 4. Функціональні модулі
-    setupImtCalculator();     // ІМТ-калькулятор
-    
-    // 5. Відгуки
-    populateReviews();        // Завантаження і відображення відгуків
-    setupReviewForm();        // Обробка форми відгуку
+    // 3. CONTENT LAYER (Дані)
+    populateTrainers();       // Завантажуємо тренерів (або фейкові дані)
+    populatePlans();          // Завантажуємо ціни
 
-    // НОВИЙ ВИКЛИК: Карусель має запускатися відразу
-    initCarousel(); 
+    // 4. FUNCTIONAL MODULES (Фічі)
+    setupImtCalculator();     // Калькулятор маси тіла
+    initCarousel();           // Слайдер фотографій
 
-    // 6. Розклад (Calendar)
+    // 5. REVIEWS (Відгуки)
+    populateReviews();        // Список відгуків
+    setupReviewForm();        // Форма додавання
+
+    // 6. CALENDAR (Розклад)
     if (typeof FullCalendar !== 'undefined') {
-        initCalendar();       // Ініціалізація FullCalendar
+        initCalendar();
     } else {
-        // Виводимо помилку, якщо FullCalendar не завантажено
-        console.error("Помилка: FullCalendar не завантажено або недоступний.");
+        console.warn('⚠️ FullCalendar library not found. Schedule disabled.');
     }
-    
+
+    console.log('✅ FITGYM Initialized Successfully.');
 });
