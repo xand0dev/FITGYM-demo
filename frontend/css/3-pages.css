@@ -1,5 +1,5 @@
 /* ========================================================== */
-/* 3-pages.css: Сторінкові/Секційні стилі (Hero, Pricing, Reviews, Calendar, BMI) */
+/* 3-pages.css: Сторінкові/Секційні стилі (Hero, Pricing, Reviews, Calendar, BMI, Cabinet) */
 /* ========================================================== */
 
 /* --- HERO SECTION --- */
@@ -30,7 +30,6 @@
     align-items: flex-start;
     margin-top: 40px;
 }
-/* ... (Всі стилі для .pricing-card, .plan-name, .plan-price, .plan-features) ... */
 
 .pricing-card {
     background: var(--surface);
@@ -218,7 +217,6 @@
 .fc .fc-daygrid-day-number, .fc-col-header-cell-cushion { color: #fff; }
 .fc .fc-event { background: var(--accent); border: none; border-radius: 6px; color: #fff; }
 .fc .fc-day-today { background: rgba(255,0,0,0.2) !important; }
-/* ВИПРАВЛЕННЯ ПУНКТИРУ (ГОДИНИ + ПІВГОДИНИ) */
 .fc-timegrid-slot-lane {
     border-bottom-style: solid !important;
     border-bottom-color: #333 !important;
@@ -261,7 +259,6 @@
     gap: 50px;
     align-items: flex-start;
 }
-/* ІМТ Таблиця */
 .imt-table-container {
     background: var(--surface);
     border-radius: var(--radius);
@@ -287,7 +284,6 @@
 .imt-note {
     font-size: 0.85rem; color: var(--muted); padding-left: 10px; margin: 10px 0 0;
 }
-/* ІМТ Форма */
 .imt-form-container { padding: 20px 0; }
 .imt-form input[type="number"], .imt-form select {
     width: 100%; padding: 12px; background: var(--surface); border: 1px solid #333; color: var(--text); border-radius: 4px; transition: border-color 0.3s, box-shadow 0.3s; font-size: 1rem; margin-bottom: 15px;
@@ -297,7 +293,6 @@
 }
 .imt-form .form-row { display: flex; gap: var(--gap); }
 .imt-form .form-row input, .imt-form .form-row select { flex: 1; }
-/* Результат */
 .imt-result-box {
     background: #1a1a1a; border: 1px solid var(--accent); padding: 15px; border-radius: 4px; min-height: 50px; margin-bottom: 25px; color: var(--text); font-size: 1.1rem; display: flex; align-items: center; justify-content: center; text-align: center; font-weight: 600;
 }
@@ -305,7 +300,7 @@
 .imt-result-box.overweight { border-color: #ff9900; color: #ff9900; }
 .imt-result-box.obese { border-color: var(--accent); color: var(--accent); }
 
-/* Стилі для анкети відгуку (світлий фон) */
+/* --- REVIEW FORM --- */
 .review-modal-content {
     max-width: 650px;
     background: #fff;
@@ -340,21 +335,16 @@
 
 
 /* ========================================================== */
-/* 3-pages.css: (ДОДАНО В КІНЕЦЬ ФАЙЛУ) */
-/* --- CABINET PAGE --- */
+/* --- CABINET PAGE (FINAL) --- */
 /* ========================================================== */
 
 .cabinet-grid {
     display: grid;
-    /* Використовуємо таку ж логіку, як в ІМТ калькуляторі: 1fr 1.5fr */
     grid-template-columns: 1fr 1.5fr;
     gap: var(--gap);
     align-items: flex-start;
 }
 
-/* Створюємо загальний стиль для карток кабінету,
-   використовуючи стилі з інших компонентів (напр. .review-item)
-*/
 .profile-card,
 .schedule-card {
     background: var(--surface);
@@ -362,7 +352,7 @@
     padding: 30px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    height: 100%; /* Додамо, щоб картки були однакової висоти (якщо знадобиться) */
+    min-height: 400px; /* Мінімальна висота для краси */
 }
 
 /* --- Ліва картка: Профіль --- */
@@ -429,30 +419,67 @@
     gap: 15px;
 }
 
-/* СТИЛІ ДЛЯ .booking-card (ЯКІ ГЕНЕРУЄ JS) */
+/* --- КАРТКА БРОНЮВАННЯ (З кнопкою видалення) --- */
 .booking-card {
-    background: var(--bg); /* Трохи темніше за --surface */
+    background: var(--bg);
     padding: 15px 20px;
     border-radius: 8px;
     border-left: 4px solid var(--accent);
     transition: background 0.3s;
+
+    /* Flexbox для розташування: Текст | Кнопка */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
 }
+
 .booking-card:hover {
     background: #1a1a1a;
 }
+
+.booking-info {
+    flex-grow: 1; /* Текст займає весь простір зліва */
+}
+
 .booking-card h4 {
-    margin: 0 0 8px;
+    margin: 0 0 5px;
     color: var(--text);
     font-size: 1.1rem;
 }
+
 .booking-card p,
 .booking-card span {
     font-size: 0.9rem;
     color: var(--muted);
-    margin: 4px 0;
+    margin: 3px 0;
+    display: block;
 }
+
 .booking-card p strong {
     color: var(--accent);
     text-transform: uppercase;
-    font-size: 0.85rem;
+}
+
+/* Кнопка скасування (смітник) */
+.btn-cancel {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #666;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.btn-cancel:hover {
+    background: rgba(230, 0, 0, 0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: rotate(90deg); /* Анімація при наведенні */
 }

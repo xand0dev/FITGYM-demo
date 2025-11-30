@@ -4,58 +4,51 @@
 
 import { getToken, getUserName, logoutUser, updateAuthArea, initAuth } from './auth.js';
 import { showToast, escapeHtml, initModalLogic, setupHamburger } from './ui.js';
-import { getAuthData } from './api.js'; // Імпортуємо getAuthData
+// Додали deleteAuthData
+import { getAuthData, deleteAuthData } from './api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-
     const token = getToken();
     const userName = getUserName();
 
-    // 1. Guard check
     if (!token) {
         window.location.href = 'index.html';
         return;
     }
 
-    console.log("Cabinet initialized.");
-
-    // 2. Init UI
+    // Init UI
     initModalLogic();
     setupHamburger();
     updateAuthArea();
     initAuth();
 
-    // 3. Set Static Data
+    // Static Data
     const nameEl = document.getElementById('user-name');
     if (nameEl) nameEl.textContent = userName || 'Клієнт';
 
-    // Logout Handler
     const logoutBtn = document.getElementById('logoutButton');
     if (logoutBtn) logoutBtn.addEventListener('click', logoutUser);
 
-    // 4. Load Async Data
+    // Load Data
     loadProfileData();
     populateUserSchedule();
 
-    // AOS
+    // Ініціалізуємо обробник кнопок "Скасувати"
+    setupCancelHandler();
+
     if (typeof AOS !== 'undefined') {
         AOS.init({ duration: 800, once: true });
     }
 });
 
+/* --- API LOADERS --- */
 
-/**
- * Завантаження профілю (/api/me/)
- */
 async function loadProfileData() {
     const infoDiv = document.getElementById('profile-info');
     if (!infoDiv) return;
 
     try {
-        // Використовуємо getAuthData - вона сама додає токен і обробляє 401
         const profileData = await getAuthData('/api/me/');
-
-        // Перевірка: чи це масив, чи об'єкт (Django ViewSet може повертати List)
         const userProfile = Array.isArray(profileData) ? profileData[0] : profileData;
 
         if (!userProfile) throw new Error('Empty profile data');
@@ -66,17 +59,13 @@ async function loadProfileData() {
             <p><i class="fas fa-phone"></i> Телефон: <span>${escapeHtml(userProfile.phone || userProfile.contact || '—')}</span></p>
             <p><i class="fas fa-user-tag"></i> Статус: <span style="color: var(--accent)">${escapeHtml(userProfile.status || 'Active')}</span></p>
         `;
-
-        // Оновлюємо ім'я, якщо воно прийшло з сервера
-        if (userProfile.full_name || userProfile.name) {
-            document.getElementById('user-name').textContent = userProfile.full_name || userProfile.name;
+        if (userProfile.full_name) {
+            document.getElementById('user-name').textContent = userProfile.full_name;
         }
 
     } catch (err) {
-        console.error('Profile Load Error:', err);
-
+        console.error('Profile Error:', err);
         if (err.message === 'Unauthorized') {
-            showToast('Сесія закінчилась', 'error');
             logoutUser();
         } else {
             infoDiv.innerHTML = `<p class="text-muted">Не вдалося завантажити дані.</p>`;
@@ -84,10 +73,6 @@ async function loadProfileData() {
     }
 }
 
-
-/**
- * Завантаження бронювань (/api/my-bookings/)
- */
 async function populateUserSchedule() {
     const list = document.getElementById('bookings-list');
     if (!list) return;
@@ -103,27 +88,81 @@ async function populateUserSchedule() {
         }
 
         list.innerHTML = bookings.map(booking => {
-            // Адаптуємо під можливі формати відповіді (вкладений session або плоский об'єкт)
             const session = booking.session || booking;
             const dateObj = new Date(session.start_at);
-
             const dateStr = dateObj.toLocaleDateString('uk-UA', {day: 'numeric', month: 'long'});
             const timeStr = dateObj.toLocaleTimeString('uk-UA', {hour: '2-digit', minute:'2-digit'});
 
+            // Рендеримо картку з кнопкою видалення
+            // data-booking-id — це ID самого бронювання
             return `
             <div class="booking-card" data-aos="fade-up">
-                <h4>${escapeHtml(session.class_name || 'Тренування')}</h4>
-                <p><strong>${dateStr}</strong> о <strong>${timeStr}</strong></p>
-                <span>Тренер: ${escapeHtml(session.instructor_name || '—')}</span>
-                <p style="margin-top:5px; font-size:0.8rem; color: #888;">
-                   Статус: ${escapeHtml(booking.status || 'Підтверджено')}
-                </p>
+                <div class="booking-info">
+                    <h4>${escapeHtml(session.class_name || 'Тренування')}</h4>
+                    <p><strong>${dateStr}</strong> о <strong>${timeStr}</strong></p>
+                    <span>Тренер: ${escapeHtml(session.instructor_name || '—')}</span>
+                    <p class="status-text">Статус: ${escapeHtml(booking.status || 'Підтверджено')}</p>
+                </div>
+                
+                <button class="btn-cancel" data-booking-id="${booking.id}" title="Скасувати запис">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
             </div>
             `;
         }).join('');
 
     } catch (error) {
-        console.error("Bookings Load Error:", error);
+        console.error("Bookings Error:", error);
         list.innerHTML = `<p class="text-muted">Помилка завантаження розкладу.</p>`;
+    }
+}
+
+/* --- CANCEL LOGIC --- */
+
+function setupCancelHandler() {
+    const list = document.getElementById('bookings-list');
+    if (!list) return;
+
+    // Використовуємо делегування подій (слухаємо кліки на всьому списку)
+    list.addEventListener('click', async (e) => {
+        // Шукаємо кнопку .btn-cancel, навіть якщо клікнули на іконку <i>
+        const btn = e.target.closest('.btn-cancel');
+
+        if (btn) {
+            const bookingId = btn.getAttribute('data-booking-id');
+            const card = btn.closest('.booking-card');
+
+            await handleCancelBooking(bookingId, card);
+        }
+    });
+}
+
+async function handleCancelBooking(id, cardElement) {
+    if (!confirm('Ви впевнені, що хочете скасувати це тренування?')) return;
+
+    try {
+        // ОБОВ'ЯЗКОВО додаємо слеш в кінці URL, як вимагав бек
+        await deleteAuthData(`/api/my-bookings/${id}/`);
+
+        // Візуальне видалення (анімація)
+        cardElement.style.transition = 'all 0.3s ease';
+        cardElement.style.opacity = '0';
+        cardElement.style.transform = 'translateX(20px)';
+
+        setTimeout(() => {
+            cardElement.remove();
+
+            // Якщо карток не залишилось, показуємо повідомлення
+            const list = document.getElementById('bookings-list');
+            if (list && list.children.length === 0) {
+                list.innerHTML = "<p>У вас немає активних записів.</p>";
+            }
+        }, 300);
+
+        showToast('Бронювання скасовано успішно', 'success');
+
+    } catch (error) {
+        console.error('Cancel Error:', error);
+        showToast(error.message || 'Не вдалося скасувати запис', 'error');
     }
 }

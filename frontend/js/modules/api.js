@@ -36,7 +36,6 @@ export async function postApiData(endpoint, body) {
 
     const data = await response.json();
     if (!response.ok) {
-        // Збираємо всі можливі тексти помилок в один рядок
         const errorMsg = data.detail || Object.values(data).flat().join(', ') || `Помилка ${response.status}`;
         throw new Error(errorMsg);
     }
@@ -62,13 +61,8 @@ export async function getAuthData(endpoint) {
         }
     });
 
-    if (response.status === 401) {
-        throw new Error('Unauthorized');
-    }
-
-    if (!response.ok) {
-        throw new Error(`API Error: ${response.statusText}`);
-    }
+    if (response.status === 401) throw new Error('Unauthorized');
+    if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
 
     return await response.json();
 }
@@ -92,23 +86,51 @@ export async function postAuthData(endpoint, body) {
     const data = await response.json();
 
     if (!response.ok) {
-        // 🛠 ОСЬ ТУТ БУЛА ПРОБЛЕМА
-        // Тепер ми читаємо ВСІ поля помилок, а не тільки 'detail'
         let errorMsg = 'Помилка виконання запиту';
-
         if (data.detail) {
             errorMsg = data.detail;
         } else {
-            // Якщо Django повернув {"session": ["Invalid pk"]} або {"non_field_errors": ["Вже записані"]}
-            // Ми склеюємо всі повідомлення в одне
             const allErrors = Object.values(data).flat();
-            if (allErrors.length > 0) {
-                errorMsg = allErrors.join(', ');
-            }
+            if (allErrors.length > 0) errorMsg = allErrors.join(', ');
         }
+        throw new Error(errorMsg);
+    }
+    return data;
+}
 
+/**
+ * DELETE запит (НОВЕ: Скасування)
+ * Спеціально обробляє 204 No Content
+ */
+export async function deleteAuthData(endpoint) {
+    const token = _getToken();
+    if (!token) throw new Error('No token found');
+
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${token}`
+        }
+    });
+
+    // 1. Успіх (204 No Content) - виходимо одразу, не парсимо JSON
+    if (response.status === 204) {
+        return true;
+    }
+
+    // 2. Помилка (404 або інші)
+    if (!response.ok) {
+        // Спробуємо прочитати JSON, якщо він є (на випадок кастомної помилки)
+        let errorMsg = `Помилка ${response.status}`;
+        try {
+            const data = await response.json();
+            if (data.detail) errorMsg = data.detail;
+        } catch (e) {
+            // Якщо JSON немає, залишаємо стандартний текст
+        }
         throw new Error(errorMsg);
     }
 
-    return data;
+    return true;
 }
