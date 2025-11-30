@@ -3,12 +3,8 @@
 /* ========================================================== */
 
 /* --- HELPER CLASSES --- */
-.review-hidden {
-    display: none;
-}
-.text-center {
-    text-align: center;
-}
+.review-hidden { display: none; }
+.text-center { text-align: center; }
 
 /* --- MEDIA QUERIES (АДАПТИВНІСТЬ) --- */
 
@@ -33,33 +29,20 @@
     .pricing-grid { grid-template-columns: repeat(2, 1fr); }
     .pricing-card--featured { grid-column: span 2; order: -1; transform: scale(1.02); }
     .imt-wrapper { grid-template-columns: 1fr; }
-
-    .cabinet-grid {
-        grid-template-columns: 1fr;
-    }
+    .cabinet-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 768px) {
     /* Header/Nav */
     .nav-primary {
-        display: none;
-        position: absolute;
-        top: 100%;
-        left: 0;
-        width: 100%;
-        flex-direction: column;
-        background: rgba(0, 0, 0, 0.95);
-        padding: 10px 0;
+        display: none; position: absolute; top: 100%; left: 0; width: 100%;
+        flex-direction: column; background: rgba(0, 0, 0, 0.95); padding: 10px 0;
         border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
-    .nav-primary a {
-        padding: 12px 20px;
-        border-radius: 0;
-        width: 100%;
-    }
+    .nav-primary a { padding: 12px 20px; border-radius: 0; width: 100%; }
     .nav-primary a::after { content: none; }
     .hamburger { display: flex; margin-left: 10px; }
-    .header-inner #authArea { display: none; } 
+    .header-inner #authArea { display: none; }
 
     /* Layout */
     .hero-inner { max-width: 100%; text-align: center; }
@@ -82,42 +65,4 @@
     /* Pages */
     .pricing-grid { grid-template-columns: 1fr; }
     .pricing-card--featured { grid-column: span 1; transform: scale(1.02); }
-}
-
-/* ========================================================== */
-/* 🌟 СТИЛІ ДЛЯ НОВОГО (ВЛАСНОГО) МОДАЛЬНОГО ВІКНА ЗАПИСУ 🌟 */
-/* ========================================================== */
-
-/* Гарантуємо, що core елементи DOM не мають агресивних фіксів, які блокують position:fixed */
-html, body {
-    position: static;
-    transform: none;
-    filter: none;
-}
-
-/* Стилі для контенту модалки запису */
-/* Це гарантує, що модалка буде виглядати як ваші інші (Login/Register) */
-#bookingModal .modal-content {
-    /* Стилізуємо як ваші інші модалки (Вхід/Реєстрація) */
-    max-width: 450px; 
-    padding: 30px;
-    border-top: 3px solid var(--accent);
-    box-shadow: 0 15px 40px rgba(230, 0, 0, 0.2);
-    
-    /* Фікс для центрування, якщо контент занадто великий */
-    margin: 20px auto; 
-    
-    /* Це дозволяє модалці зайняти місце і коректно центруватися */
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-/* Стилізація футера (використовуємо ваш новий клас) */
-.booking-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    padding-top: 20px;
-    margin-top: 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }

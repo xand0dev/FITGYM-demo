@@ -1,257 +1,99 @@
 /* ========================================================== */
-/* 2-components.css: Компоненти (Nav, Buttons, Card, Modal) */
+/* 2-components.css: Дизайн Компонентів (Visual Layer) */
 /* ========================================================== */
 
 /* --- NAVIGATION --- */
-.nav-primary {
-    display: flex;
-    gap: 25px;
-    margin-right: auto;
-}
+.nav-primary { display: flex; gap: 25px; margin-right: auto; }
 .nav-primary a {
-    color: var(--muted);
-    font-weight: 600;
-    padding: 8px 0;
-    position: relative;
-    transition: color 0.3s, transform 0.1s;
-    text-decoration: none;
+    color: var(--muted); font-weight: 600; padding: 8px 0; position: relative;
+    transition: color 0.3s, transform 0.1s; text-decoration: none;
 }
-.nav-primary a:hover {
-    color: var(--text);
-    transform: translateY(-1px);
-}
+.nav-primary a:hover { color: var(--text); transform: translateY(-1px); }
 .nav-primary a::after {
-    content: '';
-    position: absolute;
-    bottom: -4px;
-    left: 0;
-    width: 0;
-    height: 2px;
-    background: var(--accent);
-    transition: width 0.3s ease-out;
+    content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 2px;
+    background: var(--accent); transition: width 0.3s ease-out;
 }
-.nav-primary a:hover::after {
-    width: 100%;
-}
+.nav-primary a:hover::after { width: 100%; }
 
 /* --- BUTTONS --- */
 .btn {
-    display: inline-block;
-    padding: 10px 20px;
-    border-radius: 4px;
-    font-weight: 700;
-    cursor: pointer;
-    border: none;
-    transition: 0.3s;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    text-decoration: none;
-    text-align: center;
+    display: inline-block; padding: 10px 20px; border-radius: 4px;
+    font-weight: 700; cursor: pointer; border: none; transition: 0.3s;
+    text-transform: uppercase; letter-spacing: 0.5px; text-decoration: none; text-align: center;
 }
-.btn-primary {
-    background: var(--accent);
-    color: #fff;
-    box-shadow: 0 4px 10px rgba(230, 0, 0, 0.3);
-}
-.btn-primary:hover {
-    background: #ff1a1a;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(230, 0, 0, 0.4);
-}
-.btn-ghost {
-    background: transparent;
-    color: var(--text);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-}
-.btn-ghost:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: var(--accent);
-}
+.btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 10px rgba(230, 0, 0, 0.3); }
+.btn-primary:hover { background: #ff1a1a; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(230, 0, 0, 0.4); }
+.btn-ghost { background: transparent; color: var(--text); border: 1px solid rgba(255, 255, 255, 0.3); }
+.btn-ghost:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--accent); }
 
 /* --- HAMBURGER --- */
-.hamburger {
-    display: none;
-    flex-direction: column;
-    gap: 5px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    padding: 10px;
-}
-.hamburger span {
-    width: 28px;
-    height: 3px;
-    background: #fff;
-    border-radius: 2px;
-    transition: 0.3s;
-}
+.hamburger { display: none; flex-direction: column; gap: 5px; border: none; background: transparent; cursor: pointer; padding: 10px; }
+.hamburger span { width: 28px; height: 3px; background: #fff; border-radius: 2px; transition: 0.3s; }
 
 /* --- AUTH AREA --- */
-#authArea {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
+#authArea { display: flex; gap: 10px; align-items: center; }
 
-/* --- CARDS (Advantages & Trainers) --- */
+/* --- CARDS --- */
 .card {
-    background: var(--surface);
-    border-radius: 12px;
-    padding: 30px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    transition: all 0.3s ease;
-    text-align: center;
+    background: var(--surface); border-radius: 12px; padding: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.08); transition: all 0.3s ease; text-align: center;
 }
-.card:hover {
-    transform: translateY(-5px);
-    border-color: var(--accent);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
-}
-.card i {
-    color: var(--accent);
-    margin-bottom: 15px;
-}
-.card-title {
-    font-weight: 800;
-    margin-bottom: 10px;
-    font-size: 1.1rem;
-    color: var(--text);
-}
-.card-text {
-    color: var(--muted);
-    font-size: 0.9rem;
-}
+.card:hover { transform: translateY(-5px); border-color: var(--accent); box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5); }
+.card i { color: var(--accent); margin-bottom: 15px; }
+.card-title { font-weight: 800; margin-bottom: 10px; font-size: 1.1rem; color: var(--text); }
+.card-text { color: var(--muted); font-size: 0.9rem; }
 
-/* Trainer Specific */
+/* Trainer Card */
 .trainer-card {
-    background: var(--surface);
-    border-radius: 12px;
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    transition: all 0.3s ease;
+    background: var(--surface); border-radius: 12px; overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08); transition: all 0.3s ease;
 }
 .trainer-card:hover { border-color: var(--accent); }
-.trainer-card img {
-    width: 100%;
-    height: 280px;
-    object-fit: cover;
-    filter: grayscale(10%);
-    transition: filter 0.3s;
-}
+.trainer-card img { width: 100%; height: 280px; object-fit: cover; filter: grayscale(10%); transition: filter 0.3s; }
 .trainer-card:hover img { filter: grayscale(0%); }
 .trainer-card .meta { padding: 15px; text-align: center; }
 .trainer-card h3 { margin: 0; font-size: 1.2rem; color: var(--accent); }
 .trainer-card p { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
 
-
-/* --- CAROUSEL (CLEANED) --- */
+/* --- CAROUSEL --- */
 .carousel-section {
-    width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 40px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    overflow: hidden;
+    width: 100%; max-width: 1400px; margin: 0 auto; padding: 40px 20px;
+    display: flex; align-items: center; justify-content: flex-start; overflow: hidden;
 }
-
-.carousel-container {
-    flex-grow: 1;
-    max-width: 100%;
-    overflow: hidden;
-    position: relative;
-}
-
-.carousel-wrapper {
-    display: flex;
-    flex-wrap: nowrap;
-    width: fit-content;
-    transition: transform 0.5s ease-in-out;
-}
-
-.carousel-slide {
-    flex: 0 0 240px;
-    max-width: 240px;
-    margin: 0 10px;
-    height: 350px;
-    border-radius: 8px;
-    overflow: hidden;
-    background-color: #000;
-}
-
-.carousel-slide img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
+.carousel-container { flex-grow: 1; max-width: 100%; overflow: hidden; position: relative; }
+.carousel-wrapper { display: flex; flex-wrap: nowrap; width: fit-content; transition: transform 0.5s ease-in-out; }
+.carousel-slide { flex: 0 0 240px; max-width: 240px; margin: 0 10px; height: 350px; border-radius: 8px; overflow: hidden; background-color: #000; }
+.carousel-slide img { width: 100%; height: 100%; object-fit: cover; }
 
 /* --- TOAST NOTIFICATIONS --- */
-#toast-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 10000;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
+#toast-container { position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; }
 .toast {
-    padding: 12px 20px;
-    border-radius: 5px;
-    font-weight: 600;
-    min-width: 250px;
-    color: #fff;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-    border-left: 5px solid;
-    animation: slideInRight 0.3s ease-out;
+    padding: 12px 20px; border-radius: 5px; font-weight: 600; min-width: 250px; color: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5); border-left: 5px solid; animation: slideInRight 0.3s ease-out;
 }
 .toast.success { background: #222; border-left-color: #2ecc71; }
 .toast.error { background: #222; border-left-color: #e74c3c; }
+@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-@keyframes slideInRight {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-}
-
-
-/* --- MODALS (FINAL FIX) --- */
-/* Це єдина правильна версія для нашого JS */
+/* --- MODALS (DESIGN ONLY) --- */
+/* Механіка винесена в 0-critical.css. Тут тільки краса. */
 
 .modal-overlay {
-    /* Спочатку приховано */
-    display: none;
-
-    /* Фіксація на весь екран */
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-
-    /* Темний фон */
     background-color: rgba(0, 0, 0, 0.85);
     backdrop-filter: blur(5px);
-
-    /* Найвищий шар */
-    z-index: 9999;
-
-    /* Центрування */
-    justify-content: center;
-    align-items: center;
 }
-
-/* Коли JS робить display: flex, ці стилі спрацьовують */
 
 .modal-content {
     background: #1a1a1a;
     padding: 40px;
     border-radius: 12px;
+
+    /* Розміри */
     width: 90%;
-    max-width: 400px;
-    position: relative;
+    max-width: 450px; /* Уніфікували розмір (було 400px і 450px) */
+
     border: 1px solid #333;
+    border-top: 3px solid var(--accent); /* Додали червону лінію всім модалкам */
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
     color: #fff;
     animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -263,36 +105,22 @@
 }
 
 .modal-close {
-    position: absolute;
-    top: 15px;
-    right: 20px;
-    font-size: 24px;
-    background: none;
-    border: none;
-    color: #888;
-    cursor: pointer;
-    transition: color 0.2s;
+    position: absolute; top: 15px; right: 20px; font-size: 24px;
+    background: none; border: none; color: #888; cursor: pointer; transition: color 0.2s;
 }
 .modal-close:hover { color: var(--accent); }
 
-.modal-content h2 {
-    margin-top: 0;
-    margin-bottom: 20px;
-    text-align: center;
-    color: var(--accent);
-}
+.modal-content h2 { margin-top: 0; margin-bottom: 20px; text-align: center; color: var(--accent); }
 
-/* Стилі полів всередині модалки */
+/* Inputs inside Modals */
 .modal-content input {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 15px;
-    background: #2a2a2a;
-    border: 1px solid #444;
-    color: #fff;
-    border-radius: 5px;
-    outline: none;
+    width: 100%; padding: 12px; margin-bottom: 15px; background: #2a2a2a;
+    border: 1px solid #444; color: #fff; border-radius: 5px; outline: none;
 }
-.modal-content input:focus {
-    border-color: var(--accent);
+.modal-content input:focus { border-color: var(--accent); }
+
+/* Footer for Booking Modal (перенесено з utilities) */
+.booking-footer {
+    display: flex; justify-content: flex-end; gap: 10px;
+    padding-top: 20px; margin-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
