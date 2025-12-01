@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FITGYM — Панель Тренера</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="css/0-base.css">
+    <link rel="stylesheet" href="css/1-layout.css">
+    <link rel="stylesheet" href="css/2-components.css">
+    <!-- Стилі для адмін-панелі (обов'язково підключіть admin_styles.css) -->
+    <link rel="stylesheet" href="css/admin_styles.css"> 
+</head>
+<body>
+
+<header class="site-header">
+    <div class="container header-inner">
+        <div class="logo">FIT<span>GYM</span></div>
+        <nav class="nav-primary">
+            <a href="index.html">Головна Сторінка</a>
+            <a href="#" id="adminLogoutBtn">
+                <i class="fas fa-sign-out-alt"></i> Вихід
+            </a>
+        </nav>
+    </div>
+</header>
+
+<section class="section container admin-layout">
+    <aside class="sidebar">
+        <h2><i class="fas fa-dumbbell"></i> Управління Заняттями</h2>
+        <div id="controlsContainer">
+            <button id="addEventBtn" class="btn btn-primary" style="width: 100%; margin-bottom: 20px;">
+                <i class="fas fa-plus"></i> Додати Нове Заняття
+            </button>
+
+            <!-- Форма додавання/редагування подій (за замовчуванням прихована) -->
+            <div id="eventFormContainer" style="display: none;">
+                <h3>Редагування події</h3>
+                <form id="eventForm">
+                    <input type="hidden" id="event_id">
+
+                    <label for="class_name">Назва заняття:</label>
+                    <input type="text" id="class_name" required>
+
+                    <label for="instructor_name">Тренер:</label>
+                    <input type="text" id="instructor_name" required>
+                    
+                    <label for="capacity">Макс. Клієнтів:</label>
+                    <input type="number" id="capacity" min="1" required>
+
+                    <label for="start_at">Початок:</label>
+                    <input type="datetime-local" id="start_at" required>
+
+                    <label for="end_at">Кінець:</label>
+                    <input type="datetime-local" id="end_at" required>
+
+                    <button type="submit" class="btn btn-primary" id="saveEventBtn">Зберегти Зміни</button>
+                    <button type="button" class="btn btn-ghost" id="clearFormBtn">Очистити</button>
+                    <button type="button" class="btn btn-primary" id="deleteEventBtn" style="background: #a00; margin-top: 10px;">Видалити Заняття</button>
+                </form>
+            </div>
+        </div>
+
+        <h2 style="margin-top: 40px;"><i class="fas fa-users"></i> Записані Клієнти</h2>
+        <div id="bookingList">
+            <p class="muted">Оберіть подію у календарі, щоб побачити список.</p>
+        </div>
+    </aside>
+
+    <main class="calendar-area">
+        <h2>Розклад Редагування</h2>
+        <div id="calendar"></div>
+    </main>
+</section>
+
+<!-- Модальне вікно для підтвердження (як у index.html) -->
+<div id="confirmModal" class="modal-overlay">
+    <div class="modal-content">
+        <h2 id="confirmModalTitle">Підтвердження</h2>
+        <p id="confirmModalBody">Ви впевнені?</p>
+        <div class="booking-footer">
+            <!-- Використовуємо global closeModal, прив'язаний в ui.js -->
+            <button type="button" class="btn btn-ghost modal-close" onclick="closeModal('confirmModal')">Скасувати</button>
+            <button type="button" class="btn btn-primary" id="confirmActionBtn">Підтвердити</button>
+        </div>
+    </div>
+</div>
+<div id="toast-container"></div>
+
+
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
+<!-- Завантажуємо модулі -->
+<script src="js/modules/ui.js" type="module"></script>
+<script src="js/modules/auth.js" type="module"></script>
+<script src="js/modules/calendar.js" type="module"></script>
+<script src="js/modules/admin.js" type="module"></script>
+
+<script type="module">
+    import { initAdminPage } from './js/modules/admin.js';
+    import { initModalLogic, setupHamburger, setupSmoothScrolling, showToast } from './js/modules/ui.js';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Забезпечуємо роботу UI-логіки
+        initModalLogic();
+        setupHamburger();
+        setupSmoothScrolling();
+        
+        // Ініціалізуємо адмін-панель
+        if (typeof FullCalendar !== 'undefined') {
+            initAdminPage();
+        } else {
+            showToast('Критична помилка: FullCalendar не завантажено.', 'error');
+        }
+    });
+</script>
+</body>
+</html>
