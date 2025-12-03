@@ -3,121 +3,204 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FITGYM — Панель Тренера</title>
-    
+    <title>FITGYM — Адмін-панель</title>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css" rel="stylesheet">
-    
+
     <link rel="stylesheet" href="css/0-base.css">
-    <link rel="stylesheet" href="css/1-layout.css">
-    <link rel="stylesheet" href="css/2-components.css">
-    <!-- Стилі для адмін-панелі (обов'язково підключіть admin_styles.css) -->
-    <link rel="stylesheet" href="css/admin_styles.css"> 
-</head>
+    <link rel="stylesheet" href="css/admin_styles.css"> </head>
 <body>
 
-<header class="site-header">
-    <div class="container header-inner">
-        <div class="logo">FIT<span>GYM</span></div>
-        <nav class="nav-primary">
-            <a href="index.html">Головна Сторінка</a>
-            <a href="#" id="adminLogoutBtn">
-                <i class="fas fa-sign-out-alt"></i> Вихід
+<div class="dashboard-container">
+
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-logo">FIT<span>GYM</span> ADMIN</div>
+
+        <nav class="sidebar-menu">
+            <a href="#" class="menu-item active" data-tab="section-dashboard">
+                <i class="fas fa-chart-line"></i> Огляд
+            </a>
+            <a href="#" class="menu-item" data-tab="section-schedule">
+                <i class="fas fa-calendar-alt"></i> Розклад
+            </a>
+            <a href="#" class="menu-item" data-tab="section-clients">
+                <i class="fas fa-users"></i> Клієнти
+            </a>
+            <a href="#" class="menu-item" data-tab="section-trainers">
+                <i class="fas fa-dumbbell"></i> Тренери
             </a>
         </nav>
-    </div>
-</header>
 
-<section class="section container admin-layout">
-    <aside class="sidebar">
-        <h2><i class="fas fa-dumbbell"></i> Управління Заняттями</h2>
-        <div id="controlsContainer">
-            <button id="addEventBtn" class="btn btn-primary" style="width: 100%; margin-bottom: 20px;">
-                <i class="fas fa-plus"></i> Додати Нове Заняття
-            </button>
-
-            <!-- Форма додавання/редагування подій (за замовчуванням прихована) -->
-            <div id="eventFormContainer" style="display: none;">
-                <h3>Редагування події</h3>
-                <form id="eventForm">
-                    <input type="hidden" id="event_id">
-
-                    <label for="class_name">Назва заняття:</label>
-                    <input type="text" id="class_name" required>
-
-                    <label for="instructor_name">Тренер:</label>
-                    <input type="text" id="instructor_name" required>
-                    
-                    <label for="capacity">Макс. Клієнтів:</label>
-                    <input type="number" id="capacity" min="1" required>
-
-                    <label for="start_at">Початок:</label>
-                    <input type="datetime-local" id="start_at" required>
-
-                    <label for="end_at">Кінець:</label>
-                    <input type="datetime-local" id="end_at" required>
-
-                    <button type="submit" class="btn btn-primary" id="saveEventBtn">Зберегти Зміни</button>
-                    <button type="button" class="btn btn-ghost" id="clearFormBtn">Очистити</button>
-                    <button type="button" class="btn btn-primary" id="deleteEventBtn" style="background: #a00; margin-top: 10px;">Видалити Заняття</button>
-                </form>
-            </div>
-        </div>
-
-        <h2 style="margin-top: 40px;"><i class="fas fa-users"></i> Записані Клієнти</h2>
-        <div id="bookingList">
-            <p class="muted">Оберіть подію у календарі, щоб побачити список.</p>
+        <div class="sidebar-footer">
+            <a href="index.html" class="menu-item logout-link" id="adminLogoutBtn">
+                <i class="fas fa-sign-out-alt"></i> Вихід
+            </a>
         </div>
     </aside>
 
-    <main class="calendar-area">
-        <h2>Розклад Редагування</h2>
-        <div id="calendar"></div>
-    </main>
-</section>
+    <main class="dashboard-main">
 
-<!-- Модальне вікно для підтвердження (як у index.html) -->
-<div id="confirmModal" class="modal-overlay">
+        <header class="dashboard-topbar">
+            <h2 id="pageTitle">Огляд статистики</h2>
+            <div class="admin-profile">
+                <span>Адміністратор</span>
+                <div class="avatar-circle"><i class="fas fa-user"></i></div>
+            </div>
+        </header>
+
+        <section id="section-dashboard" class="content-section active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Активних клієнтів</h3>
+                    <div class="value">124</div>
+                    <p class="trend up">+12% цього місяця</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Записів на сьогодні</h3>
+                    <div class="value">18</div>
+                    <p class="trend">Заповненість 85%</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Дохід (Місяць)</h3>
+                    <div class="value">₴ 45,200</div>
+                    <p class="trend up">+5% від плану</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="section-schedule" class="content-section">
+            <div class="schedule-controls">
+                <button id="addEventBtn" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Додати Заняття
+                </button>
+            </div>
+            <div id="calendar"></div>
+        </section>
+
+        <section id="section-clients" class="content-section">
+            <div class="card">
+                <h3>База клієнтів</h3>
+                <p style="color: #888;">Тут буде таблиця з пошуком по клієнтах.</p>
+            </div>
+        </section>
+
+        <section id="section-trainers" class="content-section">
+            <div class="card">
+                <h3>Управління персоналом</h3>
+                <p style="color: #888;">Тут буде список тренерів.</p>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<div id="eventModal" class="modal-overlay">
     <div class="modal-content">
-        <h2 id="confirmModalTitle">Підтвердження</h2>
-        <p id="confirmModalBody">Ви впевнені?</p>
-        <div class="booking-footer">
-            <!-- Використовуємо global closeModal, прив'язаний в ui.js -->
-            <button type="button" class="btn btn-ghost modal-close" onclick="closeModal('confirmModal')">Скасувати</button>
-            <button type="button" class="btn btn-primary" id="confirmActionBtn">Підтвердити</button>
+        <button class="modal-close" onclick="closeModal('eventModal')">×</button>
+        <h2 id="formTitle">Керування Заняттям</h2>
+
+        <form id="eventForm" class="admin-form">
+            <input type="hidden" id="event_id">
+
+            <div class="form-group">
+                <label>Назва заняття</label>
+                <input type="text" id="class_name" required placeholder="Напр. Йога">
+            </div>
+
+            <div class="form-group">
+                <label>Тренер</label>
+                <input type="text" id="instructor_name" required placeholder="Напр. Анна">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Початок</label>
+                    <input type="datetime-local" id="start_at" required>
+                </div>
+                <div class="form-group">
+                    <label>Кінець</label>
+                    <input type="datetime-local" id="end_at" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Макс. людей</label>
+                <input type="number" id="capacity" min="1" value="20" required>
+            </div>
+
+            <div id="participantsBlock" style="display: none; margin-top: 15px; padding-top:15px; border-top:1px solid #333;">
+                <label>Записані клієнти:</label>
+                <div id="bookingList" class="mini-list">
+                    Завантаження...
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-danger" id="deleteEventBtn" style="display: none;">Видалити</button>
+                <button type="submit" class="btn btn-primary" id="saveEventBtn">Зберегти</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="confirmModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 350px; text-align: center;">
+        <h2 id="confirmModalTitle">Ви впевнені?</h2>
+        <p id="confirmModalBody" style="color: #aaa; margin-bottom: 20px;">Цю дію не можна скасувати.</p>
+        <div class="modal-actions" style="justify-content: center;">
+            <button type="button" class="btn btn-ghost" onclick="closeModal('confirmModal')">Ні</button>
+            <button type="button" class="btn btn-primary" id="confirmActionBtn">Так</button>
         </div>
     </div>
 </div>
+
 <div id="toast-container"></div>
 
-
-<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
-
-<!-- Завантажуємо модулі -->
 <script src="js/modules/ui.js" type="module"></script>
-<script src="js/modules/auth.js" type="module"></script>
-<script src="js/modules/calendar.js" type="module"></script>
 <script src="js/modules/admin.js" type="module"></script>
 
 <script type="module">
     import { initAdminPage } from './js/modules/admin.js';
-    import { initModalLogic, setupHamburger, setupSmoothScrolling, showToast } from './js/modules/ui.js';
+    import { initModalLogic, showToast } from './js/modules/ui.js';
 
     document.addEventListener('DOMContentLoaded', () => {
-        // Забезпечуємо роботу UI-логіки
-        initModalLogic();
-        setupHamburger();
-        setupSmoothScrolling();
-        
-        // Ініціалізуємо адмін-панель
+        initModalLogic(); // Це змушує працювати хрестики і клік по фону
+
+        // Перемикання вкладок (Tabs Logic)
+        const tabs = document.querySelectorAll('.menu-item[data-tab]');
+        const sections = document.querySelectorAll('.content-section');
+        const pageTitle = document.getElementById('pageTitle');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                e.preventDefault();
+                // 1. Активний клас для меню
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                // 2. Показати потрібну секцію
+                const targetId = tab.dataset.tab;
+                sections.forEach(sec => sec.classList.remove('active'));
+                document.getElementById(targetId).classList.add('active');
+
+                // 3. Змінити заголовок
+                pageTitle.textContent = tab.textContent.trim();
+
+                // 4. Якщо відкрили календар - треба його перемалювати (FullCalendar баг при display:none)
+                if (targetId === 'section-schedule') {
+                    setTimeout(() => window.dispatchEvent(new Event('resize')), 200);
+                }
+            });
+        });
+
         if (typeof FullCalendar !== 'undefined') {
             initAdminPage();
-        } else {
-            showToast('Критична помилка: FullCalendar не завантажено.', 'error');
         }
     });
 </script>
+
 </body>
 </html>
