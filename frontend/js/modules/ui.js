@@ -1,11 +1,8 @@
 /* ===========================
-   ui.js — UI Components & Helpers
-   ---------------------------
-   Відповідає за: Модалки, Тости, Скрол, Гамбургер.
-   ВАЖЛИВО: Функції модалок (openModal) експортуються,
-   але щоб працювати в HTML onclick, вони мають бути
-   прив'язані до window у main.js.
-   =========================== */
+    ui.js — UI Components & Helpers
+    ---------------------------
+    Відповідає за: Модалки, Тости, Скрол, Гамбургер.
+    =========================== */
 
 // --- Security: Санітизація ---
 export function escapeHtml(str) {
@@ -23,13 +20,19 @@ export function showToast(message, type = 'success') {
     if (!container) return; // Якщо контейнера немає в HTML, виходимо
 
     const el = document.createElement('div');
-    el.className = 'toast ' + (type === 'error' ? 'error' : 'success');
-    el.textContent = message;
+    // Додаємо іконку для кращої візуалізації
+    const icon = type === 'error' ? '<i class="fas fa-times-circle"></i>' : '<i class="fas fa-check-circle"></i>';
+    el.className = 'toast ' + (type === 'error' ? 'error' : type);
+    el.innerHTML = `${icon} <span>${escapeHtml(message)}</span>`;
 
     container.appendChild(el);
 
     // Автоматичне видалення через 3 сек
-    setTimeout(() => el.remove(), 3000);
+    setTimeout(() => {
+        // Додаємо клас для анімації зникнення (якщо ви його додасте в CSS)
+        // el.classList.add('fade-out'); 
+        el.remove();
+    }, 3000);
 }
 
 // --- UI: Modals (Core Logic) ---
@@ -38,7 +41,9 @@ export function showToast(message, type = 'success') {
 export function openModal(id) {
     const modal = document.getElementById(id);
     if (modal) {
-        modal.style.display = 'flex';
+        // 💡 ВИПРАВЛЕНО: Використовуємо клас 'active' для CSS-анімацій
+        modal.classList.add('active'); 
+        document.body.style.overflow = 'hidden'; // Заборона скролу під модалкою
     } else {
         console.warn(`[UI] Modal with ID "${id}" not found.`);
     }
@@ -47,20 +52,32 @@ export function openModal(id) {
 // 2. Закриття конкретного вікна
 export function closeModal(id) {
     const modal = document.getElementById(id);
-    if (modal) modal.style.display = 'none';
+    if (modal) {
+        // 💡 ВИПРАВЛЕНО: Використовуємо клас 'active'
+        modal.classList.remove('active'); 
+        // Перевіряємо, чи немає інших відкритих модалок, перш ніж увімкнути скрол
+        setTimeout(() => {
+             if (document.querySelectorAll('.modal-overlay.active').length === 0) {
+                 document.body.style.overflow = '';
+             }
+        }, 300); // Час має відповідати тривалості CSS-анімації
+    }
 }
 
 // 3. Закриття ВСІХ вікон (корисно при ресетах)
 export function closeAllModals() {
     document.querySelectorAll('.modal-overlay').forEach(modal => {
-        modal.style.display = 'none';
+        modal.classList.remove('active');
     });
+    // Увімкнення скролу
+    document.body.style.overflow = ''; 
 }
 
 // Хелпер: Закриття по кліку на темний фон
 function closeModalOnOutsideClick(event) {
     if (event.target.classList.contains('modal-overlay')) {
-        event.target.style.display = 'none';
+        const modalId = event.target.id;
+        closeModal(modalId);
     }
 }
 
@@ -70,13 +87,24 @@ export function initModalLogic() {
     document.querySelectorAll('.modal-close').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const modal = e.target.closest('.modal-overlay');
-            if (modal) modal.style.display = 'none';
+            if (modal) closeModal(modal.id); // Викликаємо closeModal за ID
         });
     });
 
     // 2. Слухач на клік по фону (Overlay)
     document.querySelectorAll('.modal-overlay').forEach(modal => {
         modal.addEventListener('click', closeModalOnOutsideClick);
+    });
+    
+    // 3. Слухач на Escape для закриття
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            // Закриваємо лише верхню модалку
+            const activeModal = document.querySelector('.modal-overlay.active');
+            if (activeModal) {
+                closeModal(activeModal.id);
+            }
+        }
     });
 }
 
@@ -87,9 +115,13 @@ export function setupHamburger() {
 
     if (hamb && nav) {
         hamb.addEventListener('click', () => {
-            const isVisible = nav.style.display === 'flex';
-            nav.style.display = isVisible ? 'none' : 'flex';
-            // Можна додати анімацію іконки тут, якщо потрібно
+            // 💡 ВИПРАВЛЕНО: Використовуємо клас 'active' для керування меню
+            hamb.classList.toggle('active');
+            nav.classList.toggle('active');
+            
+            // Якщо вам потрібна проста логіка display:
+            // const isVisible = nav.style.display === 'flex';
+            // nav.style.display = isVisible ? 'none' : 'flex';
         });
     }
 }
@@ -107,8 +139,12 @@ export function setupSmoothScrolling() {
 
                 // Закриваємо меню на мобільному після кліку
                 const nav = document.querySelector('.nav-primary');
-                if (window.innerWidth <= 768 && nav) {
-                    nav.style.display = 'none';
+                const hamb = document.querySelector('.hamburger');
+
+                // Припускаємо, що мобільний режим, якщо елементи існують
+                if (nav && nav.classList.contains('active')) {
+                    nav.classList.remove('active');
+                    if (hamb) hamb.classList.remove('active');
                 }
             }
         });
