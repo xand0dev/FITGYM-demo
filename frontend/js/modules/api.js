@@ -1,65 +1,17 @@
 /* ===========================
-    api.js — "Офіціант" (Логіка API)
-    =========================== */
+   api.js — "Офіціант" (Логіка API)
+   =========================== */
 
 export const BASE_URL = 'http://127.0.0.1:8000';
 
-/* =========================================
-    ДОПОМІЖНА ЛОГІКА
-    ========================================= */
-
-/**
- * Отримує токен (рядок) з localStorage. 
- * Якщо у вас JWT, то це буде сам токен.
- */
-export function getToken() {
+/* --- Private Helper --- */
+function _getToken() {
     try {
-        // Припускаємо, що в localStorage зберігається лише сам токен (рядок).
-        // Якщо у вас зберігається об'єкт, вам потрібен `JSON.parse` та доступ до поля.
-        const tokenData = localStorage.getItem('fp_token'); 
-        
-        // Якщо в localStorage зберігається об'єкт, як у вашому прикладі (_getToken), використовуйте:
-        if (tokenData) {
-             const data = JSON.parse(tokenData);
-             // Припускаємо, що токен зберігається у полі 'token' або є самим значенням.
-             return data.token || data; 
-        }
-        return null;
+        return JSON.parse(localStorage.getItem('fp_token'));
     } catch {
         return null;
     }
 }
-
-
-/* --- Private Error Handler --- */
-async function _handleError(response) {
-    let errorMsg = `Помилка ${response.status}: ${response.statusText}`;
-    
-    // Спробуємо прочитати JSON
-    try {
-        const data = await response.json();
-        if (data.detail) {
-            errorMsg = data.detail;
-        } else if (Object.keys(data).length > 0) {
-            // Обробка помилок валідації по полях
-            const allErrors = Object.values(data).flat();
-            if (allErrors.length > 0) errorMsg = allErrors.join(', ');
-        }
-    } catch (e) {
-        // Якщо JSON немає, залишаємо базове повідомлення
-    }
-
-    // Для 401 завжди повертаємо стандартизовану помилку
-    if (response.status === 401) {
-        throw new Error('Не авторизовано. Спробуйте увійти знову.');
-    }
-
-    throw new Error(errorMsg);
-}
-
-/* =========================================
-    ПУБЛІЧНІ ЗАПИТИ (Без Токена)
-    ========================================= */
 
 /**
  * GET запит (публічний)
@@ -67,7 +19,7 @@ async function _handleError(response) {
 export async function fetchPublicData(endpoint) {
     const response = await fetch(`${BASE_URL}${endpoint}`);
     if (!response.ok) {
-        await _handleError(response);
+        throw new Error(`API Error (${endpoint}): ${response.statusText}`);
     }
     return await response.json();
 }
@@ -82,81 +34,103 @@ export async function postApiData(endpoint, body) {
         body: JSON.stringify(body)
     });
 
+    const data = await response.json();
     if (!response.ok) {
-        await _handleError(response);
+        const errorMsg = data.detail || Object.values(data).flat().join(', ') || `Помилка ${response.status}`;
+        throw new Error(errorMsg);
     }
-    return await response.json();
+    return data;
 }
 
 /* =========================================
-    ЗАХИЩЕНІ ЗАПИТИ (З Bearer Токеном)
-    ========================================= */
+   PROTECTED REQUESTS (З Токеном)
+   ========================================= */
 
 /**
- * Головна функція для виконання захищених запитів.
- * @param {string} endpoint - API-маршрут.
- * @param {string} method - Метод HTTP (GET, POST, PUT, DELETE).
- * @param {object|null} body - Тіло запиту.
- * @returns {Promise<any>}
+ * GET запит з токеном
  */
-async function executeAuthRequest(endpoint, method = 'GET', body = null) {
-    const token = getToken();
-    if (!token) throw new Error('Токен автентифікації відсутній.');
+export async function getAuthData(endpoint) {
+    const token = _getToken();
+    if (!token) throw new Error('No token found');
 
-    const config = {
-        method: method,
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+        method: 'GET',
         headers: {
             'Content-Type': 'application/json',
-            // Уніфікований Bearer формат, рекомендований для JWT/OAuth
-            'Authorization': `Bearer ${token}` 
+            'Authorization': `Token ${token}`
         }
-    };
+    });
 
-    if (body) {
-        config.body = JSON.stringify(body);
-    }
-    
-    const response = await fetch(`${BASE_URL}${endpoint}`, config);
+    if (response.status === 401) throw new Error('Unauthorized');
+    if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
 
-    // Успішне видалення (204 No Content)
-    if (method === 'DELETE' && response.status === 204) {
-        return true; 
-    }
-    
-    if (!response.ok) {
-        await _handleError(response);
-    }
-
-    // Для GET/POST/PUT, які повертають тіло
-    if (response.status === 200 || response.status === 201) {
-         try {
-            return await response.json();
-         } catch(e) {
-             // Може трапитися, якщо API не повертає тіло, але має 200/201
-             return true; 
-         }
-    }
-    
-    // Для DELETE, який може повернути 200 (хоча має бути 204)
-    return true; 
-}
-
-
-export async function getAuthData(endpoint) {
-    return executeAuthRequest(endpoint, 'GET');
-}
-
-export async function postAuthData(endpoint, body) {
-    return executeAuthRequest(endpoint, 'POST', body);
+    return await response.json();
 }
 
 /**
- * НОВЕ: Захищений запит для оновлення (наприклад, для адмінки)
+ * POST запит з токеном (Бронювання)
  */
-export async function putAuthData(endpoint, body) {
-    return executeAuthRequest(endpoint, 'PUT', body);
+export async function postAuthData(endpoint, body) {
+    const token = _getToken();
+    if (!token) throw new Error('No token found');
+
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${token}`
+        },
+        body: JSON.stringify(body)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        let errorMsg = 'Помилка виконання запиту';
+        if (data.detail) {
+            errorMsg = data.detail;
+        } else {
+            const allErrors = Object.values(data).flat();
+            if (allErrors.length > 0) errorMsg = allErrors.join(', ');
+        }
+        throw new Error(errorMsg);
+    }
+    return data;
 }
 
+/**
+ * DELETE запит (НОВЕ: Скасування)
+ * Спеціально обробляє 204 No Content
+ */
 export async function deleteAuthData(endpoint) {
-    return executeAuthRequest(endpoint, 'DELETE');
+    const token = _getToken();
+    if (!token) throw new Error('No token found');
+
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${token}`
+        }
+    });
+
+    // 1. Успіх (204 No Content) - виходимо одразу, не парсимо JSON
+    if (response.status === 204) {
+        return true;
+    }
+
+    // 2. Помилка (404 або інші)
+    if (!response.ok) {
+        // Спробуємо прочитати JSON, якщо він є (на випадок кастомної помилки)
+        let errorMsg = `Помилка ${response.status}`;
+        try {
+            const data = await response.json();
+            if (data.detail) errorMsg = data.detail;
+        } catch (e) {
+            // Якщо JSON немає, залишаємо стандартний текст
+        }
+        throw new Error(errorMsg);
+    }
+
+    return true;
 }

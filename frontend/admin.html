@@ -10,45 +10,8 @@
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css" rel="stylesheet">
 
     <link rel="stylesheet" href="css/0-base.css">
-    <link rel="stylesheet" href="css/admin_styles.css">
-</head>
+    <link rel="stylesheet" href="css/admin_styles.css"> </head>
 <body>
-
-    <div id="clientModal" class="modal-overlay">
-    <div class="modal-content">
-        <button class="modal-close" onclick="closeModal('clientModal')">×</button>
-        <h2 id="clientFormTitle">Додати/Редагувати Клієнта</h2>
-
-        <form id="clientForm" class="admin-form">
-            <input type="hidden" id="client_id">
-
-            <div class="form-group">
-                <label>Повне ім'я</label>
-                <input type="text" id="client_name" required placeholder="Ім'я">
-            </div>
-
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="client_email" required placeholder="example@gmail.com">
-            </div>
-
-            <div class="form-group">
-                <label>Телефон</label>
-                <input type="tel" id="client_phone" placeholder="+38 (XXX) XXX XX XX">
-            </div>
-            
-            <div class="form-group">
-                <label>Статус (Напр. Активний/Призупинено)</label>
-                <input type="text" id="client_status" value="Активний">
-            </div>
-
-            <div class="modal-actions">
-                <button type="button" class="btn btn-danger" id="deleteClientBtn" style="display: none;">Видалити</button>
-                <button type="submit" class="btn btn-primary" id="saveClientBtn">Зберегти</button>
-            </div>
-        </form>
-    </div>
-</div>
 
 <div class="dashboard-container">
 
@@ -118,67 +81,15 @@
 
         <section id="section-clients" class="content-section">
             <div class="card">
-                <h3>База клієнтів (124 активних)</h3>
-                <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-                    <input type="text" placeholder="Пошук клієнта..." style="width: 250px; padding: 8px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 4px;">
-                    <button class="btn btn-primary"><i class="fas fa-user-plus"></i> Додати Клієнта</button>
-                </div>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Ім'я</th>
-                            <th>Email</th>
-                            <th>Останній візит</th>
-                            <th>Дії</th>
-                        </tr>
-                    </thead>
-                    <tbody id="clientsTableBody">
-                        <tr>
-                            <td>Олена Коваль</td>
-                            <td>olena@test.com</td>
-                            <td>2025-11-28</td>
-                            <td><button class="action-btn"><i class="fas fa-edit"></i></button></td>
-                        </tr>
-                        <tr>
-                            <td>Ігор Петренко</td>
-                            <td>igor@test.com</td>
-                            <td>2025-12-01</td>
-                            <td><button class="action-btn"><i class="fas fa-edit"></i></button></td>
-                        </tr>
-                    </tbody>
-                </table>
+                <h3>База клієнтів</h3>
+                <p style="color: #888;">Тут буде таблиця з пошуком по клієнтах.</p>
             </div>
         </section>
+
         <section id="section-trainers" class="content-section">
             <div class="card">
-                <h3>Управління персоналом (8 тренерів)</h3>
-                <div style="margin-bottom: 15px; text-align: right;">
-                    <button class="btn btn-primary"><i class="fas fa-user-plus"></i> Додати Тренера</button>
-                </div>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Ім'я</th>
-                            <th>Спеціалізація</th>
-                            <th>Телефон</th>
-                            <th>Дії</th>
-                        </tr>
-                    </thead>
-                    <tbody id="trainersTableBody">
-                        <tr>
-                            <td>Анна Смірна</td>
-                            <td>Йога, Пілатес</td>
-                            <td>+38 099 123 45 67</td>
-                            <td><button class="action-btn"><i class="fas fa-edit"></i></button></td>
-                        </tr>
-                        <tr>
-                            <td>Віктор Громов</td>
-                            <td>Силові, Кроссфіт</td>
-                            <td>+38 067 987 65 43</td>
-                            <td><button class="action-btn"><i class="fas fa-edit"></i></button></td>
-                        </tr>
-                    </tbody>
-                </table>
+                <h3>Управління персоналом</h3>
+                <p style="color: #888;">Тут буде список тренерів.</p>
             </div>
         </section>
 
@@ -192,17 +103,38 @@
 
         <form id="eventForm" class="admin-form">
             <input type="hidden" id="event_id">
-            <div class="form-group"><label>Назва заняття</label><input type="text" id="class_name" required placeholder="Напр. Йога"></div>
-            <div class="form-group"><label>Тренер</label><input type="text" id="instructor_name" required placeholder="Напр. Анна"></div>
-            <div class="form-row">
-                <div class="form-group"><label>Початок</label><input type="datetime-local" id="start_at" required></div>
-                <div class="form-group"><label>Кінець</label><input type="datetime-local" id="end_at" required></div>
+
+            <div class="form-group">
+                <label>Назва заняття</label>
+                <input type="text" id="class_name" required placeholder="Напр. Йога">
             </div>
-            <div class="form-group"><label>Макс. людей</label><input type="number" id="capacity" min="1" value="20" required></div>
+
+            <div class="form-group">
+                <label>Тренер</label>
+                <input type="text" id="instructor_name" required placeholder="Напр. Анна">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Початок</label>
+                    <input type="datetime-local" id="start_at" required>
+                </div>
+                <div class="form-group">
+                    <label>Кінець</label>
+                    <input type="datetime-local" id="end_at" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Макс. людей</label>
+                <input type="number" id="capacity" min="1" value="20" required>
+            </div>
 
             <div id="participantsBlock" style="display: none; margin-top: 15px; padding-top:15px; border-top:1px solid #333;">
                 <label>Записані клієнти:</label>
-                <div id="bookingList" class="mini-list">Завантаження...</div>
+                <div id="bookingList" class="mini-list">
+                    Завантаження...
+                </div>
             </div>
 
             <div class="modal-actions">
@@ -227,32 +159,17 @@
 <div id="toast-container"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
-
 <script src="js/modules/ui.js" type="module"></script>
 <script src="js/modules/admin.js" type="module"></script>
 
 <script type="module">
-    // 1. Імпортуємо всі необхідні функції з модулів
     import { initAdminPage } from './js/modules/admin.js';
-    import { initModalLogic, openModal, closeModal, closeAllModals, showToast } from './js/modules/ui.js';
+    import { initModalLogic, showToast } from './js/modules/ui.js';
 
-    /* =========================================
-        ГЛОБАЛЬНЕ ПРИВ'ЯЗУВАННЯ (GLUE LAYER)
-        -----------------------------------------
-        Робить функції open/closeModal доступними для HTML-атрибутів onclick=""
-        Це вирішує проблему, чому кнопки "Хрестик" не працювали.
-        ========================================= */
-    window.openModal = openModal;
-    window.closeModal = closeModal;
-    window.closeAllModals = closeAllModals;
-    window.showToast = showToast; // Опціонально, але корисно
-
-    // 2. Ініціалізація після завантаження DOM
     document.addEventListener('DOMContentLoaded', () => {
-        // Ініціалізація слухачів для модальних вікон (кліки по фону, хрестики)
-        initModalLogic(); 
+        initModalLogic(); // Це змушує працювати хрестики і клік по фону
 
-        // --- Логіка перемикання вкладок ---
+        // Перемикання вкладок (Tabs Logic)
         const tabs = document.querySelectorAll('.menu-item[data-tab]');
         const sections = document.querySelectorAll('.content-section');
         const pageTitle = document.getElementById('pageTitle');
@@ -272,20 +189,18 @@
                 // 3. Змінити заголовок
                 pageTitle.textContent = tab.textContent.trim();
 
-                // 4. FullCalendar redraw bugfix
+                // 4. Якщо відкрили календар - треба його перемалювати (FullCalendar баг при display:none)
                 if (targetId === 'section-schedule') {
                     setTimeout(() => window.dispatchEvent(new Event('resize')), 200);
                 }
             });
         });
 
-        // 3. Запуск логіки адмін-панелі (Календар, форми)
         if (typeof FullCalendar !== 'undefined') {
             initAdminPage();
         }
     });
 </script>
-
 
 </body>
 </html>
