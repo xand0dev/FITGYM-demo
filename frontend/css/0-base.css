@@ -1,6 +1,83 @@
 /* ========================================================== */
 /* 0-base.css: Змінні (Variables), Скидання (Reset), Основа */
 /* ========================================================== */
+/* У загальному CSS (0-base.css) */
+
+/* --- СТИЛІ ДЛЯ ГАМБУРГЕРА --- */
+.hamburger {
+    /* Базові стилі контейнера */
+    width: 30px;
+    height: 30px;
+    position: relative;
+    cursor: pointer;
+    display: none; /* За замовчуванням прихований */
+    z-index: 100; /* Поверх шапки */
+}
+
+/* Середня лінія */
+.hamburger span {
+    display: block;
+    position: absolute;
+    height: 3px;
+    width: 100%;
+    background: #fff; /* Білий колір */
+    border-radius: 9px;
+    opacity: 1;
+    left: 0;
+    transform: rotate(0deg);
+    transition: .25s ease-in-out;
+}
+
+/* Розташування ліній */
+.hamburger span:nth-child(1) {
+    top: 5px;
+}
+
+.hamburger span:nth-child(2) {
+    top: 13px;
+}
+
+.hamburger span:nth-child(3) {
+    top: 21px;
+}
+
+/* --- АНІМАЦІЯ ХРЕСТИКА (.active) --- */
+.hamburger.active span:nth-child(1) {
+    top: 13px;
+    transform: rotate(135deg);
+}
+
+.hamburger.active span:nth-child(2) {
+    opacity: 0; /* Приховуємо середню лінію */
+    left: -60px;
+}
+
+.hamburger.active span:nth-child(3) {
+    top: 13px;
+    transform: rotate(-135deg);
+}
+
+/* --- ВІДОБРАЖЕННЯ НА МОБІЛЬНОМУ (Медіа-запит) --- */
+@media (max-width: 992px) {
+    /* 1. Показуємо контейнер гамбургера */
+    .hamburger {
+        display: block; 
+    }
+    
+    /* 2. Адаптація контейнера навігації */
+    .nav-primary {
+        /* ... (ваш існуючий код) ... */
+        transition: transform 0.3s ease-out; /* Плавний виїзд */
+        transform: translateY(-100vh); /* Ховаємо за межі екрана */
+    }
+    
+    .nav-primary.active {
+        /* display: flex; <--- ЗАМІНЮЄМО НА: */
+        transform: translateY(0); /* Висуваємо на екран */
+        min-height: calc(100vh - var(--header-height, 70px)); /* Займаємо решту екрана */
+        position: fixed; /* Фіксуємо, щоб не скролилось з контентом */
+    }
+}
 
 /* --- ROOT Variables --- */
 :root {
