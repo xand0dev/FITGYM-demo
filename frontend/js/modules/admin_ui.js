@@ -1,5 +1,6 @@
 /* ===========================
     admin_ui.js — UI Components & Helpers for Admin Panel
+    (ФІНАЛЬНА ВЕРСІЯ З ЛОГІКОЮ МОБІЛЬНОГО МЕНЮ)
     =========================== */
 
 // --- Security: Санітизація ---
@@ -12,7 +13,7 @@ export function escapeHtml(str) {
         .replace(/'/g, '&#39;');
 }
 
-// --- UI: Toast Notifications (Спливаючі повідомлення) ---
+// --- UI: Toast Notifications ---
 export function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     if (!container) return;
@@ -23,8 +24,6 @@ export function showToast(message, type = 'success') {
     el.innerHTML = `${icon} <span>${escapeHtml(message)}</span>`;
 
     container.appendChild(el);
-
-    // Автоматичне видалення через 3 сек
     setTimeout(() => el.remove(), 3000);
 }
 
@@ -45,9 +44,7 @@ export function closeModal(id) {
     if (modal) {
         modal.classList.remove('active'); 
 
-        // 💡 ВИПРАВЛЕННЯ: Відновлюємо скрол з таймаутом (300 мс = тривалість CSS-анімації)
         setTimeout(() => {
-             // Перевіряємо, чи немає інших відкритих модалок
              if (document.querySelectorAll('.modal-overlay.active').length === 0) {
                  document.body.style.overflow = ''; 
              }
@@ -65,7 +62,6 @@ export function closeAllModals() {
 
 // --- INIT: Global UI Listeners ---
 export function initModalLogic() {
-    // 1. Слухач на кнопки "Хрестик" (class="modal-close")
     document.querySelectorAll('.modal-close').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const modal = e.target.closest('.modal-overlay');
@@ -73,7 +69,6 @@ export function initModalLogic() {
         });
     });
 
-    // 2. Слухач на клік по фону (Overlay)
     document.querySelectorAll('.modal-overlay').forEach(modal => {
         modal.addEventListener('click', (event) => {
             if (event.target.classList.contains('modal-overlay')) {
@@ -82,7 +77,6 @@ export function initModalLogic() {
         });
     });
     
-    // 3. Слухач на Escape для закриття
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             const activeModal = document.querySelector('.modal-overlay.active');
@@ -94,15 +88,55 @@ export function initModalLogic() {
 }
 
 
-// --- АДМІН-СПЕЦИФІЧНА ЛОГІКА ---
+// --- АДМІН-СПЕЦИФІЧНА ЛОГІКА (МОБІЛЬНЕ МЕНЮ) ---
+
+export function setupMobileSidebarToggle() {
+    const toggleBtn = document.getElementById('sidebarToggle');
+    const sidebar = document.querySelector('.dashboard-sidebar');
+    const container = document.querySelector('.dashboard-container');
+    const menuItems = document.querySelectorAll('.dashboard-sidebar .menu-item'); 
+
+    if (toggleBtn && sidebar && container) {
+        
+        const toggleSidebar = () => {
+            const isActive = sidebar.classList.toggle('active');
+            container.classList.toggle('sidebar-open');
+            
+            // Блокуємо скрол лише на мобільному
+            if (window.innerWidth <= 992) {
+                document.body.style.overflow = isActive ? 'hidden' : ''; 
+            } else {
+                document.body.style.overflow = ''; // Скидаємо блокування, якщо користувач змінив розмір
+            }
+        };
+
+        toggleBtn.addEventListener('click', toggleSidebar);
+        
+        // 💡 Закриття по кліку на пункт меню (на мобільному)
+        menuItems.forEach(item => {
+            item.addEventListener('click', () => {
+                if (window.innerWidth <= 992) {
+                    toggleSidebar();
+                }
+            });
+        });
+
+        // 💡 Закриття по кліку на оверлей (темну область)
+        container.addEventListener('click', (e) => {
+            // Перевіряємо, чи клік був по контейнеру, що позначає клік по оверлею
+            if (container.classList.contains('sidebar-open') && e.target === container) {
+                 toggleSidebar();
+            }
+        });
+    }
+}
+
 
 /**
  * Ініціалізує логіку перемикання вкладок (Sidebar)
- * і викликає initAdminPage з admin.js.
- * @param {function} adminInitFunction - initAdminPage з admin.js
  */
 export function initAdminTabs(adminInitFunction) {
-    initModalLogic(); // Базова логіка модалок
+    initModalLogic();
 
     const tabs = document.querySelectorAll('.menu-item[data-tab]');
     const sections = document.querySelectorAll('.content-section');
@@ -126,7 +160,7 @@ export function initAdminTabs(adminInitFunction) {
 
             // 4. FullCalendar redraw bugfix
             if (targetId === 'section-schedule') {
-                if (typeof FullCalendar !== 'undefined' && adminInitFunction) {
+                if (typeof FullCalendar !== 'undefined') {
                      setTimeout(() => window.dispatchEvent(new Event('resize')), 200);
                 }
             }

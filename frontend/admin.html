@@ -44,6 +44,10 @@
     <main class="dashboard-main">
 
         <header class="dashboard-topbar">
+            <button class="mobile-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+                <i class="fas fa-bars"></i>
+            </button>
+
             <h2 id="pageTitle">Огляд статистики</h2>
             <div class="admin-profile">
                 <span>Адміністратор</span>
@@ -203,14 +207,14 @@
 <script type="module">
     import { initAdminPage } from './js/modules/admin.js';
     
-    // 💡 ІМПОРТУЄМО ТА ВИКОРИСТОВУЄМО ФУНКЦІЇ З НОВОГО UI-МОДУЛЯ
     import { 
         initModalLogic, 
         openModal, 
         closeModal, 
         closeAllModals, 
         showToast,
-        initAdminTabs
+        initAdminTabs,
+        setupMobileSidebarToggle // 💡 НОВА ФУНКЦІЯ
     } from './js/modules/admin_ui.js';
 
     /* =========================================
@@ -223,8 +227,11 @@
 
 
     document.addEventListener('DOMContentLoaded', () => { 
-        // 💡 Викликаємо об'єднану логіку: модалки, вкладки та initAdminPage
+        // 1. Ініціалізуємо модалки та вкладки
         initAdminTabs(initAdminPage); 
+        
+        // 2. Ініціалізуємо логіку мобільного меню
+        setupMobileSidebarToggle();
     });
 </script>
 

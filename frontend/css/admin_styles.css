@@ -1,5 +1,6 @@
 /* ===========================
     ADMIN DASHBOARD STYLES
+    (ФІНАЛЬНА ВЕРСІЯ З МАКСИМАЛЬНОЮ АДАПТАЦІЄЮ)
     =========================== */
 
 /* --- LAYOUT --- */
@@ -24,8 +25,8 @@ body {
     height: 100vh;
     left: 0;
     top: 0;
-    z-index: 100;
-    transition: width 0.3s ease;
+    z-index: 1000;
+    transition: transform 0.3s ease;
 }
 
 .sidebar-logo {
@@ -92,6 +93,9 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 0 40px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
 }
 
 .dashboard-topbar h2 {
@@ -202,16 +206,14 @@ body {
     align-items: center;
     z-index: 1010; 
     background: rgba(0, 0, 0, 0.85);
-    
-    /* 💡 КРИТИЧНО для JS керування */
     opacity: 0;
-    pointer-events: none; /* За замовчуванням не перехоплює кліки */
+    pointer-events: none;
     transition: opacity 0.3s ease;
 }
 
 .modal-overlay.active {
     opacity: 1;
-    pointer-events: auto; /* Перехоплює кліки при відкритті */
+    pointer-events: auto;
 }
 
 .modal-content {
@@ -275,20 +277,91 @@ body {
 .data-table tr:hover { background-color: #222; cursor: pointer; }
 .data-table .action-btn { background: none; border: none; color: var(--accent, #3498db); cursor: pointer; margin-right: 10px; }
 
-/* --- АДАПТИВНІСТЬ --- */
+
+/* --- НОВА КНОПКА (Гамбургер) --- */
+.mobile-toggle {
+    display: none; /* Приховано на десктопі */
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.5rem;
+    cursor: pointer;
+    z-index: 100;
+}
+
+
+/* ===========================================
+    АДАПТИВНІСТЬ (RESPONSIVE)
+    =========================================== */
+
 @media (max-width: 992px) {
-    .dashboard-sidebar { width: 70px; }
-    .dashboard-main { margin-left: 70px; }
-    .sidebar-logo { justify-content: center; padding: 0; font-size: 1.2rem; }
-    .sidebar-logo span { display: none; }
-    .menu-item { padding: 15px 0; justify-content: center; }
-    .menu-item span { display: none; }
-    .menu-item i { margin: 0; }
-    .sidebar-footer { padding: 10px 0; }
-    .sidebar-footer .logout-link { justify-content: center; }
-    .sidebar-footer .logout-link span { display: none; }
-    .dashboard-topbar { padding: 0 15px; }
-    .content-section { padding: 20px 15px; }
-    .stats-grid { grid-template-columns: 1fr; }
-    #calendar { padding: 10px; }
+    
+    /* --- 1. SIDEBAR (Повне приховування та виїзд) --- */
+    .dashboard-sidebar {
+        transform: translateX(-100%); /* Ховаємо повністю */
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+    .dashboard-sidebar.active {
+        transform: translateX(0); /* Виїжджає при активації */
+    }
+    
+    .dashboard-main {
+        margin-left: 0; /* Знімаємо відступ */
+    }
+    
+    /* Оверлей для затемнення контенту при відкритті сайдбара */
+    .dashboard-container:after {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+    .dashboard-container.sidebar-open:after {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    
+    /* --- 2. TOPBAR (Показуємо Гамбургер) --- */
+    .dashboard-topbar {
+        padding: 0 15px;
+        justify-content: space-between; 
+    }
+    .mobile-toggle {
+        display: block; /* Показуємо кнопку */
+        order: -1; /* Ставимо на початок */
+    }
+    .admin-profile {
+        font-size: 0; /* Ховаємо текст "Адміністратор" */
+    }
+    .admin-profile span {
+        display: none;
+    }
+
+    /* --- 3. КОНТЕНТ --- */
+    .content-section {
+        padding: 20px 15px;
+    }
+
+    /* Адаптація сіток */
+    .stats-grid {
+        grid-template-columns: 1fr; 
+    }
+    
+    /* Адаптація таблиць (Горизонтальний скрол) */
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin-top: 15px;
+    }
+    .data-table {
+        min-width: 600px; /* Мінімальна ширина для скролу */
+    }
 }
