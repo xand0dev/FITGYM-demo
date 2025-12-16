@@ -4,7 +4,8 @@
 
 import { BASE_URL } from './api.js';
 import { showToast } from './admin_ui.js';
-import { getToken } from './auth.js';
+// ДОДАНО: Імпорт getUserIsStaff для перевірки прав
+import { getToken, getUserIsStaff } from './auth.js';
 
 let currentEventId = null;
 let currentCalendar = null;
@@ -12,7 +13,6 @@ let currentCalendar = null;
 // --- API HELPER ---
 async function sendDataRequest(method, endpoint, data, successMessage) {
     const token = getToken();
-    // Видаляємо подвійні слеші
     const url = `${BASE_URL.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
 
     try {
@@ -47,11 +47,11 @@ async function sendDataRequest(method, endpoint, data, successMessage) {
     }
 }
 
-// --- ЗАВАНТАЖЕННЯ СПИСКІВ (UPDATED URLs) ---
+// --- ЗАВАНТАЖЕННЯ СПИСКІВ ---
 async function loadDropdownOptions() {
     const token = getToken();
 
-    // 1. Завантажуємо Тренерів (URL: /api/instructors/)
+    // 1. Тренери
     try {
         const resTrainers = await fetch(`${BASE_URL}/api/instructors/`, {
             headers: { 'Authorization': `Token ${token}` }
@@ -73,9 +73,8 @@ async function loadDropdownOptions() {
         console.error("Failed to load instructors", e);
     }
 
-    // 2. Завантажуємо Типи занять (URL: /api/classes/) <--- ОНОВЛЕНО
+    // 2. Типи занять (Classes)
     try {
-        // Тепер стукаємо в правильний ендпоінт classes
         const resClasses = await fetch(`${BASE_URL}/api/classes/`, {
             headers: { 'Authorization': `Token ${token}` }
         });
@@ -87,13 +86,10 @@ async function loadDropdownOptions() {
             if (select) {
                 select.innerHTML = '<option value="" disabled selected>Оберіть тип заняття</option>';
                 classes.forEach(c => {
-                    // Шукаємо поле з назвою (name, title або class_name)
                     const title = c.name || c.title || c.class_name || `Заняття #${c.id}`;
                     select.innerHTML += `<option value="${c.id}">${title}</option>`;
                 });
             }
-        } else {
-            console.warn('Не вдалося завантажити список classes (Status != 200)');
         }
     } catch (e) {
         console.error("Failed to load class types", e);
@@ -193,7 +189,6 @@ async function handleEventSubmit(e) {
         return;
     }
 
-    // URL: api/admin/schedule/
     if (currentEventId) {
         await sendDataRequest('PUT', `api/admin/schedule/${currentEventId}/`, payload, 'Заняття оновлено!');
     } else {
@@ -212,9 +207,28 @@ async function handleDeleteEvent() {
 // --- ІНІЦІАЛІЗАЦІЯ ---
 
 export function initAdminPage() {
+    // --- SECURITY: ПЕРЕВІРКА НА АДМІНА ---
+    // Якщо користувач не адмін або не залогінений -> показуємо 404
+    const isStaff = getUserIsStaff();
+    const token = getToken();
+
+    if (!token || !isStaff) {
+        document.title = '404 Not Found';
+        document.body.innerHTML = `
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#0a0a0a; color:#f5f5f5; font-family:'Inter', sans-serif;">
+                <h1 style="font-size:6rem; margin:0; color: #333;">404</h1>
+                <p style="font-size:1.5rem; color:#888;">Сторінку не знайдено</p>
+                <a href="index.html" style="margin-top:20px; color:#f36100; text-decoration:none; border-bottom:1px solid #f36100;">На головну</a>
+            </div>
+        `;
+        // Зупиняємо виконання скрипта, щоб адмінка не вантажилась
+        return;
+    }
+    // --------------------------------------
+
     console.log('Admin Page Initialized');
 
-    // 1. Завантажуємо списки (тепер з /api/classes/)
+    // 1. Завантажуємо списки
     loadDropdownOptions();
 
     // 2. Ініціалізація календаря
