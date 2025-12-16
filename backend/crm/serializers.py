@@ -17,6 +17,16 @@ class WorkoutSerializer(serializers.ModelSerializer):
 # СЕРІАЛІЗАТОРИ ДЛЯ ФРОНТЕНДУ (ПУБЛІЧНІ)
 # ---
 
+# Серіалізатор для типів занять (Class)
+
+class ClassSerializer(serializers.ModelSerializer):
+    """
+    Використовується для списків (Dropdown) в адмінці та на сайті.
+    """
+    class Meta:
+        model = Class
+        fields = ['id', 'name', 'description']
+
 # Серіалізатор для Тренерів
 class InstructorSerializer(serializers.ModelSerializer):
     # 'source' дозволяє взяти дані з іншої моделі (user.get_full_name)

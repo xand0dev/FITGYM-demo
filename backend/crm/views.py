@@ -6,8 +6,7 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
 
-# Імпорт нашого кастомного пермішена
-from .permissions import IsAdminUser  # <-- НОВЕ
+from .permissions import IsAdminUser
 
 from .models import (
     Workout,
@@ -16,7 +15,8 @@ from .models import (
     MembershipType,
     Member,
     Booking,
-    MembershipHistory
+    MembershipHistory,
+    Class  # <-- Додано імпорт моделі Class
 )
 from .serializers import (
     WorkoutSerializer,
@@ -27,7 +27,8 @@ from .serializers import (
     MemberSerializer,
     BookingSerializer,
     BookingCreateSerializer,
-    AdminClassSessionSerializer  # <-- НОВЕ
+    AdminClassSessionSerializer,
+    ClassSerializer  # <-- Додано імпорт серіалізатора
 )
 
 
@@ -37,6 +38,13 @@ class WorkoutViewSet(viewsets.ReadOnlyModelViewSet):
     """(GET) /api/workouts/"""
     queryset = Workout.objects.all()
     serializer_class = WorkoutSerializer
+    permission_classes = [permissions.AllowAny]
+
+
+class ClassViewSet(viewsets.ReadOnlyModelViewSet):  # <-- НОВИЙ VIEWSET
+    """(GET) /api/classes/ - Список типів занять (Yoga, Boxing...)"""
+    queryset = Class.objects.all()
+    serializer_class = ClassSerializer
     permission_classes = [permissions.AllowAny]
 
 
@@ -55,7 +63,7 @@ class MembershipTypeViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class ClassSessionViewSet(viewsets.ReadOnlyModelViewSet):
-    """(GET) /api/schedule/ - Публічний розклад (тільки читання)"""
+    """(GET) /api/schedule/"""
     queryset = ClassSession.objects.all().order_by('start_at')
     serializer_class = ClassSessionSerializer
     permission_classes = [permissions.AllowAny]
@@ -142,15 +150,13 @@ class BookingCreateView(generics.CreateAPIView):
         serializer.save(member=member)
 
 
-# ---
-# ЕТАП 4: АДМІНСЬКІ VIEWS
-# ---
+# --- АДМІНСЬКІ VIEWS ---
 
 class AdminClassSessionViewSet(viewsets.ModelViewSet):
     """
-    CRUD для розкладу. Доступ тільки для адмінів (is_staff=True).
+    CRUD для розкладу. Доступ тільки для адмінів.
     URL: /api/admin/schedule/
     """
     queryset = ClassSession.objects.all().order_by('-start_at')
     serializer_class = AdminClassSessionSerializer
-    permission_classes = [IsAdminUser]  # Захист нашим охоронцем
+    permission_classes = [IsAdminUser]
