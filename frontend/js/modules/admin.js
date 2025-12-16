@@ -10,12 +10,9 @@ let currentEventId = null;
 let currentCalendar = null;
 
 // --- API HELPER ---
-/**
- * Універсальна функція для запитів (POST, PUT, DELETE)
- */
 async function sendDataRequest(method, endpoint, data, successMessage) {
     const token = getToken();
-    // Видаляємо подвійні слеші та пробіли
+    // Видаляємо подвійні слеші
     const url = `${BASE_URL.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
 
     try {
@@ -23,7 +20,6 @@ async function sendDataRequest(method, endpoint, data, successMessage) {
             method: method,
             headers: {
                 'Content-Type': 'application/json',
-                // Використовуємо Token, як підтверджено у Postman
                 'Authorization': `Token ${token}`
             },
             body: method !== 'DELETE' ? JSON.stringify(data) : null
@@ -32,7 +28,6 @@ async function sendDataRequest(method, endpoint, data, successMessage) {
         if (response.ok || response.status === 201 || response.status === 204) {
             showToast(successMessage || `Успішно!`, 'success');
 
-            // Оновлюємо календар
             if (currentCalendar && endpoint.includes('schedule')) {
                 currentCalendar.refetchEvents();
             }
@@ -42,7 +37,6 @@ async function sendDataRequest(method, endpoint, data, successMessage) {
             return response.status === 204 ? true : await response.json();
         } else {
             const errorData = await response.json();
-            // Спроба отримати читабельну помилку
             const errorMsg = errorData.detail || errorData.message || JSON.stringify(errorData) || 'Помилка API';
             showToast(errorMsg, 'error');
             console.error('API Error:', errorData);
@@ -52,6 +46,60 @@ async function sendDataRequest(method, endpoint, data, successMessage) {
         showToast('Помилка мережі або сервера', 'error');
     }
 }
+
+// --- ЗАВАНТАЖЕННЯ СПИСКІВ (UPDATED URLs) ---
+async function loadDropdownOptions() {
+    const token = getToken();
+
+    // 1. Завантажуємо Тренерів (URL: /api/instructors/)
+    try {
+        const resTrainers = await fetch(`${BASE_URL}/api/instructors/`, {
+            headers: { 'Authorization': `Token ${token}` }
+        });
+
+        if (resTrainers.ok) {
+            const trainers = await resTrainers.json();
+            const select = document.getElementById('instructor_select');
+
+            if (select) {
+                select.innerHTML = '<option value="" disabled selected>Оберіть тренера</option>';
+                trainers.forEach(t => {
+                    const name = t.full_name || t.name || t.first_name + ' ' + t.last_name || `Тренер #${t.id}`;
+                    select.innerHTML += `<option value="${t.id}">${name}</option>`;
+                });
+            }
+        }
+    } catch (e) {
+        console.error("Failed to load instructors", e);
+    }
+
+    // 2. Завантажуємо Типи занять (URL: /api/classes/) <--- ОНОВЛЕНО
+    try {
+        // Тепер стукаємо в правильний ендпоінт classes
+        const resClasses = await fetch(`${BASE_URL}/api/classes/`, {
+            headers: { 'Authorization': `Token ${token}` }
+        });
+
+        if (resClasses.ok) {
+            const classes = await resClasses.json();
+            const select = document.getElementById('class_select');
+
+            if (select) {
+                select.innerHTML = '<option value="" disabled selected>Оберіть тип заняття</option>';
+                classes.forEach(c => {
+                    // Шукаємо поле з назвою (name, title або class_name)
+                    const title = c.name || c.title || c.class_name || `Заняття #${c.id}`;
+                    select.innerHTML += `<option value="${c.id}">${title}</option>`;
+                });
+            }
+        } else {
+            console.warn('Не вдалося завантажити список classes (Status != 200)');
+        }
+    } catch (e) {
+        console.error("Failed to load class types", e);
+    }
+}
+
 
 // --- ЛОГІКА РОЗКЛАДУ ---
 
@@ -63,12 +111,14 @@ function formatDateTimeLocal(date) {
     return localTime.toISOString().slice(0, 16);
 }
 
-// Відкриття модалки
 function showEventModal(eventData = null) {
     const form = document.getElementById('eventForm');
     const deleteBtn = document.getElementById('deleteEventBtn');
     const partsBlock = document.getElementById('participantsBlock');
     const title = document.getElementById('formTitle');
+
+    const classSelect = document.getElementById('class_select');
+    const instructorSelect = document.getElementById('instructor_select');
 
     form.reset();
 
@@ -85,10 +135,9 @@ function showEventModal(eventData = null) {
 
         const props = eventData.extendedProps || {};
 
-        // Тут ми заповнюємо інпути.
-        // ВАЖЛИВО: Зараз тут будуть ID (числа), бо ми ще не зробили select
-        document.getElementById('class_name').value = props.class_type || '';
-        document.getElementById('instructor_name').value = props.instructor || '';
+        if (classSelect) classSelect.value = props.class_type || '';
+        if (instructorSelect) instructorSelect.value = props.instructor || '';
+
         document.getElementById('capacity').value = props.capacity || 20;
 
         start_time = eventData.start;
@@ -101,6 +150,9 @@ function showEventModal(eventData = null) {
         title.textContent = 'Нове Заняття';
         deleteBtn.style.display = 'none';
         partsBlock.style.display = 'none';
+
+        if (classSelect) classSelect.value = "";
+        if (instructorSelect) instructorSelect.value = "";
 
         if (eventData && eventData.start) {
             start_time = eventData.start;
@@ -121,25 +173,23 @@ function showEventModal(eventData = null) {
     if(window.openModal) window.openModal('eventModal');
 }
 
-// Обробка відправки форми
 async function handleEventSubmit(e) {
     e.preventDefault();
     const form = e.target;
 
-    // ВАЖЛИВО: API очікує ID (числа) для class_type та instructor.
-    // Ми використовуємо parseInt, щоб перетворити введені "1" у число 1.
-    const payload = {
-        class_type: parseInt(form.class_name.value),
-        instructor: parseInt(form.instructor_name.value),
+    const classSelect = document.getElementById('class_select');
+    const instructorSelect = document.getElementById('instructor_select');
 
+    const payload = {
+        class_type: parseInt(classSelect.value),
+        instructor: parseInt(instructorSelect.value),
         capacity: parseInt(form.capacity.value),
         start_at: new Date(form.start_at.value).toISOString(),
         end_at: new Date(form.end_at.value).toISOString(),
     };
 
-    // Перевірка на NaN (якщо користувач ввів текст замість числа)
     if (isNaN(payload.class_type) || isNaN(payload.instructor)) {
-        showToast('Помилка: Введіть числові ID для типу заняття та тренера!', 'error');
+        showToast('Будь ласка, оберіть тип заняття та тренера зі списку!', 'error');
         return;
     }
 
@@ -153,9 +203,7 @@ async function handleEventSubmit(e) {
 
 async function handleDeleteEvent() {
     if (!currentEventId) return;
-
     await sendDataRequest('DELETE', `api/admin/schedule/${currentEventId}/`, null, 'Заняття видалено');
-
     if(window.closeModal) window.closeModal('confirmModal');
     if(window.closeModal) window.closeModal('eventModal');
 }
@@ -166,6 +214,10 @@ async function handleDeleteEvent() {
 export function initAdminPage() {
     console.log('Admin Page Initialized');
 
+    // 1. Завантажуємо списки (тепер з /api/classes/)
+    loadDropdownOptions();
+
+    // 2. Ініціалізація календаря
     const calendarEl = document.getElementById('calendar');
 
     if (calendarEl) {
@@ -182,7 +234,6 @@ export function initAdminPage() {
             editable: true,
             selectable: true,
 
-            // Завантаження подій через функцію (для передачі заголовка Token)
             events: async function(info, successCallback, failureCallback) {
                 const token = getToken();
                 const url = `${BASE_URL.replace(/\/$/, '')}/api/admin/schedule/?start=${info.startStr}&end=${info.endStr}`;
@@ -193,24 +244,30 @@ export function initAdminPage() {
                     });
 
                     if (!res.ok) throw new Error('Failed to fetch events');
-
                     const events = await res.json();
 
-                    // Трансформація даних з бекенду у формат FullCalendar
-                    const mappedEvents = events.map(apiEvent => ({
-                        id: apiEvent.id,
-                        // Відображаємо ID, бо імен поки може не бути у відповіді
-                        title: `Class #${apiEvent.class_type} (Coach #${apiEvent.instructor})`,
-                        start: apiEvent.start_at,
-                        end: apiEvent.end_at,
-                        extendedProps: {
-                            class_type: apiEvent.class_type,
-                            instructor: apiEvent.instructor,
-                            capacity: apiEvent.capacity
-                        },
-                        backgroundColor: 'var(--primary)',
-                        borderColor: 'var(--primary)'
-                    }));
+                    const mappedEvents = events.map(apiEvent => {
+                        let title = `Заняття #${apiEvent.class_type}`;
+
+                        if (apiEvent.class_name) title = apiEvent.class_name;
+                        if (apiEvent.instructor_name) title += ` (${apiEvent.instructor_name})`;
+
+                        return {
+                            id: apiEvent.id,
+                            title: title,
+                            start: apiEvent.start_at,
+                            end: apiEvent.end_at,
+                            extendedProps: {
+                                class_type: apiEvent.class_type,
+                                instructor: apiEvent.instructor,
+                                capacity: apiEvent.capacity,
+                                class_name: apiEvent.class_name,
+                                instructor_name: apiEvent.instructor_name
+                            },
+                            backgroundColor: 'var(--primary)',
+                            borderColor: 'var(--primary)'
+                        };
+                    });
 
                     successCallback(mappedEvents);
                 } catch (err) {
@@ -262,7 +319,6 @@ export function initAdminPage() {
         });
     }
 
-    // Заглушки для клієнтів/тренерів
     const clientBtn = document.querySelector('#section-clients .btn-primary');
     if (clientBtn) clientBtn.addEventListener('click', () => window.openModal('clientModal'));
 

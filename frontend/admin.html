@@ -129,8 +129,21 @@
 
         <form id="eventForm" class="admin-form">
             <input type="hidden" id="event_id">
-            <div class="form-group"><label>Назва заняття</label><input type="text" id="class_name" required placeholder="Напр. Йога"></div>
-            <div class="form-group"><label>Тренер</label><input type="text" id="instructor_name" required placeholder="Напр. Анна"></div>
+
+            <div class="form-group">
+                <label>Тип заняття</label>
+                <select id="class_select" required>
+                    <option value="" disabled selected>Завантаження списку...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Тренер</label>
+                <select id="instructor_select" required>
+                    <option value="" disabled selected>Завантаження списку...</option>
+                </select>
+            </div>
+
             <div class="form-row">
                 <div class="form-group"><label>Початок</label><input type="datetime-local" id="start_at" required></div>
                 <div class="form-group"><label>Кінець</label><input type="datetime-local" id="end_at" required></div>
