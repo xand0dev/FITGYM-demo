@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FITGYM — Ваш шлях до сили | Сучасний фітнес-клуб</title>
-    
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
@@ -18,14 +18,18 @@
     <link rel="stylesheet" href="css/2-components.css">
     <link rel="stylesheet" href="css/3-pages.css">
     <link rel="stylesheet" href="css/4-utilities.css">
-    </head>
+</head>
 <body>
-    
+
 
 <header class="site-header">
     <div class="container header-inner">
         <div class="logo">FIT<span>GYM</span></div>
         <nav class="nav-primary" id="mainNav">
+            <a href="admin.html" class="auth-link" id="adminLink" style="display: none; color: var(--accent);">
+                <i class="fas fa-cogs"></i> Адмін
+            </a>
+
             <a href="/profile.html" class="auth-link" id="profileLink" style="display: none;">Особистий Кабінет</a>
 
             <a href="#advantages">Переваги</a>
@@ -35,7 +39,7 @@
             <a href="#reviews">Відгуки</a>
             <a href="#contacts">Контакти</a>
         </nav>
-        
+
         <div id="authArea">
             <div id="guestArea">
                 <button class="btn btn-ghost" onclick="openModal('loginModal')">ВХІД</button>
@@ -87,7 +91,7 @@
             <div class="card-text">Групові заняття та індивідуальні тренування на будь-який час.</div>
         </div>
     </div>
-</section> 
+</section>
 
 <section id="schedule" class="section container" data-aos="fade-up">
     <h2>Актуальний розклад занять</h2>
@@ -101,28 +105,28 @@
         <div class="imt-table-container">
             <table class="imt-table">
                 <thead>
-                    <tr>
-                        <th>ІМТ</th>
-                        <th>ВАГОВИЙ СТАТУС</th>
-                    </tr>
+                <tr>
+                    <th>ІМТ</th>
+                    <th>ВАГОВИЙ СТАТУС</th>
+                </tr>
                 </thead>
                 <tbody>
-                    <tr data-status="underweight">
-                        <td>Нижче 18.5</td>
-                        <td>Недостатня вага</td>
-                    </tr>
-                    <tr data-status="normal">
-                        <td>18.5 – 24.9</td>
-                        <td>Нормальна вага</td>
-                    </tr>
-                    <tr data-status="overweight">
-                        <td>25.0 – 29.9</td>
-                        <td>Зайва вага</td>
-                    </tr>
-                    <tr data-status="obese">
-                        <td>30.0 і вище</td>
-                        <td>Ожиріння</td>
-                    </tr>
+                <tr data-status="underweight">
+                    <td>Нижче 18.5</td>
+                    <td>Недостатня вага</td>
+                </tr>
+                <tr data-status="normal">
+                    <td>18.5 – 24.9</td>
+                    <td>Нормальна вага</td>
+                </tr>
+                <tr data-status="overweight">
+                    <td>25.0 – 29.9</td>
+                    <td>Зайва вага</td>
+                </tr>
+                <tr data-status="obese">
+                    <td>30.0 і вище</td>
+                    <td>Ожиріння</td>
+                </tr>
                 </tbody>
             </table>
             <p class="imt-note">*ІМТ: Індекс маси тіла</p>
@@ -130,12 +134,12 @@
 
         <div class="imt-form-container">
             <form id="imtForm" class="imt-form">
-                
+
                 <div class="form-row">
                     <input type="number" id="imt_height" placeholder="Зріст / см" required min="100" max="250">
                     <input type="number" id="imt_weight" placeholder="Вага / кг" required min="30" max="250">
                 </div>
-                
+
                 <div class="form-row">
                     <input type="number" id="imt_age" placeholder="Вік" required min="16" max="99">
                     <select id="imt_gender" required>
@@ -157,7 +161,7 @@
                 </div>
 
                 <div class="imt-result-box" id="imtResultBox">
-                    </div>
+                </div>
 
                 <button type="submit" class="btn btn-primary imt-submit-btn">
                     ОБЧИСЛИТИ
@@ -170,22 +174,20 @@
 
 <section class="carousel-section">
 
-<div class="carousel-container js-carousel-container">
+    <div class="carousel-container js-carousel-container">
 
-    <!-- ТІЛЬКИ ОДНА обгортка для прокручування -->
-    <div class="carousel-wrapper js-carousel-wrapper">
+        <div class="carousel-wrapper js-carousel-wrapper">
 
-<!-- Використовуйте свої файли, я залишаю приклади -->
-<div class="carousel-slide"><img src="img/training_1.jpg" alt="Тренування"></div>
-<div class="carousel-slide"><img src="img/training_2.jpg" alt="Тренування"></div>
-<div class="carousel-slide"><img src="img/training_3.jpg" alt="Тренування"></div>
-<div class="carousel-slide"><img src="img/training_4.jpg" alt="Тренування"></div>
-<div class="carousel-slide"><img src="img/training_5.jpg" alt="Тренування"></div>
-<div class="carousel-slide"><img src="img/training_1.jpg" alt="Тренування"></div>
-<div class="carousel-slide"><img src="img/training_2.jpg" alt="Тренування"></div>
+            <div class="carousel-slide"><img src="img/training_1.jpg" alt="Тренування"></div>
+            <div class="carousel-slide"><img src="img/training_2.jpg" alt="Тренування"></div>
+            <div class="carousel-slide"><img src="img/training_3.jpg" alt="Тренування"></div>
+            <div class="carousel-slide"><img src="img/training_4.jpg" alt="Тренування"></div>
+            <div class="carousel-slide"><img src="img/training_5.jpg" alt="Тренування"></div>
+            <div class="carousel-slide"><img src="img/training_1.jpg" alt="Тренування"></div>
+            <div class="carousel-slide"><img src="img/training_2.jpg" alt="Тренування"></div>
 
+        </div>
     </div>
-</div>
 </section>
 
 <section id="trainers" class="section container">
@@ -381,20 +383,14 @@
 
 <div id="bookingModal" class="modal-overlay">
     <div class="modal-content">
-        <!-- Заголовок -->
         <button class="modal-close" onclick="closeModal('bookingModal')">×</button>
         <h2 id="bookingModalTitle">Запис на тренування</h2>
 
-        <!-- Тіло модалки -->
         <div class="modal-body" id="bookingModalBody">
-            <!-- Вміст буде заповнено через JavaScript -->
         </div>
 
-        <!-- Футер з кнопками -->
         <div class="booking-footer">
-            <!-- Кнопка Скасувати закриває модалку через JS -->
             <button type="button" class="btn btn-ghost modal-close" onclick="closeModal('bookingModal')">Скасувати</button>
-            <!-- Кнопка Записатися запускає логіку з calendar.js -->
             <button type="button" class="btn btn-primary" id="confirmBookingButton">Записатися</button>
         </div>
     </div>

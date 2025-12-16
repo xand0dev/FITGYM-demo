@@ -2,7 +2,7 @@
    auth.js — "Охоронець" (Автентифікація)
    =========================== */
 
-import { postApiData } from './api.js';
+import { postApiData, getApiData } from './api.js';
 import { showToast, closeModal, openModal, escapeHtml } from './ui.js';
 import { populateReviews } from './reviews.js';
 
@@ -34,29 +34,76 @@ export function getUserName() {
     return _get('fp_user_name', null);
 }
 
+export function getUserIsStaff() {
+    return _get('fp_is_staff', false);
+}
+
 export function logoutUser() {
     localStorage.removeItem('fp_token');
     localStorage.removeItem('fp_user_name');
+    localStorage.removeItem('fp_is_staff');
     location.reload();
 }
 
 /**
- * Оновлює зону авторизації і ВРУЧНУ вішає події (Event Listeners).
- * Це надійніше, ніж onclick="" в HTML.
+ * ЗАВАНТАЖЕННЯ ПРОФІЛЮ (/api/me/)
+ * Виправлено: Обробка масиву, якщо API повертає [ { ... } ]
+ */
+export async function fetchUserProfile() {
+    const token = getToken();
+    if (!token) return;
+
+    try {
+        const responseData = await getApiData('/api/me/');
+
+        // 🛠 ВИПРАВЛЕННЯ ТУТ:
+        // Перевіряємо, чи це масив. Якщо так — беремо перший елемент.
+        const data = Array.isArray(responseData) ? responseData[0] : responseData;
+
+        // Зберігаємо is_staff, якщо він прийшов
+        if (data && typeof data.is_staff !== 'undefined') {
+            _set('fp_is_staff', data.is_staff);
+            console.log('Admin Status Updated:', data.is_staff); // Для налагодження
+        }
+
+        // Оновлюємо кнопки в хедері
+        updateAuthArea();
+
+    } catch (err) {
+        console.error('Fetch Profile Error:', err);
+    }
+}
+
+/**
+ * Оновлює зону авторизації
  */
 export function updateAuthArea() {
     const area = document.getElementById('authArea');
     const reviewBtn = document.getElementById('openReviewModalBtn');
+    const adminLink = document.getElementById('adminLink');
 
     if (!area) return;
 
     const token = getToken();
     const userName = getUserName();
+    const isStaff = getUserIsStaff();
 
+    // 1. Показуємо/ховаємо кнопку Адмін-панелі
+    if (adminLink) {
+        if (token && isStaff === true) { // Явна перевірка на true
+            adminLink.style.display = 'inline-flex'; // inline-flex виглядає краще з іконкою
+            adminLink.style.alignItems = 'center';
+            adminLink.style.gap = '8px';
+        } else {
+            adminLink.style.display = 'none';
+        }
+    }
+
+    // 2. Оновлюємо зону користувача
     if (token && userName) {
         // === LOGGED IN ===
         area.innerHTML = `
-            <span style="margin-right:10px; color: var(--text-color);">
+            <span style="margin-right:10px; color: var(--text);">
                 Привіт, <b>${escapeHtml(userName)}</b>
             </span>
             <a href="cabinet.html" class="btn btn-ghost" style="margin-right: 5px;">
@@ -66,35 +113,22 @@ export function updateAuthArea() {
                 <i class="fas fa-sign-out-alt"></i>
             </button>`;
 
-        // Слухач на Вихід
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) logoutBtn.addEventListener('click', logoutUser);
 
         if (reviewBtn) reviewBtn.style.display = 'inline-block';
 
     } else {
-        // === GUEST (ГІСТЬ) ===
-        // Зверни увагу: ми прибрали onclick і додали ID
+        // === GUEST ===
         area.innerHTML = `
             <button id="authLoginBtn" class="btn btn-ghost">ВХІД</button>
             <button id="authRegisterBtn" class="btn btn-primary">РЕЄСТРАЦІЯ</button>`;
 
-        // ВРУЧНУ вішаємо події (Це 100% працює)
         const loginBtn = document.getElementById('authLoginBtn');
         const regBtn = document.getElementById('authRegisterBtn');
 
-        if (loginBtn) {
-            loginBtn.addEventListener('click', () => {
-                console.log('Login Clicked'); // Для перевірки в консолі
-                openModal('loginModal');
-            });
-        }
-
-        if (regBtn) {
-            regBtn.addEventListener('click', () => {
-                openModal('registerModal');
-            });
-        }
+        if (loginBtn) loginBtn.addEventListener('click', () => openModal('loginModal'));
+        if (regBtn) regBtn.addEventListener('click', () => openModal('registerModal'));
 
         if (reviewBtn) reviewBtn.style.display = 'none';
     }
@@ -102,11 +136,6 @@ export function updateAuthArea() {
 
 // --- Init Listeners ---
 export function initAuth() {
-    // 1. Спочатку малюємо кнопки
-    // (Подія DOMContentLoaded вже відбулася в main.js, тому можна викликати тут)
-    // Але main.js викликає updateAuthArea() окремо, тому тут тільки слухачі форм.
-
-    // Форма реєстрації
     const regForm = document.getElementById('registerForm');
     if (regForm) {
         const newRegForm = regForm.cloneNode(true);
@@ -114,12 +143,15 @@ export function initAuth() {
         newRegForm.addEventListener('submit', handleRegister);
     }
 
-    // Форма входу
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
         const newLoginForm = loginForm.cloneNode(true);
         loginForm.parentNode.replaceChild(newLoginForm, loginForm);
         newLoginForm.addEventListener('submit', handleLogin);
+    }
+
+    if (getToken()) {
+        fetchUserProfile();
     }
 }
 
@@ -143,6 +175,8 @@ async function handleRegister(e) {
 
         showToast('Акаунт створено!', 'success');
         saveToken(data.token, data.name);
+
+        await fetchUserProfile();
 
         closeModal('registerModal');
         updateAuthArea();
@@ -171,6 +205,8 @@ async function handleLogin(e) {
 
         showToast('Вхід успішний', 'success');
         saveToken(data.token, username);
+
+        await fetchUserProfile();
 
         closeModal('loginModal');
         updateAuthArea();

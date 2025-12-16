@@ -47,9 +47,10 @@ export async function postApiData(endpoint, body) {
    ========================================= */
 
 /**
- * GET запит з токеном
+ * GET запит з токеном (використовується для /api/me/)
+ * ВАЖЛИВО: Перейменовано для сумісності з auth.js
  */
-export async function getAuthData(endpoint) {
+export async function getApiData(endpoint) {
     const token = _getToken();
     if (!token) throw new Error('No token found');
 
@@ -99,8 +100,7 @@ export async function postAuthData(endpoint, body) {
 }
 
 /**
- * DELETE запит (НОВЕ: Скасування)
- * Спеціально обробляє 204 No Content
+ * DELETE запит (Скасування)
  */
 export async function deleteAuthData(endpoint) {
     const token = _getToken();
@@ -114,21 +114,16 @@ export async function deleteAuthData(endpoint) {
         }
     });
 
-    // 1. Успіх (204 No Content) - виходимо одразу, не парсимо JSON
     if (response.status === 204) {
         return true;
     }
 
-    // 2. Помилка (404 або інші)
     if (!response.ok) {
-        // Спробуємо прочитати JSON, якщо він є (на випадок кастомної помилки)
         let errorMsg = `Помилка ${response.status}`;
         try {
             const data = await response.json();
             if (data.detail) errorMsg = data.detail;
-        } catch (e) {
-            // Якщо JSON немає, залишаємо стандартний текст
-        }
+        } catch (e) {}
         throw new Error(errorMsg);
     }
 

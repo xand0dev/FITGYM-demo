@@ -4,8 +4,7 @@
 
 import { getToken, getUserName, logoutUser, updateAuthArea, initAuth } from './auth.js';
 import { showToast, escapeHtml, initModalLogic, setupHamburger } from './ui.js';
-// Додали deleteAuthData
-import { getAuthData, deleteAuthData } from './api.js';
+import { getApiData, deleteAuthData } from './api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const token = getToken();
@@ -48,7 +47,8 @@ async function loadProfileData() {
     if (!infoDiv) return;
 
     try {
-        const profileData = await getAuthData('/api/me/');
+        // ВИПРАВЛЕНО: Використовуємо getApiData
+        const profileData = await getApiData('/api/me/');
         const userProfile = Array.isArray(profileData) ? profileData[0] : profileData;
 
         if (!userProfile) throw new Error('Empty profile data');
@@ -80,7 +80,8 @@ async function populateUserSchedule() {
     list.innerHTML = `<p class="text-muted">Оновлення списку...</p>`;
 
     try {
-        const bookings = await getAuthData('/api/my-bookings/');
+        // ВИПРАВЛЕНО: Використовуємо getApiData
+        const bookings = await getApiData('/api/my-bookings/');
 
         if (!Array.isArray(bookings) || bookings.length === 0) {
             list.innerHTML = "<p>У вас поки немає активних записів.</p>";
@@ -93,8 +94,6 @@ async function populateUserSchedule() {
             const dateStr = dateObj.toLocaleDateString('uk-UA', {day: 'numeric', month: 'long'});
             const timeStr = dateObj.toLocaleTimeString('uk-UA', {hour: '2-digit', minute:'2-digit'});
 
-            // Рендеримо картку з кнопкою видалення
-            // data-booking-id — це ID самого бронювання
             return `
             <div class="booking-card" data-aos="fade-up">
                 <div class="booking-info">
@@ -123,9 +122,7 @@ function setupCancelHandler() {
     const list = document.getElementById('bookings-list');
     if (!list) return;
 
-    // Використовуємо делегування подій (слухаємо кліки на всьому списку)
     list.addEventListener('click', async (e) => {
-        // Шукаємо кнопку .btn-cancel, навіть якщо клікнули на іконку <i>
         const btn = e.target.closest('.btn-cancel');
 
         if (btn) {
@@ -141,18 +138,14 @@ async function handleCancelBooking(id, cardElement) {
     if (!confirm('Ви впевнені, що хочете скасувати це тренування?')) return;
 
     try {
-        // ОБОВ'ЯЗКОВО додаємо слеш в кінці URL, як вимагав бек
         await deleteAuthData(`/api/my-bookings/${id}/`);
 
-        // Візуальне видалення (анімація)
         cardElement.style.transition = 'all 0.3s ease';
         cardElement.style.opacity = '0';
         cardElement.style.transform = 'translateX(20px)';
 
         setTimeout(() => {
             cardElement.remove();
-
-            // Якщо карток не залишилось, показуємо повідомлення
             const list = document.getElementById('bookings-list');
             if (list && list.children.length === 0) {
                 list.innerHTML = "<p>У вас немає активних записів.</p>";
