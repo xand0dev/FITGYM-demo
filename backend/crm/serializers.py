@@ -101,6 +101,9 @@ class MemberSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email', read_only=True)
     full_name = serializers.CharField(source='user.get_full_name', read_only=True)
 
+    # 👇 НОВЕ ПОЛЕ: беремо is_staff з моделі User
+    is_staff = serializers.BooleanField(source='user.is_staff', read_only=True)
+
     class Meta:
         model = Member
         # Вказуємо всі поля, які хочемо повернути фронтенду
@@ -109,6 +112,7 @@ class MemberSerializer(serializers.ModelSerializer):
             'username',
             'email',
             'full_name',
+            'is_staff',  
             'contact',
             'gender',
             'birth_date',
@@ -163,3 +167,18 @@ class BookingCreateSerializer(serializers.ModelSerializer):  # <-- НОВИЙ К
         # 'id', 'booked_at', 'status' ми не очікуємо від юзера,
         # вони встановлюються сервером.
         read_only_fields = ['id', 'booked_at', 'status']
+
+
+# ---
+# ЕТАП 4: АДМІНСЬКІ СЕРІАЛІЗАТОРИ
+# ---
+
+class AdminClassSessionSerializer(serializers.ModelSerializer):
+    """
+    Серіалізатор для CRUD операцій із розкладом (лише для адмінів).
+    На відміну від публічного, тут ми працюємо з ID (class_type, instructor),
+    а не з іменами, щоб мати змогу створювати та редагувати об'єкти.
+    """
+    class Meta:
+        model = ClassSession
+        fields = ['id', 'class_type', 'instructor', 'start_at', 'end_at', 'capacity']

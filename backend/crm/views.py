@@ -1,10 +1,13 @@
 # crm/views.py
 
-from rest_framework import viewsets, permissions, generics, mixins  # <-- 1. Додано 'mixins'
+from rest_framework import viewsets, permissions, generics, mixins
 from rest_framework import serializers
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
+
+# Імпорт нашого кастомного пермішена
+from .permissions import IsAdminUser  # <-- НОВЕ
 
 from .models import (
     Workout,
@@ -23,7 +26,8 @@ from .serializers import (
     RegisterSerializer,
     MemberSerializer,
     BookingSerializer,
-    BookingCreateSerializer
+    BookingCreateSerializer,
+    AdminClassSessionSerializer  # <-- НОВЕ
 )
 
 
@@ -51,7 +55,7 @@ class MembershipTypeViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class ClassSessionViewSet(viewsets.ReadOnlyModelViewSet):
-    """(GET) /api/schedule/"""
+    """(GET) /api/schedule/ - Публічний розклад (тільки читання)"""
     queryset = ClassSession.objects.all().order_by('start_at')
     serializer_class = ClassSessionSerializer
     permission_classes = [permissions.AllowAny]
@@ -86,29 +90,18 @@ class MeViewSet(viewsets.ReadOnlyModelViewSet):
         return Member.objects.filter(user=self.request.user)
 
 
-# ---
-# ОНОВЛЕНИЙ VIEW ДЛЯ "МОЇХ ЗАПИСІВ" (GET + DELETE)
-# ---
-
-class MyBookingsViewSet(mixins.ListModelMixin,  # Дозволяє GET (список)
-                        mixins.RetrieveModelMixin,  # Дозволяє GET (конкретний запис)
-                        mixins.DestroyModelMixin,  # Дозволяє DELETE <-- НОВЕ
-                        viewsets.GenericViewSet):  # Базовий клас
+class MyBookingsViewSet(mixins.ListModelMixin,
+                        mixins.RetrieveModelMixin,
+                        mixins.DestroyModelMixin,
+                        viewsets.GenericViewSet):
     """
-    (GET) /api/my-bookings/      - список моїх записів
-    (GET) /api/my-bookings/{id}/ - деталі одного запису
-    (DELETE) /api/my-bookings/{id}/ - скасувати запис
+    (GET) /api/my-bookings/
+    (DELETE) /api/my-bookings/{id}/
     """
     serializer_class = BookingSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        """
-        Ця функція критична для безпеки DELETE.
-        Вона повертає ТІЛЬКИ записи поточного користувача.
-        Якщо спробувати видалити чужий ID, Django його тут не знайде
-        і поверне 404.
-        """
         return Booking.objects.filter(member__user=self.request.user).order_by('-booked_at')
 
 
@@ -143,7 +136,21 @@ class BookingCreateView(generics.CreateAPIView):
 
         if not has_active_membership:
             raise serializers.ValidationError(
-                "У вас немає активного абонемента на дату проведення цього заняття. Будь ласка, придбайте абонемент."
+                "У вас немає активного абонемента на дату проведення цього заняття."
             )
 
         serializer.save(member=member)
+
+
+# ---
+# ЕТАП 4: АДМІНСЬКІ VIEWS
+# ---
+
+class AdminClassSessionViewSet(viewsets.ModelViewSet):
+    """
+    CRUD для розкладу. Доступ тільки для адмінів (is_staff=True).
+    URL: /api/admin/schedule/
+    """
+    queryset = ClassSession.objects.all().order_by('-start_at')
+    serializer_class = AdminClassSessionSerializer
+    permission_classes = [IsAdminUser]  # Захист нашим охоронцем
