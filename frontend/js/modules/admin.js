@@ -1,59 +1,60 @@
 /* ===========================
-    admin.js — Адмін-панель (Керування Розкладом, Клієнтами, Тренерами)
+    admin.js — Адмін-панель (Логіка)
     =========================== */
 
 import { BASE_URL } from './api.js';
-// 💡 Імпортуємо з нового UI-модуля
-import { showToast, escapeHtml } from './admin_ui.js'; 
-import { getToken } from './auth.js'; 
+import { showToast } from './admin_ui.js';
+import { getToken } from './auth.js';
 
 let currentEventId = null;
 let currentCalendar = null;
-// Потрібні для логіки клієнтів/тренерів, якщо будете додавати редагування/видалення
-// let currentClientId = null; 
-// let currentTrainerId = null; 
 
-// --- API ХЕЛПЕР (УНІФІКОВАНИЙ) ---
-// Використовуйте цю функцію для всіх POST/PUT/DELETE
+// --- API HELPER ---
+/**
+ * Універсальна функція для запитів (POST, PUT, DELETE)
+ */
 async function sendDataRequest(method, endpoint, data, successMessage) {
     const token = getToken();
-    const url = `${BASE_URL}${endpoint}`;
+    // Видаляємо подвійні слеші та пробіли
+    const url = `${BASE_URL.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
 
     try {
         const response = await fetch(url, {
             method: method,
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` 
+                // Використовуємо Token, як підтверджено у Postman
+                'Authorization': `Token ${token}`
             },
             body: method !== 'DELETE' ? JSON.stringify(data) : null
         });
 
-        if (response.ok || response.status === 204) { 
+        if (response.ok || response.status === 201 || response.status === 204) {
             showToast(successMessage || `Успішно!`, 'success');
-            if (currentCalendar && endpoint.includes('/schedule/')) {
+
+            // Оновлюємо календар
+            if (currentCalendar && endpoint.includes('schedule')) {
                 currentCalendar.refetchEvents();
-            } 
-            if(window.closeAllModals) window.closeAllModals(); 
-            return await (response.status !== 204 ? response.json() : true);
+            }
+
+            if(window.closeAllModals) window.closeAllModals();
+
+            return response.status === 204 ? true : await response.json();
         } else {
-            const error = await response.json();
-            showToast(error.detail || 'Помилка API. Перевірте авторизацію.', 'error');
+            const errorData = await response.json();
+            // Спроба отримати читабельну помилку
+            const errorMsg = errorData.detail || errorData.message || JSON.stringify(errorData) || 'Помилка API';
+            showToast(errorMsg, 'error');
+            console.error('API Error:', errorData);
         }
     } catch (error) {
-        console.error("Network or parsing error:", error);
-        showToast('Помилка мережі або системи', 'error');
+        console.error("Network error:", error);
+        showToast('Помилка мережі або сервера', 'error');
     }
 }
 
 // --- ЛОГІКА РОЗКЛАДУ ---
-async function sendEventRequest(method, data, eventId) {
-    const endpoint = `/api/schedule/` + (eventId ? eventId + '/' : '');
-    const message = eventId ? 'Розклад оновлено!' : 'Нове заняття додано!';
-    await sendDataRequest(method, endpoint, data, message);
-}
 
-// ... (fetchBookings, showEventModal, formatDateTimeLocal - без змін) ...
 function formatDateTimeLocal(date) {
     if (!date) return '';
     const dt = new Date(date);
@@ -62,7 +63,7 @@ function formatDateTimeLocal(date) {
     return localTime.toISOString().slice(0, 16);
 }
 
-// Функція showEventModal тут
+// Відкриття модалки
 function showEventModal(eventData = null) {
     const form = document.getElementById('eventForm');
     const deleteBtn = document.getElementById('deleteEventBtn');
@@ -74,22 +75,28 @@ function showEventModal(eventData = null) {
     let start_time, end_time;
 
     if (eventData && eventData.id) {
+        // === РЕДАГУВАННЯ ===
         currentEventId = eventData.id;
         title.textContent = 'Редагувати Заняття';
         deleteBtn.style.display = 'block';
         partsBlock.style.display = 'block';
 
         document.getElementById('event_id').value = eventData.id;
-        document.getElementById('class_name').value = eventData.extendedProps.class_name || eventData.title.split('(')[0].trim();
-        document.getElementById('instructor_name').value = eventData.extendedProps.instructor_name || '';
-        document.getElementById('capacity').value = eventData.extendedProps.capacity || 20;
+
+        const props = eventData.extendedProps || {};
+
+        // Тут ми заповнюємо інпути.
+        // ВАЖЛИВО: Зараз тут будуть ID (числа), бо ми ще не зробили select
+        document.getElementById('class_name').value = props.class_type || '';
+        document.getElementById('instructor_name').value = props.instructor || '';
+        document.getElementById('capacity').value = props.capacity || 20;
 
         start_time = eventData.start;
         end_time = eventData.end;
 
-        // Завантажуємо список людей
-        // fetchBookings(currentEventId); // Розкоментувати, якщо потрібно
+        document.getElementById('bookingList').textContent = 'Функція списку учасників ще в розробці...';
     } else {
+        // === СТВОРЕННЯ ===
         currentEventId = null;
         title.textContent = 'Нове Заняття';
         deleteBtn.style.display = 'none';
@@ -97,10 +104,11 @@ function showEventModal(eventData = null) {
 
         if (eventData && eventData.start) {
             start_time = eventData.start;
-            end_time = eventData.end || new Date(eventData.start.getTime() + 60 * 60 * 1000); // Додати 1 годину
+            end_time = eventData.end || new Date(eventData.start.getTime() + 60 * 60 * 1000);
         } else {
             const now = new Date();
             now.setMinutes(0);
+            now.setSeconds(0);
             start_time = now;
             end_time = new Date(now.getTime() + 60 * 60 * 1000);
         }
@@ -113,101 +121,151 @@ function showEventModal(eventData = null) {
     if(window.openModal) window.openModal('eventModal');
 }
 
+// Обробка відправки форми
+async function handleEventSubmit(e) {
+    e.preventDefault();
+    const form = e.target;
 
-// --- ЛОГІКА КЛІЄНТІВ ТА ТРЕНЕРІВ ---
+    // ВАЖЛИВО: API очікує ID (числа) для class_type та instructor.
+    // Ми використовуємо parseInt, щоб перетворити введені "1" у число 1.
+    const payload = {
+        class_type: parseInt(form.class_name.value),
+        instructor: parseInt(form.instructor_name.value),
 
-function showClientModal(clientData = null) {
-    // ... (реалізація модалки клієнтів) ...
-    window.openModal('clientModal');
+        capacity: parseInt(form.capacity.value),
+        start_at: new Date(form.start_at.value).toISOString(),
+        end_at: new Date(form.end_at.value).toISOString(),
+    };
+
+    // Перевірка на NaN (якщо користувач ввів текст замість числа)
+    if (isNaN(payload.class_type) || isNaN(payload.instructor)) {
+        showToast('Помилка: Введіть числові ID для типу заняття та тренера!', 'error');
+        return;
+    }
+
+    // URL: api/admin/schedule/
+    if (currentEventId) {
+        await sendDataRequest('PUT', `api/admin/schedule/${currentEventId}/`, payload, 'Заняття оновлено!');
+    } else {
+        await sendDataRequest('POST', 'api/admin/schedule/', payload, 'Заняття створено!');
+    }
 }
 
-function initClientControls() {
-    document.querySelector('#section-clients .btn-primary')?.addEventListener('click', () => showClientModal(null));
-    document.getElementById('clientForm')?.addEventListener('submit', (e) => {
-        e.preventDefault();
-        sendDataRequest('POST', '/api/clients/', {/* data */}, 'Клієнт доданий!');
-    });
-}
+async function handleDeleteEvent() {
+    if (!currentEventId) return;
 
-function showTrainerModal(trainerData = null) {
-    // ... (реалізація модалки тренерів) ...
-    window.openModal('trainerModal');
-}
+    await sendDataRequest('DELETE', `api/admin/schedule/${currentEventId}/`, null, 'Заняття видалено');
 
-function initTrainerControls() {
-    document.querySelector('#section-trainers .btn-primary')?.addEventListener('click', () => showTrainerModal(null));
-    document.getElementById('trainerForm')?.addEventListener('submit', (e) => {
-        e.preventDefault();
-        sendDataRequest('POST', '/api/trainers/', {/* data */}, 'Тренер доданий!');
-    });
+    if(window.closeModal) window.closeModal('confirmModal');
+    if(window.closeModal) window.closeModal('eventModal');
 }
 
 
-// --- ІНІЦІАЛІЗАЦІЯ (ТОЧКА ВХОДУ) ---
+// --- ІНІЦІАЛІЗАЦІЯ ---
 
 export function initAdminPage() {
-    console.log('Admin Page Init');
+    console.log('Admin Page Initialized');
 
-    // 1. Календар
     const calendarEl = document.getElementById('calendar');
 
-    currentCalendar = new FullCalendar.Calendar(calendarEl, {
-        locale: "uk",
-        initialView: "timeGridWeek",
-        headerToolbar: {
-            left: "prev,next today",
-            center: "title",
-            right: "dayGridMonth,timeGridWeek"
-        },
-        height: 'auto',
-        events: `${BASE_URL}/api/schedule/`,
-        editable: true,
+    if (calendarEl) {
+        currentCalendar = new FullCalendar.Calendar(calendarEl, {
+            locale: "uk",
+            initialView: "timeGridWeek",
+            headerToolbar: {
+                left: "prev,next today",
+                center: "title",
+                right: "dayGridMonth,timeGridWeek"
+            },
+            height: 'auto',
+            navLinks: true,
+            editable: true,
+            selectable: true,
 
-        eventClick: function(info) {
-            info.jsEvent.preventDefault();
-            showEventModal(info.event);
-        },
+            // Завантаження подій через функцію (для передачі заголовка Token)
+            events: async function(info, successCallback, failureCallback) {
+                const token = getToken();
+                const url = `${BASE_URL.replace(/\/$/, '')}/api/admin/schedule/?start=${info.startStr}&end=${info.endStr}`;
 
-        // 💡 АКТИВОВАНО: Клік по порожньому місцю -> Створити
-        dateClick: function(info) {
-             const eventData = { 
-                id: null, 
-                start: info.date, 
-                end: new Date(info.date.getTime() + 60*60*1000), 
-                extendedProps: { class_name: '', instructor_name: '', capacity: 20 }
-             };
-             showEventModal(eventData);
-        }
-    });
-    currentCalendar.render();
+                try {
+                    const res = await fetch(url, {
+                        headers: { 'Authorization': `Token ${token}` }
+                    });
 
-    // 2. Обробники кнопок
-    document.getElementById('addEventBtn').addEventListener('click', () => showEventModal(null));
-    
-    document.getElementById('eventForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const form = e.target;
-        const data = {
-            class_name: form.class_name.value,
-            instructor_name: form.instructor_name.value,
-            capacity: parseInt(form.capacity.value),
-            start_at: new Date(form.start_at.value).toISOString(),
-            end_at: new Date(form.end_at.value).toISOString(),
-        };
+                    if (!res.ok) throw new Error('Failed to fetch events');
 
-        if (currentEventId) {
-            sendEventRequest('PUT', data, currentEventId);
-        } else {
-            sendEventRequest('POST', data, null);
-        }
-    });
+                    const events = await res.json();
 
-    document.getElementById('deleteEventBtn')?.addEventListener('click', () => {
-        if(window.openModal) window.openModal('confirmModal');
-        // ... (логіка підтвердження видалення)
-    });
-    
-    // 3. Ініціалізація нових модулів
-    initClientControls();
-    initTrainerControls();
+                    // Трансформація даних з бекенду у формат FullCalendar
+                    const mappedEvents = events.map(apiEvent => ({
+                        id: apiEvent.id,
+                        // Відображаємо ID, бо імен поки може не бути у відповіді
+                        title: `Class #${apiEvent.class_type} (Coach #${apiEvent.instructor})`,
+                        start: apiEvent.start_at,
+                        end: apiEvent.end_at,
+                        extendedProps: {
+                            class_type: apiEvent.class_type,
+                            instructor: apiEvent.instructor,
+                            capacity: apiEvent.capacity
+                        },
+                        backgroundColor: 'var(--primary)',
+                        borderColor: 'var(--primary)'
+                    }));
+
+                    successCallback(mappedEvents);
+                } catch (err) {
+                    console.error(err);
+                    failureCallback(err);
+                }
+            },
+
+            eventClick: function(info) {
+                info.jsEvent.preventDefault();
+                showEventModal(info.event);
+            },
+
+            dateClick: function(info) {
+                const eventData = {
+                    id: null,
+                    start: info.date,
+                    end: new Date(info.date.getTime() + 60*60*1000)
+                };
+                showEventModal(eventData);
+            },
+
+            select: function(info) {
+                const eventData = {
+                    id: null,
+                    start: info.start,
+                    end: info.end
+                };
+                showEventModal(eventData);
+            }
+        });
+        currentCalendar.render();
+    }
+
+    const addEventBtn = document.getElementById('addEventBtn');
+    if (addEventBtn) addEventBtn.addEventListener('click', () => showEventModal(null));
+
+    const eventForm = document.getElementById('eventForm');
+    if (eventForm) eventForm.addEventListener('submit', handleEventSubmit);
+
+    const deleteEventBtn = document.getElementById('deleteEventBtn');
+    if (deleteEventBtn) {
+        deleteEventBtn.addEventListener('click', () => {
+            const confirmBtn = document.getElementById('confirmActionBtn');
+            if (confirmBtn) {
+                confirmBtn.onclick = handleDeleteEvent;
+            }
+            if(window.openModal) window.openModal('confirmModal');
+        });
+    }
+
+    // Заглушки для клієнтів/тренерів
+    const clientBtn = document.querySelector('#section-clients .btn-primary');
+    if (clientBtn) clientBtn.addEventListener('click', () => window.openModal('clientModal'));
+
+    const trainerBtn = document.querySelector('#section-trainers .btn-primary');
+    if (trainerBtn) trainerBtn.addEventListener('click', () => window.openModal('trainerModal'));
 }
