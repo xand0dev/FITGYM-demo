@@ -10,7 +10,7 @@
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css" rel="stylesheet">
 
     <link rel="stylesheet" href="css/0-base.css">
-    <link rel="stylesheet" href="css/admin_styles.css"> 
+    <link rel="stylesheet" href="css/admin_styles.css">
 </head>
 <body>
 
@@ -93,10 +93,9 @@
                 </div>
                 <table class="data-table">
                     <thead>
-                        <tr><th>Ім'я</th><th>Email</th><th>Останній візит</th><th>Дії</th></tr>
+                    <tr><th>Ім'я</th><th>Email</th><th>Останній візит</th><th>Дії</th></tr>
                     </thead>
                     <tbody id="clientsTableBody">
-                        <tr><td data-label="Ім'я">Олена Коваль</td><td data-label="Email">olena@test.com</td><td data-label="Останній візит">2025-11-28</td><td data-label="Дії"><button class="action-btn"><i class="fas fa-edit"></i></button></td></tr>
                     </tbody>
                 </table>
             </div>
@@ -110,10 +109,9 @@
                 </div>
                 <table class="data-table">
                     <thead>
-                        <tr><th>Ім'я</th><th>Спеціалізація</th><th>Телефон</th><th>Дії</th></tr>
+                    <tr><th>Ім'я</th><th>Спеціалізація</th><th>Телефон</th><th>Дії</th></tr>
                     </thead>
                     <tbody id="trainersTableBody">
-                        <tr><td data-label="Ім'я">Анна Смірна</td><td data-label="Спеціалізація">Йога, Пілатес</td><td data-label="Телефон">+38 099 123 45 67</td><td data-label="Дії"><button class="action-btn"><i class="fas fa-edit"></i></button></td></tr>
                     </tbody>
                 </table>
             </div>
@@ -173,7 +171,7 @@
             <div class="form-group"><label>Повне ім'я</label><input type="text" id="client_name" required placeholder="Ім'я"></div>
             <div class="form-group"><label>Email</label><input type="email" id="client_email" required placeholder="example@gmail.com"></div>
             <div class="form-group"><label>Телефон</label><input type="tel" id="client_phone" placeholder="+38 (XXX) XXX XX XX"></div>
-            <div class="form-group"><label>Статус</label><input type="text" id="client_status" value="Активний"></div>
+            <div class="form-group"><label>Статус</label><input type="text" id="client_status" value="active"></div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-danger" id="deleteClientBtn" style="display: none;">Видалити</button>
                 <button type="submit" class="btn btn-primary" id="saveClientBtn">Зберегти</button>
@@ -189,9 +187,32 @@
 
         <form id="trainerForm" class="admin-form">
             <input type="hidden" id="trainer_id">
-            <div class="form-group"><label>Повне ім'я</label><input type="text" id="trainer_name" required placeholder="Ім'я"></div>
-            <div class="form-group"><label>Спеціалізація</label><input type="text" id="trainer_specialization" required placeholder="Напр. Силові тренування, Йога"></div>
-            <div class="form-group"><label>Телефон</label><input type="tel" id="trainer_phone" placeholder="+38 (XXX) XXX XX XX"></div>
+
+            <div id="trainerAuthFields">
+                <div class="form-group">
+                    <label>Логін (username)</label>
+                    <input type="text" id="trainer_username" placeholder="trainer_login" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>Пароль</label>
+                    <input type="password" id="trainer_password" placeholder="********" autocomplete="new-password">
+                </div>
+                <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
+            </div>
+
+            <div class="form-group">
+                <label>Повне ім'я</label>
+                <input type="text" id="trainer_name" required placeholder="Ім'я Прізвище">
+            </div>
+            <div class="form-group">
+                <label>Спеціалізація</label>
+                <input type="text" id="trainer_specialization" required placeholder="Напр. Boxing, Yoga">
+            </div>
+            <div class="form-group">
+                <label>Телефон</label>
+                <input type="tel" id="trainer_phone" placeholder="+38 (XXX) XXX XX XX">
+            </div>
+
             <div class="modal-actions">
                 <button type="button" class="btn btn-danger" id="deleteTrainerBtn" style="display: none;">Видалити</button>
                 <button type="submit" class="btn btn-primary" id="saveTrainerBtn">Зберегти</button>
@@ -215,35 +236,28 @@
 
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
 <script src="js/modules/admin.js" type="module"></script>
-<script src="js/modules/admin_ui.js" type="module"></script> 
+<script src="js/modules/admin_ui.js" type="module"></script>
 
 <script type="module">
     import { initAdminPage } from './js/modules/admin.js';
-    
-    import { 
-        initModalLogic, 
-        openModal, 
-        closeModal, 
-        closeAllModals, 
+
+    import {
+        initModalLogic,
+        openModal,
+        closeModal,
+        closeAllModals,
         showToast,
         initAdminTabs,
-        setupMobileSidebarToggle // 💡 НОВА ФУНКЦІЯ
+        setupMobileSidebarToggle
     } from './js/modules/admin_ui.js';
 
-    /* =========================================
-        ГЛОБАЛІЗАЦІЯ (РІШЕННЯ ПРОБЛЕМИ)
-        ========================================= */
     window.openModal = openModal;
     window.closeModal = closeModal;
     window.closeAllModals = closeAllModals;
     window.showToast = showToast;
 
-
-    document.addEventListener('DOMContentLoaded', () => { 
-        // 1. Ініціалізуємо модалки та вкладки
-        initAdminTabs(initAdminPage); 
-        
-        // 2. Ініціалізуємо логіку мобільного меню
+    document.addEventListener('DOMContentLoaded', () => {
+        initAdminTabs(initAdminPage);
         setupMobileSidebarToggle();
     });
 </script>
