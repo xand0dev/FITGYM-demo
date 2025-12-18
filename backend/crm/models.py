@@ -16,10 +16,12 @@ class Workout(models.Model):
 # Розширює вбудованого User
 class Instructor(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    specialties = models.TextField(blank=True, null=True)
+    specialties = models.TextField()
+    # 👇 НОВЕ ПОЛЕ
+    contact = models.CharField(max_length=20, blank=True, null=True, help_text="Номер телефону")
 
     def __str__(self):
-        return self.user.get_full_name() or self.user.username
+        return self.user.get_full_name()
 
 
 # === ПРОФІЛЬ КЛІЄНТА ===

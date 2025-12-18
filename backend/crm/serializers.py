@@ -192,3 +192,46 @@ class AdminClassSessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClassSession
         fields = ['id', 'class_type', 'instructor', 'start_at', 'end_at', 'capacity']
+
+
+class AdminInstructorSerializer(serializers.ModelSerializer):
+    """
+    Серіалізатор для Адміна. Створює тренера + User + контакт.
+    """
+    username = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+    first_name = serializers.CharField(write_only=True)
+    last_name = serializers.CharField(write_only=True)
+    full_name = serializers.CharField(source='user.get_full_name', read_only=True)
+
+    class Meta:
+        model = Instructor
+        fields = [
+            'id',
+            'username', 'password', 'first_name', 'last_name',
+            'full_name',
+            'specialties',
+            'contact'  # <-- ✅ ДОДАНО ТУТ
+        ]
+
+    def create(self, validated_data):
+        # 1. "Вирізаємо" дані для User (щоб вони не потрапили в Instructor)
+        username = validated_data.pop('username')
+        password = validated_data.pop('password')
+        first_name = validated_data.pop('first_name')
+        last_name = validated_data.pop('last_name')
+
+        # 2. Створюємо User
+        user = User.objects.create_user(
+            username=username,
+            password=password,
+            first_name=first_name,
+            last_name=last_name
+        )
+
+        # 3. Створюємо Instructor
+        # Всі поля, що лишилися в validated_data (в т.ч. contact),
+        # підуть в модель Instructor
+        instructor = Instructor.objects.create(user=user, **validated_data)
+
+        return instructor

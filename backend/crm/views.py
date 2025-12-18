@@ -28,7 +28,8 @@ from .serializers import (
     BookingSerializer,
     BookingCreateSerializer,
     AdminClassSessionSerializer,
-    ClassSerializer  # <-- Додано імпорт серіалізатора
+    ClassSerializer,
+    AdminInstructorSerializer
 )
 
 
@@ -159,4 +160,25 @@ class AdminClassSessionViewSet(viewsets.ModelViewSet):
     """
     queryset = ClassSession.objects.all().order_by('-start_at')
     serializer_class = AdminClassSessionSerializer
+    permission_classes = [IsAdminUser]
+
+
+class AdminMemberViewSet(viewsets.ModelViewSet):
+    """
+    CRUD для клієнтів. Доступ тільки для адмінів.
+    URL: /api/admin/members/
+    """
+    queryset = Member.objects.all().order_by('-id')
+    serializer_class = MemberSerializer
+    permission_classes = [IsAdminUser]  # 🔒 ЗАХИСТ
+
+
+class AdminInstructorViewSet(viewsets.ModelViewSet):
+    """
+    CRUD для тренерів.
+    URL: /api/admin/instructors/
+    """
+    queryset = Instructor.objects.all().order_by('id')
+    # 👇 ЗМІНЕНО: Використовуємо новий серіалізатор
+    serializer_class = AdminInstructorSerializer
     permission_classes = [IsAdminUser]
