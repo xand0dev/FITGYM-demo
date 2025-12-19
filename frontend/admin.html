@@ -93,7 +93,7 @@
                 </div>
                 <table class="data-table">
                     <thead>
-                    <tr><th>Ім'я</th><th>Email</th><th>Останній візит</th><th>Дії</th></tr>
+                    <tr><th>Ім'я</th><th>Email</th><th>Телефон</th><th>Статус</th><th>Дії</th></tr>
                     </thead>
                     <tbody id="clientsTableBody">
                     </tbody>
@@ -168,10 +168,40 @@
 
         <form id="clientForm" class="admin-form">
             <input type="hidden" id="client_id">
-            <div class="form-group"><label>Повне ім'я</label><input type="text" id="client_name" required placeholder="Ім'я"></div>
-            <div class="form-group"><label>Email</label><input type="email" id="client_email" required placeholder="example@gmail.com"></div>
-            <div class="form-group"><label>Телефон</label><input type="tel" id="client_phone" placeholder="+38 (XXX) XXX XX XX"></div>
-            <div class="form-group"><label>Статус</label><input type="text" id="client_status" value="active"></div>
+
+            <div id="clientAuthFields">
+                <div class="form-group">
+                    <label>Логін (username)</label>
+                    <input type="text" id="client_username" placeholder="client_login" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>Пароль</label>
+                    <input type="password" id="client_password" placeholder="********" autocomplete="new-password">
+                </div>
+                <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
+            </div>
+
+            <div class="form-group">
+                <label>Повне ім'я</label>
+                <input type="text" id="client_name" required placeholder="Ім'я Прізвище">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="client_email" required placeholder="example@gmail.com">
+            </div>
+            <div class="form-group">
+                <label>Телефон</label>
+                <input type="tel" id="client_phone" placeholder="+38 (XXX) XXX XX XX">
+            </div>
+            <div class="form-group">
+                <label>Статус</label>
+                <select id="client_status">
+                    <option value="active">Active (Активний)</option>
+                    <option value="frozen">Frozen (Заморожено)</option>
+                    <option value="inactive">Inactive (Неактивний)</option>
+                </select>
+            </div>
+
             <div class="modal-actions">
                 <button type="button" class="btn btn-danger" id="deleteClientBtn" style="display: none;">Видалити</button>
                 <button type="submit" class="btn btn-primary" id="saveClientBtn">Зберегти</button>

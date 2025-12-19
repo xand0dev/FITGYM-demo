@@ -57,14 +57,14 @@ async function sendDataRequest(method, endpoint, data, successMessage) {
 }
 
 // ==========================================
-// 1. ЛОГІКА КЛІЄНТІВ (MEMBERS)
+// 1. ЛОГІКА КЛІЄНТІВ (MEMBERS) - ОНОВЛЕНО
 // ==========================================
 
 async function loadClientsTable() {
     const tbody = document.getElementById('clientsTableBody');
     if (!tbody) return;
 
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center">Завантаження...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Завантаження...</td></tr>';
 
     try {
         const token = getToken();
@@ -77,11 +77,11 @@ async function loadClientsTable() {
             const clients = await res.json();
             renderClientsTable(clients);
         } else {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center error">Не вдалося завантажити дані</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center error">Не вдалося завантажити дані</td></tr>';
         }
     } catch (e) {
         console.error(e);
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center error">Мережева помилка</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center error">Мережева помилка</td></tr>';
     }
 }
 
@@ -90,18 +90,29 @@ function renderClientsTable(clients) {
     if (!tbody) return;
 
     if (!Array.isArray(clients) || clients.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Список порожній</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Список порожній</td></tr>';
         return;
     }
 
-    tbody.innerHTML = clients.map(c => `
+    tbody.innerHTML = clients.map(c => {
+        // Дані з бекенду: full_name, user_email, contact, status
+        const name = escapeHtml(c.full_name || c.username || 'Без імені');
+        const email = escapeHtml(c.user_email || c.email || '—');
+        const contact = escapeHtml(c.contact || c.phone || '—');
+
+        // Стилізація статусу
+        let statusColor = '#888';
+        let statusText = c.status || 'Active';
+        if (statusText === 'active') statusColor = 'var(--accent)';
+        else if (statusText === 'frozen') statusColor = '#3498db';
+
+        return `
         <tr>
-            <td data-label="Ім'я"><strong>${escapeHtml(c.full_name || c.username)}</strong></td>
-            <td data-label="Email">${escapeHtml(c.email)}</td>
+            <td data-label="Ім'я"><strong>${name}</strong></td>
+            <td data-label="Email">${email}</td>
+            <td data-label="Телефон">${contact}</td>
             <td data-label="Статус">
-                <span style="color: ${c.status === 'active' ? 'var(--accent)' : '#888'}">
-                    ${escapeHtml(c.status || 'Active')}
-                </span>
+                <span style="color: ${statusColor}">${escapeHtml(statusText)}</span>
             </td>
             <td data-label="Дії">
                 <button class="action-btn edit-client-btn" data-json='${JSON.stringify(c).replace(/'/g, "&#39;")}' title="Редагувати">
@@ -109,7 +120,7 @@ function renderClientsTable(clients) {
                 </button>
             </td>
         </tr>
-    `).join('');
+    `}).join('');
 
     // Прив'язка подій редагування
     document.querySelectorAll('.edit-client-btn').forEach(btn => {
@@ -125,24 +136,52 @@ function showClientModal(clientData = null) {
     const deleteBtn = document.getElementById('deleteClientBtn');
     const title = document.getElementById('clientFormTitle');
 
+    // Блок авторизації
+    const authFields = document.getElementById('clientAuthFields');
+
     form.reset();
 
     if (clientData && clientData.id) {
-        // === EDIT ===
+        // === EDIT (Редагування) ===
         currentClientId = clientData.id;
         title.textContent = 'Редагувати Клієнта';
         deleteBtn.style.display = 'block';
 
+        // При редагуванні ховаємо логін/пароль
+        if (authFields) authFields.style.display = 'none';
+        document.getElementById('client_username').removeAttribute('required');
+        document.getElementById('client_password').removeAttribute('required');
+
+        // Заповнюємо поля
         document.getElementById('client_id').value = clientData.id;
-        document.getElementById('client_name').value = clientData.full_name || clientData.username || '';
-        document.getElementById('client_email').value = clientData.email || '';
-        document.getElementById('client_phone').value = clientData.phone || clientData.contact || '';
+        document.getElementById('client_name').value = clientData.full_name || '';
+        document.getElementById('client_email').value = clientData.user_email || clientData.email || '';
+        document.getElementById('client_phone').value = clientData.contact || '';
         document.getElementById('client_status').value = clientData.status || 'active';
+
+        // Робимо ім'я та email "тільки для читання", оскільки бек їх не оновлює через цей PUT
+        document.getElementById('client_email').setAttribute('readonly', true);
+        document.getElementById('client_name').setAttribute('readonly', true);
+        document.getElementById('client_email').style.opacity = '0.6';
+        document.getElementById('client_name').style.opacity = '0.6';
+
     } else {
-        // === CREATE ===
+        // === CREATE (Створення) ===
         currentClientId = null;
         title.textContent = 'Новий Клієнт';
         deleteBtn.style.display = 'none';
+
+        // Показуємо і вимагаємо логін/пароль
+        if (authFields) authFields.style.display = 'block';
+        document.getElementById('client_username').setAttribute('required', 'true');
+        document.getElementById('client_password').setAttribute('required', 'true');
+
+        // Робимо поля доступними
+        document.getElementById('client_email').removeAttribute('readonly');
+        document.getElementById('client_name').removeAttribute('readonly');
+        document.getElementById('client_email').style.opacity = '1';
+        document.getElementById('client_name').style.opacity = '1';
+
         document.getElementById('client_status').value = 'active';
     }
 
@@ -153,16 +192,43 @@ async function handleClientSubmit(e) {
     e.preventDefault();
     const form = e.target;
 
-    const payload = {
-        full_name: form.client_name.value,
-        email: form.client_email.value,
-        phone: form.client_phone.value,
-        status: form.client_status.value
-    };
+    const contact = form.client_phone.value;
+    const status = form.client_status.value;
 
     if (currentClientId) {
+        // === PUT (Редагування) ===
+        const payload = {
+            contact: contact,
+            status: status
+        };
         await sendDataRequest('PUT', `api/admin/members/${currentClientId}/`, payload, 'Дані клієнта оновлено');
     } else {
+        // === POST (Створення) ===
+
+        // Розбиваємо ім'я
+        const fullName = form.client_name.value.trim();
+        // Розділяємо по будь-якій кількості пробілів
+        const nameParts = fullName.split(/\s+/);
+        const firstName = nameParts[0];
+        // Якщо прізвища немає, ставимо "-" щоб сервер не сварився, або беремо решту слів
+        const lastName = nameParts.slice(1).join(' ') || '-';
+
+        // Валідація Email на стороні клієнта (проста)
+        const email = form.client_email.value;
+        if (!email.includes('@') || !email.includes('.')) {
+            showToast('Введіть коректний Email (напр. user@mail.com)', 'error');
+            return;
+        }
+
+        const payload = {
+            username: form.client_username.value,
+            password: form.client_password.value,
+            email: email,
+            first_name: firstName,
+            last_name: lastName, // Тепер тут ніколи не буде пусто
+            contact: contact,
+            status: status
+        };
         await sendDataRequest('POST', 'api/admin/members/', payload, 'Клієнта створено');
     }
 }
@@ -176,7 +242,7 @@ async function handleDeleteClient() {
 
 
 // ==========================================
-// 2. ЛОГІКА ТРЕНЕРІВ (INSTRUCTORS) - ОНОВЛЕНО
+// 2. ЛОГІКА ТРЕНЕРІВ (INSTRUCTORS)
 // ==========================================
 
 async function loadTrainersTable() {
@@ -237,7 +303,7 @@ function showTrainerModal(data = null) {
     const form = document.getElementById('trainerForm');
     const deleteBtn = document.getElementById('deleteTrainerBtn');
     const title = document.getElementById('trainerFormTitle');
-    const authFields = document.getElementById('trainerAuthFields'); // Блок логіна/пароля
+    const authFields = document.getElementById('trainerAuthFields');
 
     form.reset();
 
@@ -247,14 +313,12 @@ function showTrainerModal(data = null) {
         title.textContent = 'Редагувати Тренера';
         deleteBtn.style.display = 'block';
 
-        // При редагуванні ховаємо блок авторизації
         if (authFields) authFields.style.display = 'none';
         document.getElementById('trainer_username').removeAttribute('required');
         document.getElementById('trainer_password').removeAttribute('required');
 
         document.getElementById('trainer_id').value = data.id;
         document.getElementById('trainer_name').value = data.full_name || data.name || `${data.first_name || ''} ${data.last_name || ''}`.trim();
-        // Backend keys: specialties, contact
         document.getElementById('trainer_specialization').value = data.specialties || data.specialization || '';
         document.getElementById('trainer_phone').value = data.contact || data.phone || '';
     } else {
@@ -263,7 +327,6 @@ function showTrainerModal(data = null) {
         title.textContent = 'Новий Тренер';
         deleteBtn.style.display = 'none';
 
-        // Показуємо і робимо обов'язковим блок авторизації
         if (authFields) authFields.style.display = 'block';
         document.getElementById('trainer_username').setAttribute('required', 'true');
         document.getElementById('trainer_password').setAttribute('required', 'true');
@@ -276,28 +339,23 @@ async function handleTrainerSubmit(e) {
     e.preventDefault();
     const form = e.target;
 
-    // Розбиваємо ім'я
     const fullName = form.trainer_name.value.trim();
     const nameParts = fullName.split(' ');
     const firstName = nameParts[0];
     const lastName = nameParts.slice(1).join(' ') || '';
 
-    // Формуємо payload згідно вимог бекенду
     const payload = {
         first_name: firstName,
         last_name: lastName,
-        specialties: form.trainer_specialization.value, // Ключ згідно API
-        contact: form.trainer_phone.value               // Ключ згідно API
+        specialties: form.trainer_specialization.value,
+        contact: form.trainer_phone.value
     };
 
     if (currentTrainerId) {
-        // PUT: оновлюємо дані
         await sendDataRequest('PUT', `api/admin/instructors/${currentTrainerId}/`, payload, 'Дані тренера оновлено');
     } else {
-        // POST: додаємо облікові дані
         payload.username = form.trainer_username.value;
         payload.password = form.trainer_password.value;
-
         await sendDataRequest('POST', 'api/admin/instructors/', payload, 'Тренера створено');
     }
 }
