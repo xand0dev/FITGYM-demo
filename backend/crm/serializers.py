@@ -235,3 +235,59 @@ class AdminInstructorSerializer(serializers.ModelSerializer):
         instructor = Instructor.objects.create(user=user, **validated_data)
 
         return instructor
+
+
+class AdminMemberSerializer(serializers.ModelSerializer):
+    """
+    Серіалізатор для створення/редагування клієнтів адміном.
+    При створенні вимагає дані для User (username, password).
+    """
+    # Поля для створення User
+    username = serializers.CharField(write_only=True, required=False) # required=False для PUT
+    password = serializers.CharField(write_only=True, required=False, style={'input_type': 'password'})
+    first_name = serializers.CharField(write_only=True, required=False)
+    last_name = serializers.CharField(write_only=True, required=False)
+    email = serializers.EmailField(write_only=True, required=False)
+
+    # Поля для читання
+    full_name = serializers.CharField(source='user.get_full_name', read_only=True)
+    user_email = serializers.EmailField(source='user.email', read_only=True)
+
+    class Meta:
+        model = Member
+        fields = [
+            'id',
+            'username', 'password', 'first_name', 'last_name', 'email', # Write only (Create)
+            'full_name', 'user_email', # Read only
+            'contact', 'status', 'birth_date', 'gender' # Member fields
+        ]
+
+    def create(self, validated_data):
+        # 1. Витягуємо дані для User
+        username = validated_data.pop('username')
+        password = validated_data.pop('password')
+        first_name = validated_data.pop('first_name', '')
+        last_name = validated_data.pop('last_name', '')
+        email = validated_data.pop('email', '')
+
+        # 2. Створюємо User
+        user = User.objects.create_user(
+            username=username,
+            password=password,
+            email=email,
+            first_name=first_name,
+            last_name=last_name
+        )
+
+        # 3. Створюємо Member
+        member = Member.objects.create(user=user, **validated_data)
+        return member
+
+    def update(self, instance, validated_data):
+        # Для PUT/PATCH оновлюємо тільки поля Member (статус, контакт)
+        # Якщо треба оновлювати і User (ім'я, email) - це треба прописувати окремо,
+        # але поки спростимо задачу.
+        instance.contact = validated_data.get('contact', instance.contact)
+        instance.status = validated_data.get('status', instance.status)
+        instance.save()
+        return instance
