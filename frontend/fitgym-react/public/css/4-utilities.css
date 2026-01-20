@@ -1,0 +1,68 @@
+/* ========================================================== */
+/* 4-utilities.css: Адаптивність (Media Queries) та Хелпери */
+/* ========================================================== */
+
+/* --- HELPER CLASSES --- */
+.review-hidden { display: none; }
+.text-center { text-align: center; }
+
+/* --- MEDIA QUERIES (АДАПТИВНІСТЬ) --- */
+
+@media (max-width: 1024px) {
+    .hero { padding: 80px 0; }
+    .hero-inner { padding: 30px; }
+    .section { padding: 60px 0; }
+    .footer-grid { grid-template-columns: 1.5fr 1fr 1fr; }
+    .footer-branding { grid-column: span 1; }
+}
+
+@media (max-width: 880px) {
+    /* Layout */
+    .cols-3 { grid-template-columns: repeat(2, 1fr); }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+    .footer-branding { grid-column: span 2; order: -1; }
+    .footer-bottom { flex-direction: column; gap: 15px; text-align: center; }
+    .payment-systems { margin-top: 10px; }
+    .social-links { justify-content: flex-start; }
+
+    /* Pages */
+    .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+    .pricing-card--featured { grid-column: span 2; order: -1; transform: scale(1.02); }
+    .imt-wrapper { grid-template-columns: 1fr; }
+    .cabinet-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+    /* Header/Nav */
+    .nav-primary {
+        display: none; position: absolute; top: 100%; left: 0; width: 100%;
+        flex-direction: column; background: rgba(0, 0, 0, 0.95); padding: 10px 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .nav-primary a { padding: 12px 20px; border-radius: 0; width: 100%; }
+    .nav-primary a::after { content: none; }
+    .hamburger { display: flex; margin-left: 10px; }
+    .header-inner #authArea { display: none; }
+
+    /* Layout */
+    .hero-inner { max-width: 100%; text-align: center; }
+    .hero-actions { justify-content: center; }
+    .section h2 { font-size: 1.8rem; }
+}
+
+@media (max-width: 560px) {
+    /* Layout */
+    .cols-3 { grid-template-columns: 1fr; }
+    .footer-grid { grid-template-columns: 1fr; }
+    .footer-col:first-child { grid-column: span 1; }
+    .footer-col { text-align: center; }
+    .app-buttons { align-items: center; }
+    .social-links { justify-content: center; }
+    .footer-branding .tagline { max-width: 100%; }
+    .section-title { font-size: 2rem; }
+    .section-subtitle { font-size: 1rem; }
+
+    /* Pages */
+    .pricing-grid { grid-template-columns: 1fr; }
+    .pricing-card--featured { grid-column: span 1; transform: scale(1.02); }
+}

@@ -1,0 +1,52 @@
+/* ===========================
+   0-critical.css — SYSTEM CORE
+   Механіка роботи інтерфейсу. Не для дизайну!
+   =========================== */
+
+/* --- SYSTEM RESET & BASE --- */
+* { box-sizing: border-box; }
+body { margin: 0; padding: 0; }
+
+/* --- MODAL LOGIC (UNBREAKABLE) --- */
+/* Відповідає ТІЛЬКИ за те, щоб вікно перекривало екран і було по центру */
+
+.modal-overlay {
+    /* 1. Стан за замовчуванням - приховано */
+    display: none;
+
+    /* 2. Позиціювання - поверх усього */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999; /* Найвищий пріоритет */
+
+    /* 3. Центрування контенту (Flexbox) */
+    justify-content: center;
+    align-items: center;
+
+    /* 4. Скрол, якщо екран малий */
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Цей селектор гарантує, що JS style.display='flex' спрацює */
+.modal-overlay[style*="display: flex"],
+.modal-overlay[style*="display:flex"] {
+    display: flex !important;
+}
+
+.modal-content {
+    position: relative;
+    /* Максимальні розміри для безпеки на мобільних */
+    max-width: 95vw;
+    max-height: 95vh;
+    /* Якщо контент великий - скролимо */
+    overflow-y: auto;
+}
+
+/* --- UTILITY HELPERS (Structural) --- */
+.d-none { display: none !important; }
+.d-flex { display: flex !important; }
+.d-block { display: block !important; }

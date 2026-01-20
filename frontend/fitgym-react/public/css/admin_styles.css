@@ -1,0 +1,367 @@
+/* ===========================
+    ADMIN DASHBOARD STYLES
+    (ФІНАЛЬНА ВЕРСІЯ З МАКСИМАЛЬНОЮ АДАПТАЦІЄЮ)
+    =========================== */
+
+/* --- LAYOUT --- */
+body {
+    background-color: #121212;
+    overflow-x: hidden;
+}
+
+.dashboard-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* --- SIDEBAR --- */
+.dashboard-sidebar {
+    width: 260px;
+    background-color: #050505;
+    border-right: 1px solid #222;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    height: 100vh;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+    transition: transform 0.3s ease;
+}
+
+.sidebar-logo {
+    height: 70px;
+    display: flex;
+    align-items: center;
+    padding-left: 25px;
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: #fff;
+    border-bottom: 1px solid #222;
+    white-space: nowrap;
+}
+.sidebar-logo span { color: var(--accent); }
+
+.sidebar-menu {
+    flex-grow: 1;
+    padding: 20px 0;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px 25px;
+    color: #888;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s;
+    border-left: 4px solid transparent;
+}
+
+.menu-item:hover {
+    color: #fff;
+    background: #111;
+}
+
+.menu-item.active {
+    color: #fff;
+    background: #1a1a1a;
+    border-left-color: var(--accent);
+}
+
+.sidebar-footer {
+    padding: 20px;
+    border-top: 1px solid #222;
+}
+
+/* --- MAIN CONTENT --- */
+.dashboard-main {
+    flex-grow: 1;
+    margin-left: 260px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    transition: margin-left 0.3s ease;
+}
+
+.dashboard-topbar {
+    height: 70px;
+    background: #181818;
+    border-bottom: 1px solid #222;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 40px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.dashboard-topbar h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #fff;
+}
+
+.admin-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #ccc;
+    font-size: 0.9rem;
+}
+
+.avatar-circle {
+    width: 35px;
+    height: 35px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- SECTIONS (TABS) --- */
+.content-section {
+    display: none; 
+    padding: 40px;
+    animation: fadeIn 0.3s ease;
+    flex-direction: column;
+}
+
+.content-section.active {
+    display: flex; 
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- DASHBOARD STATS & CARDS --- */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.stat-card, .card {
+    background: #1e1e1e;
+    padding: 25px;
+    border-radius: 12px;
+    border: 1px solid #333;
+    margin-bottom: 20px;
+}
+.stat-card h3, .card h3 { margin: 0 0 10px; color: #888; font-size: 0.9rem; text-transform: uppercase; }
+.stat-card .value { font-size: 2rem; font-weight: 700; color: #fff; margin-bottom: 5px; }
+.stat-card .trend { font-size: 0.85rem; color: #666; }
+.stat-card .trend.up { color: #2ecc71; }
+.card h3 { color: #fff; font-size: 1.2rem; }
+
+/* --- SCHEDULE AREA --- */
+.schedule-controls {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: flex-end;
+}
+#calendar {
+    background: #1e1e1e;
+    padding: 20px;
+    border-radius: 12px;
+    min-height: 700px;
+}
+
+/* --- BUTTONS --- */
+.btn {
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s, color 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+}
+.btn-primary { background: var(--accent, #3498db); color: #fff; }
+.btn-primary:hover { background: #2980b9; }
+.btn-danger { background: #d32f2f; color: #fff; }
+.btn-danger:hover { background: #b71c1c; }
+.btn-ghost { background: transparent; color: #ccc; border: 1px solid #444; }
+.btn-ghost:hover { background: #2a2a2a; color: #fff; }
+
+/* --- МОДАЛЬНІ ВІКНА (FIXED POSITION) --- */
+.modal-overlay {
+    position: fixed; 
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1010; 
+    background: rgba(0, 0, 0, 0.85);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-content {
+    background: #181818;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.6);
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    border: 1px solid #2a2a2a;
+    transform: translateY(-50px);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.modal-overlay.active .modal-content {
+    transform: translateY(0);
+}
+
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 1.5rem;
+    color: #888;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.modal-close:hover {
+    color: #fff;
+}
+
+
+/* --- MODAL FORM STYLES --- */
+.admin-form .form-group { margin-bottom: 15px; }
+.admin-form label { display: block; margin-bottom: 5px; color: #ccc; font-size: 0.9rem; }
+.admin-form input, .admin-form select, .admin-form textarea {
+    width: 100%;
+    padding: 10px;
+    background: #2a2a2a;
+    border: 1px solid #444;
+    color: #fff;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+.admin-form input:focus { border-color: var(--accent); outline: none; }
+.form-row { display: flex; gap: 15px; }
+.form-row .form-group { flex: 1; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
+.mini-list { max-height: 150px; overflow-y: auto; background: #111; padding: 10px; border-radius: 4px; font-size: 0.9rem; }
+.mini-list ul { list-style: none; padding: 0; margin: 0; }
+.mini-list li { padding: 5px 0; border-bottom: 1px solid #222; color: #ccc; }
+.mini-list li:last-child { border-bottom: none; }
+
+
+/* --- TABLE STYLES --- */
+.data-table { width: 100%; border-collapse: collapse; color: #ccc; font-size: 0.9rem; margin-top: 15px; }
+.data-table th, .data-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #2a2a2a; }
+.data-table th { color: #fff; font-weight: 700; background-color: #1a1a1a; }
+.data-table tr:hover { background-color: #222; cursor: pointer; }
+.data-table .action-btn { background: none; border: none; color: var(--accent, #3498db); cursor: pointer; margin-right: 10px; }
+
+
+/* --- НОВА КНОПКА (Гамбургер) --- */
+.mobile-toggle {
+    display: none; /* Приховано на десктопі */
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.5rem;
+    cursor: pointer;
+    z-index: 100;
+}
+
+
+/* ===========================================
+    АДАПТИВНІСТЬ (RESPONSIVE)
+    =========================================== */
+
+@media (max-width: 992px) {
+    
+    /* --- 1. SIDEBAR (Повне приховування та виїзд) --- */
+    .dashboard-sidebar {
+        transform: translateX(-100%); /* Ховаємо повністю */
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+    .dashboard-sidebar.active {
+        transform: translateX(0); /* Виїжджає при активації */
+    }
+    
+    .dashboard-main {
+        margin-left: 0; /* Знімаємо відступ */
+    }
+    
+    /* Оверлей для затемнення контенту при відкритті сайдбара */
+    .dashboard-container:after {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+    .dashboard-container.sidebar-open:after {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    
+    /* --- 2. TOPBAR (Показуємо Гамбургер) --- */
+    .dashboard-topbar {
+        padding: 0 15px;
+        justify-content: space-between; 
+    }
+    .mobile-toggle {
+        display: block; /* Показуємо кнопку */
+        order: -1; /* Ставимо на початок */
+    }
+    .admin-profile {
+        font-size: 0; /* Ховаємо текст "Адміністратор" */
+    }
+    .admin-profile span {
+        display: none;
+    }
+
+    /* --- 3. КОНТЕНТ --- */
+    .content-section {
+        padding: 20px 15px;
+    }
+
+    /* Адаптація сіток */
+    .stats-grid {
+        grid-template-columns: 1fr; 
+    }
+    
+    /* Адаптація таблиць (Горизонтальний скрол) */
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin-top: 15px;
+    }
+    .data-table {
+        min-width: 600px; /* Мінімальна ширина для скролу */
+    }
+}
