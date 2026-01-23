@@ -9,6 +9,16 @@ import { publicRequest, authRequest } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 
+
+/**
+ * @component Schedule
+ * @description Відображає календар занять (FullCalendar).
+ * Дозволяє переглядати події та бронювати їх (клік на подію).
+ * * Логіка:
+ * 1. Завантажує події з /api/schedule/ при зміні дат.
+ * 2. Використовує AuthContext для перевірки прав.
+ * 3. Відкриває вбудовану модалку для підтвердження запису.
+ */
 export default function Schedule() {
     const { user } = useAuth();
     const { openLogin } = useUI();

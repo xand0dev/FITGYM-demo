@@ -1,4 +1,11 @@
 // src/context/AuthContext.jsx
+
+/**
+ * Провайдер авторизації.
+ * Перевіряє токен при завантаженні, зберігає дані юзера.
+ * Надає: user, login, logout, loading.
+ */
+
 import { createContext, useState, useEffect, useContext } from 'react';
 import { authRequest, getToken } from '../utils/api';
 

@@ -9,7 +9,14 @@ export function getToken() {
     }
 }
 
-// Універсальна функція для захищених запитів
+/**
+ * Робить запит до захищеного API, автоматично додаючи токен.
+ * * @param {string} endpoint - Шлях до API (наприклад, '/api/me/')
+ * @param {string} [method='GET'] - HTTP метод (GET, POST, PUT, DELETE)
+ * @param {Object|null} [body=null] - Дані для відправки (для POST/PUT)
+ * @returns {Promise<any>} Відповідь від сервера у форматі JSON
+ * @throws {Error} Якщо статус відповіді не 2xx
+ */
 export async function authRequest(endpoint, method = 'GET', body = null) {
     const token = getToken();
     const headers = { 'Content-Type': 'application/json' };
