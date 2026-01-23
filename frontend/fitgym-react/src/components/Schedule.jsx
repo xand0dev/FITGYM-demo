@@ -73,24 +73,29 @@ export default function Schedule() {
     // Логіка бронювання
     const handleBooking = async () => {
         if (!user) {
-            openLogin(); // Якщо не зайшов - кидаємо на логін
+            openLogin(); 
             return;
         }
 
         if (!confirm(`Записатися на ${selectedEvent.title}?`)) return;
 
         try {
-            await authRequest('/api/bookings/', 'POST', { 
-                schedule: selectedEvent.id 
+            // ВИПРАВЛЕННЯ ТУТ:
+            // 1. URL змінив з '/api/bookings/' на '/api/book/' (як в urls.py)
+            // 2. Тіло запиту: змінив 'schedule' на 'session' (як в serializers.py)
+            await authRequest('/api/book/', 'POST', { 
+                session: selectedEvent.id 
             });
-            alert('Ви успішно записалися!');
-            setSelectedEvent(null); // Закриваємо модалку
             
-            // Оновлюємо календар (щоб змінилась кількість місць, якщо бек це віддає)
+            alert('Ви успішно записалися!');
+            setSelectedEvent(null); 
+            
             if (calendarRef.current) {
                 calendarRef.current.getApi().refetchEvents();
             }
         } catch (e) {
+            // Виводимо детальну помилку, якщо вона є
+            console.error(e);
             alert('Помилка: ' + e.message);
         }
     };
