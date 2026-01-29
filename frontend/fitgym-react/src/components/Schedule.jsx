@@ -21,7 +21,7 @@ import { useUI } from '../context/UIContext';
  */
 export default function Schedule() {
     const { user } = useAuth();
-    const { openLogin } = useUI();
+    const { openLogin, addToast, confirmAction } = useUI();
     
     // Стан для модалки бронювання
     const [selectedEvent, setSelectedEvent] = useState(null);
@@ -71,33 +71,33 @@ export default function Schedule() {
     };
 
     // Логіка бронювання
-    const handleBooking = async () => {
+    const handleBooking = () => { // Прибираємо async тут, він буде всередині confirm
         if (!user) {
-            openLogin(); 
+            addToast('Спершу увійдіть у систему', 'error'); // Замість alert
+            openLogin();
             return;
         }
 
-        if (!confirm(`Записатися на ${selectedEvent.title}?`)) return;
-
-        try {
-            // ВИПРАВЛЕННЯ ТУТ:
-            // 1. URL змінив з '/api/bookings/' на '/api/book/' (як в urls.py)
-            // 2. Тіло запиту: змінив 'schedule' на 'session' (як в serializers.py)
-            await authRequest('/api/book/', 'POST', { 
-                session: selectedEvent.id 
-            });
-            
-            alert('Ви успішно записалися!');
-            setSelectedEvent(null); 
-            
-            if (calendarRef.current) {
-                calendarRef.current.getApi().refetchEvents();
+        // Замість window.confirm викликаємо наше красиве вікно
+        confirmAction(
+            `Записатися на заняття "${selectedEvent.title}"?`, // Повідомлення
+            async () => { // Функція, яка виконається, якщо натиснуть "ТАК"
+                try {
+                    await authRequest('/api/book/', 'POST', { 
+                        session: selectedEvent.id 
+                    });
+                    
+                    addToast('Ви успішно записалися!', 'success'); // Красивий тост
+                    setSelectedEvent(null);
+                    
+                    if (calendarRef.current) {
+                        calendarRef.current.getApi().refetchEvents();
+                    }
+                } catch (e) {
+                    addToast(e.message || 'Помилка бронювання', 'error');
+                }
             }
-        } catch (e) {
-            // Виводимо детальну помилку, якщо вона є
-            console.error(e);
-            alert('Помилка: ' + e.message);
-        }
+        );
     };
 
     return (

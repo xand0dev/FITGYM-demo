@@ -1,3 +1,4 @@
+// src/App.jsx
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -5,8 +6,10 @@ import Cabinet from './pages/Cabinet';
 import AdminPanel from './pages/AdminPanel';
 import LoginModal from './components/LoginModal';
 import RegisterModal from './components/RegisterModal';
+import ToastContainer from './components/ToastContainer'; // <--- НОВЕ
+import GlobalConfirmModal from './components/GlobalConfirmModal'; // <--- НОВЕ
 import { useAuth } from './context/AuthContext';
-import { useUI } from './context/UIContext'; 
+import { useUI } from './context/UIContext';
 
 const PrivateRoute = ({ children, adminOnly = false }) => {
     const { user, loading } = useAuth();
@@ -17,11 +20,14 @@ const PrivateRoute = ({ children, adminOnly = false }) => {
 };
 
 function App() {
-  // Дістаємо стани з контексту
   const { isLoginOpen, closeLogin, isRegisterOpen, closeRegister } = useUI();
 
   return (
     <>
+      {/* Глобальні сповіщення та модалки */}
+      <ToastContainer />
+      <GlobalConfirmModal />
+
       <Routes>
         <Route path="/" element={<Layout />}>
             <Route index element={<Home />} />
@@ -37,7 +43,6 @@ function App() {
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
 
-      {/* ВАЖЛИВО: Модалки тут */}
       {isLoginOpen && <LoginModal onClose={closeLogin} />}
       {isRegisterOpen && <RegisterModal onClose={closeRegister} />}
     </>

@@ -5,9 +5,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import ukLocale from '@fullcalendar/core/locales/uk';
-// Важливо: переконайся, що імпорт стилів тут, або в index.html
-// import '../../public/css/admin_styles.css'; 
+import ukLocale from '@fullcalendar/core/locales/uk'; 
 
 export default function AdminPanel() {
     const { user, logout } = useAuth();
@@ -72,7 +70,7 @@ export default function AdminPanel() {
                 title: item.class_name || 'Тренування',
                 start: item.start_at,
                 end: item.end_at,
-                backgroundColor: '#e60000', // Яскраво червоний
+                backgroundColor: '#e60000', 
                 borderColor: '#e60000',
                 extendedProps: {
                     capacity: item.capacity,
