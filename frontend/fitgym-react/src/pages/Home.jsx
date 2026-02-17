@@ -12,11 +12,17 @@ import Contacts from '../components/Contacts';
 import BMICalculator from '../components/BMICalculator';
 import Carousel from '../components/Carousel'; 
 import Schedule from '../components/Schedule';
+import { useAuth } from '../context/AuthContext';
+import { useUI } from '../context/UIContext';
 
 export default function Home() {
     const [trainers, setTrainers] = useState([]);
+    const { user } = useAuth(); // Це тут не використовується напряму, але може знадобитись для іншої логіки
     
-    // Хуки useAuth та useUI тут більше не потрібні, вони всередині <Hero />
+    // Хуки useAuth та useUI тут більше не потрібні для Hero, бо вони всередині <Hero />
+    // Але якщо вони використовуються десь ще в Home, то залишаємо.
+    // В даному коді openLogin/openRegister не використовуються в Home, тому можна прибрати
+    // const { openLogin, openRegister } = useUI(); 
 
     useEffect(() => {
         AOS.init({ duration: 800, once: true });
