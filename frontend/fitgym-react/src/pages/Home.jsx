@@ -1,23 +1,22 @@
 // src/pages/Home.jsx
 import { useEffect, useState } from 'react';
-import { useOutletContext } from 'react-router-dom'; // <--- ВАЖЛИВО: Імпорт для useOutletContext
+import { useOutletContext } from 'react-router-dom'; // <--- Залишив, як ти просив
 import { publicRequest } from '../utils/api';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
+
+// Компоненти
+import Hero from '../components/Hero'; // <--- Новий компонент
 import Plans from '../components/Plans';
 import Contacts from '../components/Contacts';
 import BMICalculator from '../components/BMICalculator';
 import Carousel from '../components/Carousel'; 
 import Schedule from '../components/Schedule';
-import { useAuth } from '../context/AuthContext';
-import { useUI } from '../context/UIContext';
 
 export default function Home() {
     const [trainers, setTrainers] = useState([]);
-    const { user } = useAuth();
     
-    // Беремо функції з контексту UI, а не Outlet, бо ми вже перейшли на Global UIContext
-    const { openLogin, openRegister } = useUI(); 
+    // Хуки useAuth та useUI тут більше не потрібні, вони всередині <Hero />
 
     useEffect(() => {
         AOS.init({ duration: 800, once: true });
@@ -33,23 +32,8 @@ export default function Home() {
 
     return (
         <>
-            {/* HERO SECTION */}
-            <section className="hero">
-                <div className="hero-inner container" data-aos="fade-up">
-                    <h1>Ваша фітнесова подорож починається тут</h1>
-                    <p>Приєднуйтесь до нашого клубу та досягайте цілей з професіоналами.</p>
-                    <div className="hero-actions">
-                        {!user ? (
-                            <>
-                                <button onClick={openLogin} className="btn btn-primary" style={{marginRight: '10px'}}>Вхід</button>
-                                <button onClick={openRegister} className="btn btn-ghost">Реєстрація</button>
-                            </>
-                        ) : (
-                            <a href="#plans" className="btn btn-primary">Обрати абонемент</a>
-                        )}
-                    </div>
-                </div>
-            </section>
+            {/* HERO SECTION (Винесено) */}
+            <Hero />
 
             {/* ADVANTAGES */}
             <section id="advantages" className="section container">
@@ -80,7 +64,7 @@ export default function Home() {
             <BMICalculator />
 
             {/* СЛАЙДЕР (CAROUSEL) */}
-            <Carousel /> {/* <--- 2. Вставка Слайдера */}
+            <Carousel /> 
 
             {/* TRAINERS */}
             <section id="trainers" className="section container">

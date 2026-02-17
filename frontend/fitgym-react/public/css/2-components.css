@@ -2,18 +2,7 @@
 /* 2-components.css: Дизайн Компонентів (Visual Layer) */
 /* ========================================================== */
 
-/* --- NAVIGATION --- */
-.nav-primary { display: flex; gap: 25px; margin-right: auto; }
-.nav-primary a {
-    color: var(--muted); font-weight: 600; padding: 8px 0; position: relative;
-    transition: color 0.3s, transform 0.1s; text-decoration: none;
-}
-.nav-primary a:hover { color: var(--text); transform: translateY(-1px); }
-.nav-primary a::after {
-    content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 2px;
-    background: var(--accent); transition: width 0.3s ease-out;
-}
-.nav-primary a:hover::after { width: 100%; }
+
 
 /* --- BUTTONS --- */
 .btn {

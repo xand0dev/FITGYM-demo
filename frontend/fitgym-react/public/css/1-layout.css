@@ -2,30 +2,179 @@
 /* 1-layout.css: Структура (Header, Footer, Sections, Grid) */
 /* ========================================================== */
 
-/* --- HEADER --- */
+/* ===========================
+   MODERN HEADER STYLES (FIXED)
+   =========================== */
+
+/* 1. Основа Хедера */
 .site-header {
-    position: sticky;
+    position: fixed;
     top: 0;
-    z-index: 100;
-    background: rgba(0, 0, 0, 0.95);
-    backdrop-filter: blur(10px);
-    border-bottom: 2px solid var(--accent);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    padding: 15px 0;
+    transition: all 0.4s ease;
+    background: transparent; /* Прозорий старт */
+    /* Градієнт для читабельності тексту, якщо банер світлий */
+    background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
 }
+
+.site-header.scrolled {
+    background: rgba(10, 10, 10, 0.95); /* Майже чорний */
+    backdrop-filter: blur(10px);
+    padding: 10px 0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .header-inner {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: px;
-    padding: 16px 0;
+    justify-content: space-between; /* Розподіл по краях */
+    position: relative;
 }
+
+/* 2. Логотип */
 .logo {
+    font-size: 1.8rem;
     font-weight: 900;
-    font-size: 1.6rem;
-    letter-spacing: 1px;
+    color: #fff;
     text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    z-index: 1002;
 }
-.logo span { color: var(--accent); }
+.logo span { color: var(--accent); margin-left: 2px; }
+
+/* 3. Навігація (Центрування) */
+.nav-primary {
+    display: flex;
+    align-items: center;
+    gap: 40px; /* Відступ між пунктами */
+    
+    /* Ця магія центрує меню */
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.nav-primary > a {
+    color: #e0e0e0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-decoration: none;
+    transition: color 0.3s ease;
+    position: relative;
+    padding: 5px 0;
+}
+
+.nav-primary > a:hover {
+    color: #fff;
+}
+
+/* Червона лінія при наведенні */
+.nav-primary > a::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--accent);
+    transition: width 0.3s ease;
+    box-shadow: 0 0 8px var(--accent);
+}
+
+.nav-primary > a:hover::after {
+    width: 100%;
+}
+
+/* 4. Права частина (Кнопки) */
+#authArea {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    z-index: 1002;
+}
+
+/* --- ВАЖЛИВО: Ховаємо мобільні кнопки на ПК --- */
+.mobile-auth-actions {
+    display: none;
+}
+
+.nav-link-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: color 0.3s;
+}
+.nav-link-btn:hover { color: var(--accent); }
+
+.btn-sm {
+    padding: 8px 24px;
+    font-size: 0.85rem;
+    border-radius: 30px; /* Овальна кнопка */
+    font-weight: 700;
+}
+
+/* 5. Мобільна версія */
+@media (max-width: 992px) {
+    /* Скидаємо центрування на мобільному */
+    .nav-primary {
+        position: fixed;
+        left: auto;
+        transform: none;
+        top: 0;
+        right: 0;
+        height: 100vh;
+        width: 100%;
+        max-width: 320px;
+        background: #000;
+        flex-direction: column;
+        justify-content: center;
+        padding: 40px;
+        box-shadow: -10px 0 30px rgba(0,0,0,0.8);
+        transition: transform 0.4s cubic-bezier(0.77, 0, 0.175, 1);
+        transform: translateX(100%); /* Сховано */
+        z-index: 1001;
+        gap: 30px;
+    }
+
+    .nav-primary.open {
+        transform: translateX(0); /* Показано */
+    }
+
+    .nav-primary > a {
+        font-size: 1.3rem;
+        width: 100%;
+        text-align: center;
+        border-bottom: 1px solid #222;
+        padding-bottom: 15px;
+    }
+    
+    .nav-primary > a::after { display: none; }
+
+    /* Ховаємо десктопні кнопки */
+    #authArea { display: none; }
+    
+    /* Показуємо кнопки в мобільному меню */
+    .mobile-auth-actions {
+        display: flex; /* Тепер вони видимі тільки тут */
+        flex-direction: column;
+        width: 100%;
+        gap: 15px;
+        margin-top: 20px;
+    }
+    .mobile-auth-actions button { width: 100%; }
+}
 
 /* --- SECTIONS & GRID --- */
 .section { padding: 80px 0; border-top: 1px solid rgba(255, 255, 255, 0.05); }

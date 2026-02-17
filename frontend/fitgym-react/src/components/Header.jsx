@@ -1,69 +1,91 @@
 // src/components/Header.jsx
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useUI } from '../context/UIContext'; // <--- 1. Імпортуємо хук UI
-import { useState } from 'react';
+import { useUI } from '../context/UIContext';
+import { useState, useEffect } from 'react';
 
 export default function Header() {
     const { user, logout } = useAuth();
-    
-    // 2. Беремо функції відкриття вікон з глобального контексту
-    const { openLogin, openRegister } = useUI(); 
+    const { openLogin, openRegister } = useUI();
     
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [isScrolled, setIsScrolled] = useState(false);
+
+    // Ефект для відстеження скролу (щоб змінювати колір хедера)
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 50);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Функція закриття меню після кліку (для мобільного)
+    const closeMenu = () => setMobileMenuOpen(false);
 
     return (
-        <header className="site-header">
+        <header className={`site-header ${isScrolled ? 'scrolled' : ''}`}>
             <div className="container header-inner">
-                <div className="logo">FIT<span>GYM</span></div>
+                {/* ЛОГОТИП */}
+                <Link to="/" className="logo" onClick={closeMenu}>
+                    FIT<span>GYM</span>
+                </Link>
                 
-                {/* Меню навігації */}
-                <nav 
-                    className="nav-primary" 
-                    style={{ 
-                        // Якщо меню відкрите - показуємо flex. 
-                        // undefined залишає поведінку CSS за замовчуванням (щоб не ховати меню на ПК)
-                        display: mobileMenuOpen ? 'flex' : undefined 
-                    }}
-                >
-                    <Link to="/">Головна</Link>
-                    <a href="/#schedule">Розклад</a>
-                    <a href="/#trainers">Тренери</a>
-                    <a href="/#plans">Абонементи</a>
+                {/* НАВІГАЦІЯ */}
+                {/* Додаємо клас 'open', якщо меню активне */}
+                <nav className={`nav-primary ${mobileMenuOpen ? 'open' : ''}`}>
+                    <Link to="/" onClick={closeMenu}>Головна</Link>
+                    <a href="/#schedule" onClick={closeMenu}>Розклад</a>
+                    <a href="/#trainers" onClick={closeMenu}>Тренери</a>
+                    <a href="/#plans" onClick={closeMenu}>Абонементи</a>
                     
-                    {/* Посилання для Адміна */}
                     {user?.is_staff && (
-                        <Link to="/admin" style={{ color: 'var(--accent)' }}>Адмін</Link>
+                        <Link to="/admin" onClick={closeMenu} style={{ color: 'var(--accent)' }}>
+                            <i className="fas fa-cogs"></i> Адмін
+                        </Link>
                     )}
                     
-                    {/* Посилання в Кабінет */}
                     {user && (
-                         <Link to="/cabinet">Кабінет</Link>
+                         <Link to="/cabinet" onClick={closeMenu}>
+                             <i className="fas fa-user-circle"></i> Кабінет
+                         </Link>
                     )}
+
+                    {/* На мобільному дублюємо кнопку виходу/входу в меню для зручності */}
+                    <div className="mobile-auth-actions">
+                        {user ? (
+                            <button onClick={() => { logout(); closeMenu(); }} className="btn btn-ghost">Вийти</button>
+                        ) : (
+                            <>
+                                <button className="btn btn-ghost" onClick={() => { openLogin(); closeMenu(); }}>Вхід</button>
+                                <button className="btn btn-primary" onClick={() => { openRegister(); closeMenu(); }}>Реєстрація</button>
+                            </>
+                        )}
+                    </div>
                 </nav>
 
-                {/* Зона авторизації */}
+                {/* ПРАВА ЧАСТИНА (Десктоп) */}
                 <div id="authArea">
                     {user ? (
-                        <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
-                            <span style={{color:'#fff'}} className="hide-on-mobile">
-                                Привіт, <b>{user.username}</b>
-                            </span>
-                            <button onClick={logout} className="btn btn-primary" title="Вихід">
+                        <div className="user-greeting">
+                            <span className="hide-on-mobile">Привіт, <b>{user.username}</b></span>
+                            <button onClick={logout} className="btn-icon-logout" title="Вихід">
                                 <i className="fas fa-sign-out-alt"></i>
                             </button>
                         </div>
                     ) : (
-                        <div id="guestArea">
-                            {/* 3. Кнопки тепер викликають функції з useUI */}
-                            <button className="btn btn-ghost" onClick={openLogin}>ВХІД</button>
-                            <button className="btn btn-primary" onClick={openRegister}>РЕЄСТРАЦІЯ</button>
+                        <div className="guest-actions">
+                            <button className="nav-link-btn" onClick={openLogin}>Вхід</button>
+                            <button className="btn btn-primary btn-sm" onClick={openRegister}>Реєстрація</button>
                         </div>
                     )}
                 </div>
 
-                {/* Мобільна кнопка (бургер) */}
-                <button className="hamburger" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                {/* БУРГЕР КНОПКА */}
+                <button 
+                    className={`hamburger ${mobileMenuOpen ? 'active' : ''}`} 
+                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                >
                     <span></span><span></span><span></span>
                 </button>
             </div>
