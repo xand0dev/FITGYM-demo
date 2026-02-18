@@ -12,12 +12,10 @@ export default function RegisterModal({ onClose }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-
         if (formData.password !== formData.confirm) {
-            setError('Паролі не співпадають');
+            setError('ПАРОЛІ НЕ СПІВПАДАЮТЬ');
             return;
         }
-
         try {
             const res = await fetch(`${BASE_URL}/api/register/`, {
                 method: 'POST',
@@ -30,61 +28,117 @@ export default function RegisterModal({ onClose }) {
                 })
             });
             const data = await res.json();
-
-            if (!res.ok) throw new Error(data.detail || 'Помилка реєстрації');
-
+            if (!res.ok) throw new Error(data.detail || 'ПОМИЛКА');
             login(data.token, formData.name);
             onClose();
-            
         } catch (err) {
-            setError(err.message);
+            setError(err.message.toUpperCase());
         }
     };
 
+    // --- Оновлений стиль інпутів (Чорний текст при наборі) ---
     const inputStyle = {
-        width:'100%', padding:'12px', borderRadius:'5px', 
-        border:'1px solid #444', background:'#2a2a2a', color:'white', 
-        boxSizing: 'border-box', marginBottom: '10px'
+        width: '100%', 
+        padding: '12px', 
+        background: '#f5f5f5',
+        border: '1px solid #ddd', 
+        marginBottom: '15px',
+        borderRadius: '5px', 
+        fontWeight: '600', 
+        outline: 'none',
+        color: '#000', // Текст тепер завжди чорний
+        fontFamily: "'Inter', sans-serif",
+        boxSizing: 'border-box'
     };
 
     return (
         <div className="modal-overlay" style={{
-            // --- ТІ САМІ ФІКСИ ---
-            display: 'flex', opacity: 1, pointerEvents: 'auto', visibility: 'visible',
-            position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-            backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 99999,
-            alignItems: 'center', justifyContent: 'center'
+            display: 'flex',
+            position: 'fixed',
+            top: 0, left: 0,
+            width: '100%', height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.85)',
+            zIndex: 99999,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backdropFilter: 'blur(8px)',
+            animation: 'fadeIn 0.3s ease-out'
         }}>
-            <div className="modal-content" style={{
-                background: '#1e1e1e', padding: '30px', borderRadius: '10px', 
-                width: '90%', maxWidth: '400px', position: 'relative',
-                transform: 'none', opacity: 1
+            {/* КОНТЕЙНЕР З АНІМОВАНОЮ ПІДСВІТКОЮ */}
+            <div className="animated-glow-border" style={{
+                position: 'relative',
+                padding: '3px',
+                background: 'linear-gradient(45deg, #ff0000, #000, #ff0000, #fff)',
+                backgroundSize: '400% 400%',
+                animation: 'gradientBG 5s ease infinite',
+                borderRadius: '12px'
             }}>
-                <button onClick={onClose} style={{
-                    position: 'absolute', top: '15px', right: '15px', 
-                    background: 'none', border: 'none', color: '#888', 
-                    fontSize: '24px', cursor: 'pointer'
-                }}>×</button>
-                
-                <h2 style={{color: '#fff', marginBottom: '20px', textAlign: 'center', marginTop: 0}}>Реєстрація</h2>
-                {error && <p style={{color:'red', textAlign:'center', marginBottom:'15px'}}>{error}</p>}
-                
-                <form onSubmit={handleSubmit}>
-                    <input style={inputStyle} required placeholder="Ім'я" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-                    <input style={inputStyle} required placeholder="Логін" value={formData.username} onChange={e => setFormData({...formData, username: e.target.value})} />
-                    <input style={inputStyle} type="email" required placeholder="Email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
-                    <input style={inputStyle} type="password" required placeholder="Пароль" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
-                    <input style={inputStyle} type="password" required placeholder="Підтвердіть пароль" value={formData.confirm} onChange={e => setFormData({...formData, confirm: e.target.value})} />
-                    
-                    <button type="submit" className="btn btn-primary" style={{
-                        width:'100%', padding:'12px', background:'#f36100', color:'white', 
-                        border:'none', borderRadius:'5px', cursor:'pointer', fontWeight:'bold', 
-                        fontSize:'16px', marginTop: '10px'
+                <div className="modal-content" style={{
+                    background: '#fff',
+                    padding: '40px',
+                    width: '400px',
+                    borderRadius: '10px',
+                    position: 'relative'
+                }}>
+                    <button onClick={onClose} style={{
+                        position: 'absolute', top: '15px', right: '15px', 
+                        background: 'none', border: 'none', color: '#000', 
+                        fontSize: '24px', cursor: 'pointer', fontWeight: '900'
+                    }}>×</button>
+
+                    <h2 style={{
+                        fontFamily: "'Montserrat', sans-serif",
+                        fontWeight: '900',
+                        fontStyle: 'italic',
+                        fontSize: '1.8rem',
+                        color: '#000',
+                        textAlign: 'center',
+                        textTransform: 'uppercase',
+                        marginBottom: '30px'
                     }}>
-                        Зареєструватися
-                    </button>
-                </form>
+                        РЕЄСТРАЦІЯ <br/>
+                        <span style={{ color: '#ff0000' }}>FITGYM</span>
+                    </h2>
+
+                    <form onSubmit={handleSubmit}>
+                        <input style={inputStyle} placeholder="ПОВНЕ ІМ'Я" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
+                        <input style={inputStyle} placeholder="ЛОГІН" value={formData.username} onChange={e => setFormData({...formData, username: e.target.value})} required />
+                        <input style={inputStyle} type="email" placeholder="EMAIL" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} required />
+                        <input style={inputStyle} type="password" placeholder="ПАРОЛЬ" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} required />
+                        <input style={inputStyle} type="password" placeholder="ПІДТВЕРДЖЕННЯ" value={formData.confirm} onChange={e => setFormData({...formData, confirm: e.target.value})} required />
+                        
+                        <button type="submit" style={{
+                            width: '100%', padding: '15px', background: '#000',
+                            color: '#fff', border: 'none', borderRadius: '5px',
+                            fontWeight: '900', textTransform: 'uppercase', cursor: 'pointer',
+                            marginTop: '10px'
+                        }} className="submit-btn-glow">
+                            ЗАРЕЄСТРУВАТИСЯ
+                        </button>
+                    </form>
+                </div>
             </div>
+
+            <style>{`
+                @keyframes gradientBG {
+                    0% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
+                }
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                .submit-btn-glow:hover {
+                    background: #ff0000 !important;
+                    box-shadow: 0 0 15px #ff0000;
+                    transition: 0.3s;
+                }
+                input::placeholder {
+                    color: #aaa;
+                    font-weight: 500;
+                }
+            `}</style>
         </div>
     );
 }

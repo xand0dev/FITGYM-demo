@@ -1,9 +1,7 @@
 import { useAuth } from '../context/AuthContext';
-import { useUI } from '../context/UIContext';
 
 export default function Hero() {
     const { user } = useAuth();
-    const { openLogin, openRegister } = useUI();
 
     return (
         <section className="hero-modern" style={{padding: '80px 0', background: '#fff', color: '#000', overflow: 'hidden'}}>
@@ -31,68 +29,29 @@ export default function Hero() {
                     </p>
 
                     <div className="hero-actions">
-                        {!user ? (
-                            <div style={{display: 'flex', gap: '15px', flexWrap: 'wrap'}}>
-                                <button 
-                                    onClick={openLogin} 
-                                    className="btn" 
-                                    style={{
-                                        background: '#111', 
-                                        color: '#fff', 
-                                        padding: '16px 45px', 
-                                        borderRadius: '6px', 
-                                        fontWeight: '700', 
-                                        border: 'none', 
-                                        cursor: 'pointer',
-                                        fontSize: '0.9rem',
-                                        letterSpacing: '1px'
-                                    }}
-                                >
-                                    ВХІД
-                                </button>
-                                <button 
-                                    onClick={openRegister} 
-                                    className="btn"
-                                    style={{
-                                        background: 'transparent', 
-                                        color: '#111', 
-                                        border: '2px solid #111', 
-                                        padding: '14px 45px', 
-                                        borderRadius: '6px', 
-                                        fontWeight: '700', 
-                                        cursor: 'pointer',
-                                        fontSize: '0.9rem',
-                                        letterSpacing: '1px'
-                                    }}
-                                >
-                                    РЕЄСТРАЦІЯ
-                                </button>
-                            </div>
-                        ) : (
-                            <a 
-                                href="#plans" 
-                                className="btn"
-                                style={{
-                                    background: '#111', 
-                                    color: '#fff', 
-                                    padding: '16px 45px', 
-                                    borderRadius: '6px', 
-                                    fontWeight: '700', 
-                                    textDecoration: 'none', 
-                                    display: 'inline-block',
-                                    fontSize: '0.9rem',
-                                    letterSpacing: '1px'
-                                }}
-                            >
-                                ОБРАТИ АБОНЕМЕНТ
-                            </a>
-                        )}
+                        {/* ЗАЛИШАЄМО ТІЛЬКИ ОДНУ КНОПКУ ДЛЯ ВСІХ КОРИСТУВАЧІВ */}
+                        <a 
+                            href="#plans" 
+                            className="btn"
+                            style={{
+                                background: '#111', 
+                                color: '#fff', 
+                                padding: '16px 45px', 
+                                borderRadius: '6px', 
+                                fontWeight: '700', 
+                                textDecoration: 'none', 
+                                display: 'inline-block',
+                                fontSize: '0.9rem',
+                                letterSpacing: '1px'
+                            }}
+                        >
+                            ОБРАТИ АБОНЕМЕНТ
+                        </a>
                     </div>
                 </div>
 
                 {/* ПРАВА ЧАСТИНА: ФОТО */}
                 <div className="hero-image-block" style={{flex: '1', minWidth: '350px', position: 'relative', display: 'flex', justifyContent: 'center'}} data-aos="fade-left">
-                    {/* Використовуємо URL з Unsplash, щоб уникнути помилки імпорту */}
                     <img 
                         src="https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=2069&auto=format&fit=crop" 
                         alt="Athlete" 
@@ -102,8 +61,8 @@ export default function Hero() {
                             display: 'block', 
                             objectFit: 'contain', 
                             maxHeight: '650px', 
-                            filter: 'grayscale(100%) contrast(1.1)', // Чорно-білий стиль як на макеті
-                            maskImage: 'linear-gradient(to bottom, black 80%, transparent 100%)', // Плавне зникнення знизу (для webkit браузерів)
+                            filter: 'grayscale(100%) contrast(1.1)', 
+                            maskImage: 'linear-gradient(to bottom, black 80%, transparent 100%)', 
                             WebkitMaskImage: 'linear-gradient(to bottom, black 80%, transparent 100%)'
                         }} 
                     />

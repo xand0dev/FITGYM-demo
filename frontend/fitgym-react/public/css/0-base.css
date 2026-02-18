@@ -1,107 +1,107 @@
 /* ========================================================== */
-/* 0-base.css: Змінні (Variables), Скидання (Reset), Основа */
+/* 0-base.css: Змінні, Скидання та Основа (RED-BLACK-WHITE)   */
 /* ========================================================== */
-/* У загальному CSS (0-base.css) */
-
-/* --- СТИЛІ ДЛЯ ГАМБУРГЕРА --- */
-.hamburger {
-    /* Базові стилі контейнера */
-    width: 30px;
-    height: 30px;
-    position: relative;
-    cursor: pointer;
-    display: none; /* За замовчуванням прихований */
-    z-index: 100; /* Поверх шапки */
-}
-
-/* Середня лінія */
-.hamburger span {
-    display: block;
-    position: absolute;
-    height: 3px;
-    width: 100%;
-    background: #fff; /* Білий колір */
-    border-radius: 9px;
-    opacity: 1;
-    left: 0;
-    transform: rotate(0deg);
-    transition: .25s ease-in-out;
-}
-
-/* Розташування ліній */
-.hamburger span:nth-child(1) {
-    top: 5px;
-}
-
-.hamburger span:nth-child(2) {
-    top: 13px;
-}
-
-.hamburger span:nth-child(3) {
-    top: 21px;
-}
-
-/* --- АНІМАЦІЯ ХРЕСТИКА (.active) --- */
-.hamburger.active span:nth-child(1) {
-    top: 13px;
-    transform: rotate(135deg);
-}
-
-.hamburger.active span:nth-child(2) {
-    opacity: 0; /* Приховуємо середню лінію */
-    left: -60px;
-}
-
-.hamburger.active span:nth-child(3) {
-    top: 13px;
-    transform: rotate(-135deg);
-}
-
-/* --- ВІДОБРАЖЕННЯ НА МОБІЛЬНОМУ (Медіа-запит) --- */
-@media (max-width: 992px) {
-    /* 1. Показуємо контейнер гамбургера */
-    .hamburger {
-        display: block; 
-    }
-    
-    /* 2. Адаптація контейнера навігації */
-    .nav-primary {
-        /* ... (ваш існуючий код) ... */
-        transition: transform 0.3s ease-out; /* Плавний виїзд */
-        transform: translateY(-100vh); /* Ховаємо за межі екрана */
-    }
-    
-    .nav-primary.active {
-        /* display: flex; <--- ЗАМІНЮЄМО НА: */
-        transform: translateY(0); /* Висуваємо на екран */
-        min-height: calc(100vh - var(--header-height, 70px)); /* Займаємо решту екрана */
-        position: fixed; /* Фіксуємо, щоб не скролилось з контентом */
-    }
-}
 
 /* --- ROOT Variables --- */
 :root {
-    --bg: #0a0a0a;
-    --surface: #141414;
-    --text: #f5f5f5;
-    --muted: #bdbdbd;
-    --accent: #e60000; /* Ваш червоний акцент */
+    /* Основна палітра */
+    --bg: #ffffff;           /* Чистий білий фон */
+    --surface: #f4f4f4;      /* Світло-сірий для карток або блоків */
+    --text: #000000;         /* Чорний основний текст */
+    --muted: #666666;        /* Темно-сірий для описів */
+    --accent: #ff0000;       /* Чистий червоний акцент */
+    
+    /* Додаткові кольори */
+    --black: #000000;
+    --white: #ffffff;
+    
+    /* Параметри макета */
     --max-w: 1200px;
-    --radius: 12px;
+    --radius: 8px;           /* Більш гострі кути для спортивного стилю */
     --gap: 20px;
-    font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --header-height: 80px;
+
+    /* Шрифти (Montserrat для заголовків обов'язковий) */
+    --font-main: "Inter", system-ui, sans-serif;
+    --font-accent: "Montserrat", sans-serif;
 }
 
 /* --- BASE --- */
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
+
 body {
     height: 100%;
     margin: 0;
-    background: var(--bg);
-    color: var(--text);
+    background: var(--bg);   /* Тепер фон білий */
+    color: var(--text);      /* Текст чорний */
+    font-family: var(--font-main);
     font-size: 16px;
     line-height: 1.6;
 }
-a { color: inherit; text-decoration: none; }
+
+a { color: inherit; text-decoration: none; transition: 0.3s; }
+a:hover { color: var(--accent); }
+
 .container { max-width: var(--max-w); margin: 0 auto; padding: 0 20px; }
+
+/* --- СТИЛІ ДЛЯ ГАМБУРГЕРА (Чорний для білого фону) --- */
+.hamburger {
+    width: 30px;
+    height: 30px;
+    position: relative;
+    cursor: pointer;
+    display: none;
+    z-index: 100;
+}
+
+.hamburger span {
+    display: block;
+    position: absolute;
+    height: 3px;
+    width: 100%;
+    background: var(--black); /* Змінено на чорний для видимості на білому */
+    border-radius: 2px;
+    transition: .25s ease-in-out;
+}
+
+.hamburger span:nth-child(1) { top: 5px; }
+.hamburger span:nth-child(2) { top: 13px; }
+.hamburger span:nth-child(3) { top: 21px; }
+
+/* Анімація хрестика */
+.hamburger.active span:nth-child(1) { top: 13px; transform: rotate(135deg); background: var(--accent); }
+.hamburger.active span:nth-child(2) { opacity: 0; left: -60px; }
+.hamburger.active span:nth-child(3) { top: 13px; transform: rotate(-135deg); background: var(--accent); }
+
+/* --- МЕДІА-ЗАПИТИ --- */
+@media (max-width: 992px) {
+    .hamburger { display: block; }
+    
+    .menu { /* Твоя навігація у Header.jsx */
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 100vh;
+        background: var(--white);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        transform: translateX(100%); /* Виїжджає збоку */
+        transition: transform 0.4s cubic-bezier(0.77,0.2,0.05,1.0);
+        z-index: 99;
+    }
+    
+    .menu.open { transform: translateX(0); }
+}
+/* Універсальний фікс для FITGYM */
+.container {
+    width: 100% !important;
+    max-width: 1200px !important;
+    margin-right: auto !important;
+    margin-left: auto !important;
+    padding-left: 30px !important;  /* ВІДСТУП ЗЛІВА */
+    padding-right: 30px !important; /* ВІДСТУП СПРАВА */
+}
