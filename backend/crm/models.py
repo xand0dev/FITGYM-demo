@@ -1,6 +1,6 @@
 # crm/models.py
 from django.db import models
-from django.contrib.auth.models import User  # Вбудована модель User
+from django.contrib.auth.models import User
 
 
 # === КАТЕГОРІЯ ЗАНЯТТЯ ===

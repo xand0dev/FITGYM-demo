@@ -13,8 +13,8 @@ from .views import (
     MyBookingsViewSet,
     BookingCreateView,
     AdminClassSessionViewSet,
-    AdminMemberViewSet,      # <-- НОВЕ
-    AdminInstructorViewSet   # <-- НОВЕ
+    AdminMemberViewSet,
+    AdminInstructorViewSet
 )
 
 router = DefaultRouter()
@@ -22,7 +22,7 @@ router = DefaultRouter()
 # --- ПУБЛІЧНІ API (доступні всім або авторизованим юзерам) ---
 router.register(r'workouts', WorkoutViewSet, basename='workout')
 router.register(r'classes', ClassViewSet, basename='class')
-router.register(r'instructors', InstructorViewSet, basename='instructor') # Тільки читання
+router.register(r'instructors', InstructorViewSet, basename='instructor')
 router.register(r'membership-types', MembershipTypeViewSet, basename='membershiptype')
 router.register(r'schedule', ClassSessionViewSet, basename='classsession')
 router.register(r'me', MeViewSet, basename='me')
@@ -30,8 +30,8 @@ router.register(r'my-bookings', MyBookingsViewSet, basename='mybooking')
 
 # --- АДМІНСЬКІ API (захищені IsAdminUser) ---
 router.register(r'admin/schedule', AdminClassSessionViewSet, basename='admin-schedule')
-router.register(r'admin/members', AdminMemberViewSet, basename='admin-member')        # <-- Список клієнтів
-router.register(r'admin/instructors', AdminInstructorViewSet, basename='admin-instructor') # <-- Редагування тренерів
+router.register(r'admin/members', AdminMemberViewSet, basename='admin-member')
+router.register(r'admin/instructors', AdminInstructorViewSet, basename='admin-instructor')
 
 urlpatterns = [
     path('', include(router.urls)),

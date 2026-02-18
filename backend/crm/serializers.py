@@ -211,7 +211,7 @@ class AdminInstructorSerializer(serializers.ModelSerializer):
             'username', 'password', 'first_name', 'last_name',
             'full_name',
             'specialties',
-            'contact'  # <-- ✅ ДОДАНО ТУТ
+            'contact'
         ]
 
     def create(self, validated_data):
