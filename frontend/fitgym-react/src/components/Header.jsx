@@ -73,11 +73,12 @@ export default function Header() {
 
             <style>{`
                 .site-header {
-                    position: fixed; top: 0; left: 0; width: 100%; z-index: 1000;
+                    position: fixed;
+                    top: 0; left: 0; width: 100%; z-index: 1000;
                     padding: 20px 0; transition: 0.4s ease;
                 }
                 .site-header.scrolled {
-                    background: rgba(0, 0, 0, 0.8);
+                    background: rgba(0, 0, 0, 0.85);
                     backdrop-filter: blur(15px);
                     padding: 12px 0;
                     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -87,7 +88,47 @@ export default function Header() {
                 .logo { font-size: 1.8rem; font-weight: 900; color: #fff; text-decoration: none; }
                 .logo span { color: #ff0000; }
 
-                /* USER PILL - Скляний ефект */
+                /* --- КНОПКИ ДЛЯ ГОСТЕЙ (Вхід/Реєстрація) --- */
+                .guest-btns {
+                    display: flex;
+                    align-items: center;
+                    gap: 20px;
+                }
+                .login-link {
+                    background: none;
+                    border: none;
+                    color: #fff;
+                    font-weight: 800;
+                    font-size: 0.9rem;
+                    text-transform: uppercase;
+                    cursor: pointer;
+                    transition: color 0.3s;
+                    padding: 0;
+                    letter-spacing: 0.5px;
+                }
+                .login-link:hover {
+                    color: #ff0000;
+                }
+                .btn-red-sm {
+                    background: #ff0000;
+                    color: #fff;
+                    border: none;
+                    padding: 10px 24px;
+                    border-radius: 6px;
+                    font-weight: 800;
+                    font-size: 0.9rem;
+                    text-transform: uppercase;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 4px 10px rgba(255, 0, 0, 0.3);
+                }
+                .btn-red-sm:hover {
+                    background: #cc0000;
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 15px rgba(255, 0, 0, 0.5);
+                }
+
+                /* --- USER PILL - Скляний ефект --- */
                 .user-pill-container { display: flex; align-items: center; gap: 10px; }
                 
                 .user-pill {
@@ -102,27 +143,32 @@ export default function Header() {
                 .pill-name { color: #ff0000; text-transform: uppercase; font-weight: 900; }
 
                 .logout-icon-btn {
-                    background: none; border: none; color: #555;
+                    background: none; border: none; color: #fff; opacity: 0.7;
                     font-size: 1.2rem; cursor: pointer; transition: 0.3s;
                     display: flex; align-items: center;
                 }
-                .logout-icon-btn:hover { color: #ff0000; transform: scale(1.1); }
+                .logout-icon-btn:hover { color: #ff0000; opacity: 1; transform: scale(1.1); }
 
                 .admin-accent { color: #ff0000 !important; font-weight: 800; }
 
-                /* HAMBURGER */
+                /* --- HAMBURGER --- */
+                .hamburger { display: none; background: transparent; border: none; cursor: pointer; }
                 .hamburger span { display: block; width: 25px; height: 3px; background: #fff; margin: 5px 0; transition: 0.4s; }
                 .hamburger.active span:nth-child(1) { transform: rotate(-45deg) translate(-5px, 6px); }
                 .hamburger.active span:nth-child(2) { opacity: 0; }
                 .hamburger.active span:nth-child(3) { transform: rotate(45deg) translate(-5px, -6px); }
 
+                /* --- МЕДІА ЗАПИТИ (МОБІЛЬНІ) --- */
                 @media (max-width: 991px) {
+                    .hamburger { display: block; }
                     .nav-primary {
                         position: fixed; top: 0; right: -100%; width: 280px; height: 100vh;
                         background: #000; flex-direction: column; padding: 100px 40px; transition: 0.5s;
                     }
                     .nav-primary.open { right: 0; }
-                    .auth-zone { margin-right: 50px; }
+                    
+                    /* Ховаємо кнопки з верхньої панелі на мобільному (вони мають бути в меню, якщо треба) */
+                    .auth-zone { display: none; }
                 }
             `}</style>
         </header>
