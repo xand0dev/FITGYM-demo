@@ -1017,7 +1017,6 @@ export default function GlobalConfirmModal() {
 ФАЙЛ: src\components\Header.jsx
 =========================================
 
-// src/components/Header.jsx
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
@@ -1030,7 +1029,6 @@ export default function Header() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
 
-    // Ефект для відстеження скролу (щоб змінювати колір хедера)
     useEffect(() => {
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 50);
@@ -1039,7 +1037,6 @@ export default function Header() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // Функція закриття меню після кліку (для мобільного)
     const closeMenu = () => setMobileMenuOpen(false);
 
     return (
@@ -1051,7 +1048,6 @@ export default function Header() {
                 </Link>
                 
                 {/* НАВІГАЦІЯ */}
-                {/* Додаємо клас 'open', якщо меню активне */}
                 <nav className={`nav-primary ${mobileMenuOpen ? 'open' : ''}`}>
                     <Link to="/" onClick={closeMenu}>Головна</Link>
                     <a href="/#schedule" onClick={closeMenu}>Розклад</a>
@@ -1059,43 +1055,28 @@ export default function Header() {
                     <a href="/#plans" onClick={closeMenu}>Абонементи</a>
                     
                     {user?.is_staff && (
-                        <Link to="/admin" onClick={closeMenu} style={{ color: 'var(--accent)' }}>
-                            <i className="fas fa-cogs"></i> Адмін
+                        <Link to="/admin" onClick={closeMenu} className="admin-accent">
+                            <i className="fas fa-shield-alt"></i> Адмін
                         </Link>
                     )}
-                    
-                    {user && (
-                         <Link to="/cabinet" onClick={closeMenu}>
-                             <i className="fas fa-user-circle"></i> Кабінет
-                         </Link>
-                    )}
-
-                    {/* На мобільному дублюємо кнопку виходу/входу в меню для зручності */}
-                    <div className="mobile-auth-actions">
-                        {user ? (
-                            <button onClick={() => { logout(); closeMenu(); }} className="btn btn-ghost">Вийти</button>
-                        ) : (
-                            <>
-                                <button className="btn btn-ghost" onClick={() => { openLogin(); closeMenu(); }}>Вхід</button>
-                                <button className="btn btn-primary" onClick={() => { openRegister(); closeMenu(); }}>Реєстрація</button>
-                            </>
-                        )}
-                    </div>
                 </nav>
 
-                {/* ПРАВА ЧАСТИНА (Десктоп) */}
-                <div id="authArea">
+                {/* ПРАВА ЧАСТИНА (АВТОРИЗАЦІЯ) */}
+                <div className="auth-zone">
                     {user ? (
-                        <div className="user-greeting">
-                            <span className="hide-on-mobile">Привіт, <b>{user.username}</b></span>
-                            <button onClick={logout} className="btn-icon-logout" title="Вихід">
+                        <div className="user-pill-container">
+                            <Link to="/cabinet" className="user-pill" onClick={closeMenu}>
+                                <span className="pill-label">Привіт, </span>
+                                <b className="pill-name">{user.username}</b>
+                            </Link>
+                            <button onClick={logout} className="logout-icon-btn" title="Вийти">
                                 <i className="fas fa-sign-out-alt"></i>
                             </button>
                         </div>
                     ) : (
-                        <div className="guest-actions">
-                            <button className="nav-link-btn" onClick={openLogin}>Вхід</button>
-                            <button className="btn btn-primary btn-sm" onClick={openRegister}>Реєстрація</button>
+                        <div className="guest-btns">
+                            <button className="login-link" onClick={openLogin}>Вхід</button>
+                            <button className="btn-red-sm" onClick={openRegister}>Реєстрація</button>
                         </div>
                     )}
                 </div>
@@ -1108,6 +1089,61 @@ export default function Header() {
                     <span></span><span></span><span></span>
                 </button>
             </div>
+
+            <style>{`
+                .site-header {
+                    position: fixed; top: 0; left: 0; width: 100%; z-index: 1000;
+                    padding: 20px 0; transition: 0.4s ease;
+                }
+                .site-header.scrolled {
+                    background: rgba(0, 0, 0, 0.8);
+                    backdrop-filter: blur(15px);
+                    padding: 12px 0;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                }
+                .header-inner { display: flex; align-items: center; justify-content: space-between; }
+                
+                .logo { font-size: 1.8rem; font-weight: 900; color: #fff; text-decoration: none; }
+                .logo span { color: #ff0000; }
+
+                /* USER PILL - Скляний ефект */
+                .user-pill-container { display: flex; align-items: center; gap: 10px; }
+                
+                .user-pill {
+                    display: flex; align-items: center; gap: 8px;
+                    background: rgba(255, 255, 255, 0.05);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    padding: 6px 16px; border-radius: 30px;
+                    text-decoration: none; color: #fff; transition: 0.3s;
+                }
+                .user-pill:hover { background: rgba(255, 255, 255, 0.1); border-color: #ff0000; }
+                .pill-label { font-size: 0.8rem; opacity: 0.7; }
+                .pill-name { color: #ff0000; text-transform: uppercase; font-weight: 900; }
+
+                .logout-icon-btn {
+                    background: none; border: none; color: #555;
+                    font-size: 1.2rem; cursor: pointer; transition: 0.3s;
+                    display: flex; align-items: center;
+                }
+                .logout-icon-btn:hover { color: #ff0000; transform: scale(1.1); }
+
+                .admin-accent { color: #ff0000 !important; font-weight: 800; }
+
+                /* HAMBURGER */
+                .hamburger span { display: block; width: 25px; height: 3px; background: #fff; margin: 5px 0; transition: 0.4s; }
+                .hamburger.active span:nth-child(1) { transform: rotate(-45deg) translate(-5px, 6px); }
+                .hamburger.active span:nth-child(2) { opacity: 0; }
+                .hamburger.active span:nth-child(3) { transform: rotate(45deg) translate(-5px, -6px); }
+
+                @media (max-width: 991px) {
+                    .nav-primary {
+                        position: fixed; top: 0; right: -100%; width: 280px; height: 100vh;
+                        background: #000; flex-direction: column; padding: 100px 40px; transition: 0.5s;
+                    }
+                    .nav-primary.open { right: 0; }
+                    .auth-zone { margin-right: 50px; }
+                }
+            `}</style>
         </header>
     );
 }
@@ -1408,221 +1444,116 @@ export default function LoginModal({ onClose }) {
 ФАЙЛ: src\components\Plans.jsx
 =========================================
 
-import React from 'react';
+import React, { useState } from 'react';
 
-const PlanCard = ({ title, price, features, isFeatured }) => (
-    <div className={`plan-card ${isFeatured ? 'featured' : ''}`} data-aos={isFeatured ? "zoom-in" : "fade-up"}>
-        {isFeatured && <div className="plan-badge">Популярний</div>}
+const Modal = ({ isOpen, onClose, planTitle }) => {
+    if (!isOpen) return null;
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-body" onClick={(e) => e.stopPropagation()}>
+                <button className="close-modal" onClick={onClose}>&times;</button>
+                <h3 className="modal-header">Оформити підписку</h3>
+                <p className="modal-text">Тариф: <span className="accent-text">{planTitle}</span></p>
+                <form className="modal-form" onSubmit={(e) => e.preventDefault()}>
+                    <input type="text" placeholder="Ім'я" required />
+                    <input type="tel" placeholder="Телефон" required />
+                    <button type="submit" className="plan-button small-btn">Замовити</button>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+const PlanCard = ({ title, price, features, isFeatured, onSelect }) => (
+    <div className={`plan-card ${isFeatured ? 'featured' : ''}`}>
+        {isFeatured && <div className="plan-badge">Top</div>}
         <h3 className="plan-title">{title}</h3>
         <div className="plan-price">
-            <span className="currency">₴</span>
-            {price}
-            <span className="period">/ міс</span>
+            <span className="currency">₴</span>{price}<span className="period">/міс</span>
         </div>
-        <div className="plan-divider"></div>
         <ul className="plan-features">
-            {features.map((f, i) => (
-                <li key={i}><i className="fas fa-check"></i> {f}</li>
-            ))}
+            {features.map((f, i) => <li key={i}>✓ {f}</li>)}
         </ul>
-        <button className="plan-button">Обрати план</button>
+        <button className="plan-button" onClick={() => onSelect(title)}>Обрати</button>
     </div>
 );
 
 export default function Plans() {
+    const [isModalOpen, setModalOpen] = useState(false);
+    const [selectedPlan, setSelectedPlan] = useState('');
+
+    const handlePlanSelect = (title) => {
+        setSelectedPlan(title);
+        setModalOpen(true);
+    };
+
     return (
         <section id="plans" className="plans-section">
-            {/* Шар затемнення для фону */}
             <div className="plans-overlay"></div>
-            
             <div className="container plans-content">
                 <div className="plans-header">
-                    <h2 className="plans-main-title">
-                        Оберіть свій <span className="accent-text">рівень</span>
-                    </h2>
-                    <p className="plans-subtitle">Прозорі ціни для твоїх перемог</p>
+                    <h2 className="plans-main-title">Наші <span className="accent-text">Тарифи</span></h2>
                 </div>
-
                 <div className="plans-grid">
-                    <PlanCard 
-                        title="Базовий" 
-                        price="800" 
-                        features={["8 тренувань на місяць", "Доступ до кардіо зони", "Роздягальня та душ"]} 
-                    />
-                    <PlanCard 
-                        title="Безліміт" 
-                        price="1200" 
-                        isFeatured 
-                        features={["Необмежена кількість відвідувань", "Всі зони залу", "1 безкоштовне тренування", "Доступ 24/7"]} 
-                    />
-                    <PlanCard 
-                        title="PRO" 
-                        price="2500" 
-                        features={["Безлімітний доступ", "Персональний план харчування", "Заморозка абонементу", "Пріоритетний запис"]} 
-                    />
+                    <PlanCard title="Базовий" price="800" features={["8 тренувань", "Кардіо зона", "Душ"]} onSelect={handlePlanSelect} />
+                    <PlanCard title="Безліміт" price="1200" isFeatured features={["Безліміт", "Всі зони", "24/7"]} onSelect={handlePlanSelect} />
+                    <PlanCard title="PRO" price="2500" features={["Персональний план", "Заморозка", "Пріоритет"]} onSelect={handlePlanSelect} />
                 </div>
             </div>
+            <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} planTitle={selectedPlan} />
 
             <style>{`
                 .plans-section {
                     position: relative;
-                    padding: 120px 0;
-                    /* ЗАМІНИ ЦЕ ПОСИЛАННЯ НА СВОЄ ФОТО ЗАЛУ */
-                    background-image: url('https://images.unsplash.com/photo-1540497077202-7c8a3999166f?q=80&w=2070');
-                    background-size: cover;
-                    background-position: center;
-                    background-attachment: fixed; /* Ефект паралаксу */
-                    overflow: hidden;
+                    padding: 60px 0;
+                    background: url('https://images.unsplash.com/photo-1540497077202-7c8a3999166f?q=80&w=2070') center/cover fixed;
+                    min-height: 600px;
+                    display: flex;
+                    align-items: center;
                 }
-
-                .plans-overlay {
-                    position: absolute;
-                    top: 0; left: 0; width: 100%; height: 100%;
-                    background: rgba(0, 0, 0, 0.8); /* Темний фільтр поверх фото */
-                    z-index: 1;
-                }
-
-                .plans-content {
-                    position: relative;
-                    z-index: 2;
-                    max-width: 1200px;
-                    margin: 0 auto;
-                    padding: 0 5%;
-                }
-
-                .plans-header {
-                    text-align: center;
-                    margin-bottom: 70px;
-                    color: #fff;
-                }
-
-                .plans-main-title {
-                    font-size: clamp(2.5rem, 6vw, 4.5rem);
-                    font-weight: 950;
-                    text-transform: uppercase;
-                    line-height: 0.9;
-                    margin-bottom: 15px;
-                }
-
+                .plans-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1; }
+                .plans-content { position: relative; z-index: 2; max-width: 1000px; margin: 0 auto; width: 100%; padding: 0 15px; }
+                .plans-header { text-align: center; margin-bottom: 40px; color: #fff; }
+                .plans-main-title { font-size: 2.2rem; font-weight: 800; text-transform: uppercase; }
                 .accent-text { color: #ff0000; }
 
-                .plans-subtitle {
-                    font-weight: 700;
-                    text-transform: uppercase;
-                    letter-spacing: 3px;
-                    opacity: 0.8;
-                }
+                .plans-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
 
-                .plans-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                    gap: 30px;
-                    align-items: stretch;
-                }
-
-                /* СТИЛІ КАРТОК */
                 .plan-card {
                     background: #fff;
-                    border: 3px solid #000;
-                    padding: 50px 30px;
+                    padding: 25px 20px;
+                    border-radius: 12px;
+                    text-align: center;
+                    transition: 0.3s;
                     position: relative;
-                    transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
                 }
+                .plan-card:hover { transform: translateY(-5px); }
+                .plan-card.featured { border: 2px solid #ff0000; }
+                .plan-badge { position: absolute; top: -10px; background: #ff0000; color: #fff; padding: 2px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
+                
+                .plan-title { font-size: 1.2rem; font-weight: 700; color: #333; margin-bottom: 10px; }
+                .plan-price { font-size: 2.2rem; font-weight: 800; color: #ff0000; margin-bottom: 15px; }
+                .currency { font-size: 1rem; vertical-align: super; }
+                .period { font-size: 0.8rem; color: #888; }
 
-                .plan-card:hover {
-                    transform: translateY(-15px);
-                    box-shadow: 20px 20px 0px #000;
-                }
-
-                .plan-card.featured {
-                    border-color: #ff0000;
-                    box-shadow: 15px 15px 0px #ff0000;
-                }
-
-                .plan-badge {
-                    position: absolute;
-                    top: -15px;
-                    background: #ff0000;
-                    color: #fff;
-                    padding: 5px 20px;
-                    font-weight: 900;
-                    text-transform: uppercase;
-                    font-size: 0.8rem;
-                    border: 2px solid #000;
-                }
-
-                .plan-title {
-                    font-size: 1.8rem;
-                    font-weight: 950;
-                    text-transform: uppercase;
-                    margin-bottom: 25px;
-                    color: #000;
-                }
-
-                .plan-price {
-                    font-size: 4.5rem;
-                    font-weight: 950;
-                    color: #ff0000;
-                    line-height: 1;
-                    margin-bottom: 10px;
-                }
-
-                .currency { font-size: 1.5rem; vertical-align: super; }
-                .period { font-size: 1rem; color: #666; font-weight: 700; }
-
-                .plan-divider {
-                    width: 60px; height: 5px;
-                    background: #000;
-                    margin: 30px 0;
-                }
-
-                .plan-features {
-                    list-style: none;
-                    padding: 0;
-                    margin-bottom: 40px;
-                    width: 100%;
-                    flex-grow: 1;
-                }
-
-                .plan-features li {
-                    margin-bottom: 15px;
-                    font-weight: 700;
-                    color: #333;
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    font-size: 0.95rem;
-                }
-
-                .plan-features i { color: #ff0000; }
+                .plan-features { list-style: none; padding: 0; margin-bottom: 20px; text-align: left; }
+                .plan-features li { font-size: 0.85rem; color: #555; margin-bottom: 8px; font-weight: 600; }
 
                 .plan-button {
-                    width: 100%;
-                    padding: 18px;
-                    background: #000;
-                    color: #fff;
-                    border: none;
-                    font-weight: 900;
-                    text-transform: uppercase;
-                    cursor: pointer;
-                    transition: 0.3s;
-                    letter-spacing: 1px;
+                    width: 100%; padding: 10px; background: #000; color: #fff; border: none; border-radius: 6px;
+                    font-weight: bold; text-transform: uppercase; cursor: pointer; transition: 0.3s; font-size: 0.85rem;
                 }
+                .plan-button:hover { background: #ff0000; }
+                .featured .plan-button { background: #ff0000; }
 
-                .plan-button:hover {
-                    background: #ff0000;
-                }
-
-                .plan-card.featured .plan-button { background: #ff0000; }
-                .plan-card.featured .plan-button:hover { background: #000; }
-
-                @media (max-width: 600px) {
-                    .plan-card.featured { transform: none; }
-                    .plan-card.featured:hover { transform: translateY(-10px); }
-                }
+                /* MODAL */
+                .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+                .modal-body { background: rgba(255,255,255,0.1); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.2); padding: 30px; border-radius: 15px; width: 90%; max-width: 320px; color: #fff; text-align: center; position: relative; }
+                .close-modal { position: absolute; top: 10px; right: 15px; background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; }
+                .modal-header { font-size: 1.2rem; text-transform: uppercase; margin-bottom: 5px; }
+                .modal-text { font-size: 0.9rem; margin-bottom: 20px; }
+                .modal-form { display: flex; flex-direction: column; gap: 10px; }
+                .modal-form input { padding: 10px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; color: #fff; font-size: 0.9rem; }
             `}</style>
         </section>
     );
@@ -2752,8 +2683,7 @@ export default function AdminPanel() {
 ФАЙЛ: src\pages\Cabinet.jsx
 =========================================
 
-// src/pages/Cabinet.jsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { authRequest } from '../utils/api';
 import AOS from 'aos';
@@ -2763,111 +2693,225 @@ export default function Cabinet() {
     const { user, logout } = useAuth();
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
+    
+    // Завантаження збережених даних з localStorage або значення за замовчуванням
+    const [firstName, setFirstName] = useState(() => localStorage.getItem('gym_fname') || user?.first_name || 'Поліна');
+    const [lastName, setLastName] = useState(() => localStorage.getItem('gym_lname') || user?.last_name || 'Товстуха');
+    const [activity, setActivity] = useState(() => JSON.parse(localStorage.getItem('gym_activity')) || [30, 50, 45, 80, 60, 20, 70]);
+    const [userNotes, setUserNotes] = useState(() => JSON.parse(localStorage.getItem('gym_notes')) || {});
+    
+    const [avatar, setAvatar] = useState('/img/муж1.png');
+    const [activeDay, setActiveDay] = useState(null);
+    const [tempNote, setTempNote] = useState('');
+    const fileInputRef = useRef(null);
+
+    // Зберігання при зміні даних
+    useEffect(() => {
+        localStorage.setItem('gym_fname', firstName);
+        localStorage.setItem('gym_lname', lastName);
+        localStorage.setItem('gym_activity', JSON.stringify(activity));
+        localStorage.setItem('gym_notes', JSON.stringify(userNotes));
+    }, [firstName, lastName, activity, userNotes]);
 
     useEffect(() => {
-        AOS.init();
+        AOS.init({ duration: 800 });
         loadSchedule();
     }, []);
 
     const loadSchedule = async () => {
         try {
-            // Запит на отримання моїх тренувань
             const data = await authRequest('/api/my-bookings/');
             setBookings(Array.isArray(data) ? data : []);
-        } catch (e) {
-            console.error("Помилка завантаження бронювань:", e);
-        } finally {
-            setLoading(false);
-        }
+        } catch (e) { console.error(e); } finally { setLoading(false); }
     };
 
-    const handleCancel = async (id) => {
-        if (!confirm('Ви впевнені, що хочете скасувати запис?')) return;
-        try {
-            await authRequest(`/api/my-bookings/${id}/`, 'DELETE');
-            // Прибираємо видалене тренування зі списку без перезавантаження
-            setBookings(bookings.filter(b => b.id !== id));
-        } catch (e) {
-            alert('Помилка: ' + e.message);
-        }
+    const handleActivityChange = (index, e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const heightPercent = Math.round(((rect.bottom - e.clientY) / rect.height) * 100);
+        const newActivity = [...activity];
+        newActivity[index] = Math.max(5, Math.min(100, heightPercent));
+        setActivity(newActivity);
+    };
+
+    const saveNote = () => {
+        setUserNotes({ ...userNotes, [activeDay]: tempNote });
+        setActiveDay(null);
     };
 
     return (
-        <section id="cabinet" className="section container" style={{minHeight: '80vh'}}>
-            <h2 className="section-title" data-aos="fade-up">Особистий Кабінет</h2>
-
-            <div className="cabinet-grid">
-                {/* --- ЛІВА КОЛОНКА: ПРОФІЛЬ --- */}
-                <div className="profile-card" data-aos="fade-right">
-                    <div className="profile-header">
-                        {/* Аватар (заглушка або реальний, якщо є) */}
-                        <img 
-                            id="user-avatar" 
-                            src="/img/муж1.png" 
-                            alt="User" 
-                            className="user-avatar" 
-                            onError={(e) => e.target.src = 'https://via.placeholder.com/100'}
-                        />
-                        <h3 id="user-name">{user?.username || 'Клієнт'}</h3>
-                        <p className="user-role">
-                            {user?.is_staff ? 'Адміністратор' : 'Учасник клубу'}
-                        </p>
-                    </div>
+        <section className="ultimate-glass-cabinet">
+            <div className="bg-image-layer"></div>
+            
+            <div className="container position-relative z-3">
+                <div className="cabinet-grid">
                     
-                    <div className="profile-details">
-                        <p><i className="fas fa-user"></i> <span>{user?.first_name} {user?.last_name}</span></p>
-                        <p><i className="fas fa-envelope"></i> <span>{user?.email}</span></p>
-                        <p><i className="fas fa-phone"></i> <span>{user?.contact || user?.phone || 'Не вказано'}</span></p>
-                    </div>
-
-                    <button onClick={logout} className="btn btn-primary" style={{marginTop: '20px', width: '100%'}}>
-                        <i className="fas fa-sign-out-alt"></i> Вийти
-                    </button>
-                </div>
-
-                {/* --- ПРАВА КОЛОНКА: СПИСОК ТРЕНУВАНЬ --- */}
-                <div className="schedule-card" data-aos="fade-left">
-                    <h3 className="schedule-title">Мої тренування</h3>
-                    
-                    <div className="user-schedule-list">
-                        {loading ? (
-                            <p className="text-center">Завантаження...</p>
-                        ) : bookings.length === 0 ? (
-                            <div className="text-center" style={{padding: '20px', color: '#888'}}>
-                                <i className="fas fa-calendar-times fa-3x" style={{marginBottom:'10px'}}></i>
-                                <p>У вас поки немає активних записів.</p>
+                    {/* ЛІВА ПАНЕЛЬ */}
+                    <aside className="glass-aside" data-aos="fade-right">
+                        <div className="profile-top">
+                            <div className="avatar-circle-red" onClick={() => fileInputRef.current.click()}>
+                                <img src={avatar} alt="User" />
+                                <input type="file" ref={fileInputRef} hidden onChange={(e) => setAvatar(URL.createObjectURL(e.target.files[0]))} />
                             </div>
-                        ) : (
-                            bookings.map(item => (
-                                <div key={item.id} className="booking-card">
-                                    <div className="booking-info">
-                                        <h4>{item.session?.class_name || 'Тренування'}</h4>
-                                        <p>
-                                            <i className="far fa-clock"></i> {new Date(item.session?.start_at).toLocaleString('uk-UA')}
-                                        </p>
-                                        <p>
-                                            <i className="fas fa-user-ninja"></i> Тренер: {item.session?.instructor_name || 'Черговий'}
-                                        </p>
-                                        <span>Статус: <strong>{item.status || 'Active'}</strong></span>
-                                    </div>
-                                    
-                                    <button 
-                                        className="btn-cancel" 
-                                        onClick={() => handleCancel(item.id)}
-                                        title="Скасувати запис"
-                                    >
-                                        <i className="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            ))
-                        )}
-                    </div>
+                            {/* ПІБ ЧЕРВОНИМ КОЛЬОРОМ */}
+                            <h2 className="user-fullname-red">{firstName} <br/> {lastName}</h2>
+                        </div>
 
-                    <a href="/#schedule" className="btn btn-ghost" style={{width: '100%', marginTop: '20px', textAlign:'center'}}>
-                        <i className="fas fa-calendar-plus"></i> Записатись ще
-                    </a>
+                        <div className="edit-section">
+                            <div className="glass-field">
+                                <label>РЕДАГУВАТИ ІМ'Я</label>
+                                <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                            </div>
+                            <div className="glass-field">
+                                <label>РЕДАГУВАТИ ПРІЗВИЩЕ</label>
+                                <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                            </div>
+                        </div>
+
+                        <button onClick={logout} className="logout-glass-btn">ВИЙТИ З АКАУНТУ</button>
+                    </aside>
+
+                    {/* ПРАВА ПАНЕЛЬ */}
+                    <main className="main-glass-content">
+                        
+                        {/* ГРУПОВІ ЗАНЯТТЯ */}
+                        <div className="glass-card mb-4" data-aos="fade-up">
+                            <h4 className="title-tech">Групові тренування (Записи)</h4>
+                            <div className="bookings-flex">
+                                {loading ? <p>Завантаження...</p> : bookings.length === 0 ? (
+                                    <p className="no-data-text">Ви ще не записані на групові заняття.</p>
+                                ) : (
+                                    bookings.map(item => (
+                                        <div key={item.id} className="booking-glass-item">
+                                            <div className="b-date">{new Date(item.session?.start_at).getDate()}</div>
+                                            <div className="b-info">
+                                                <h5>{item.session?.class_name}</h5>
+                                                <small>{item.session?.instructor_name} • {new Date(item.session?.start_at).getHours()}:00</small>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                        {/* АКТИВНІСТЬ */}
+                        <div className="glass-card mb-4" data-aos="fade-up">
+                            <h4 className="title-tech">Тижнева активність</h4>
+                            <div className="chart-glass-container">
+                                {activity.map((h, i) => (
+                                    <div key={i} className="chart-column">
+                                        <div className="bar-track-glass" onClick={(e) => handleActivityChange(i, e)}>
+                                            <div className="bar-fill-red" style={{height: `${h}%`}}></div>
+                                        </div>
+                                        <span className="bar-label">{['Пн','Вт','Ср','Чт','Пт','Сб','Нд'][i]}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* КАЛЕНДАР */}
+                        <div className="glass-card" data-aos="fade-up">
+                            <h4 className="title-tech">Календар тренувань</h4>
+                            <div className="calendar-glass-grid">
+                                {['Пн','Вт','Ср','Чт','Пт','Сб','Нд'].map(d => <div key={d} className="calendar-header-day">{d}</div>)}
+                                {[...Array(35)].map((_, i) => {
+                                    const day = i - 2; 
+                                    if (day <= 0 || day > 30) return <div key={i}></div>;
+                                    return (
+                                        <div key={i} className={`cal-glass-cell ${userNotes[day] ? 'active' : ''}`} onClick={() => {setActiveDay(day); setTempNote(userNotes[day] || '');}}>
+                                            <span className="day-number">{day}</span>
+                                            {userNotes[day] && <div className="note-text-inside">{userNotes[day]}</div>}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                    </main>
                 </div>
             </div>
+
+            {/* ВПЛИВАЮЧЕ ВІКНО */}
+            {activeDay && (
+                <div className="glass-modal-overlay">
+                    <div className="glass-popup">
+                        <h5>Запис на {activeDay} число</h5>
+                        <input type="text" value={tempNote} onChange={(e)=>setTempNote(e.target.value)} placeholder="Введіть ваше тренування..." />
+                        <div className="popup-buttons">
+                            <button className="btn-save-red" onClick={saveNote}>Зберегти</button>
+                            <button className="btn-close-glass" onClick={()=>setActiveDay(null)}>Закрити</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <style>{`
+                .ultimate-glass-cabinet { min-height: 100vh; padding: 100px 0; color: #fff; position: relative; }
+                .bg-image-layer { 
+                    position: absolute; top:0; left:0; width:100%; height:100%; 
+                    background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=2070') center/cover;
+                    z-index: 1; backdrop-filter: blur(15px);
+                }
+                .cabinet-grid { display: grid; grid-template-columns: 320px 1fr; gap: 30px; position: relative; z-index: 5; }
+
+                /* GLASS PANELS */
+                .glass-aside, .glass-card { 
+                    background: rgba(255, 255, 255, 0.05); 
+                    backdrop-filter: blur(25px); 
+                    border: 1px solid rgba(255, 255, 255, 0.1); 
+                    border-radius: 30px; padding: 35px;
+                }
+
+                /* PROFILE */
+                .avatar-circle-red { width: 130px; height: 130px; border-radius: 50%; border: 3px solid #ff0000; margin: 0 auto 20px; overflow: hidden; cursor: pointer; box-shadow: 0 0 20px rgba(255,0,0,0.3); }
+                .avatar-circle-red img { width: 100%; height: 100%; object-fit: cover; }
+                .user-fullname-red { color: #ff0000; text-align: center; font-weight: 900; text-transform: uppercase; font-size: 1.4rem; line-height: 1.2; margin-bottom: 30px; }
+
+                .glass-field label { display: block; font-size: 0.6rem; font-weight: 900; color: #555; margin-bottom: 5px; }
+                .glass-field input { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 12px; color: #fff; border-radius: 12px; margin-bottom: 20px; outline: none; }
+                
+                .logout-glass-btn { width: 100%; background: none; border: 1px solid #ff0000; color: #ff0000; padding: 12px; border-radius: 15px; font-weight: 900; cursor: pointer; transition: 0.3s; }
+                .logout-glass-btn:hover { background: #ff0000; color: #fff; }
+
+                /* TECH TITLE */
+                .title-tech { font-size: 1rem; font-weight: 900; text-transform: uppercase; border-left: 5px solid #ff0000; padding-left: 15px; margin-bottom: 30px; }
+
+                /* ACTIVITY */
+                .chart-glass-container { display: flex; justify-content: space-between; align-items: flex-end; height: 130px; }
+                .chart-column { width: 12%; text-align: center; }
+                .bar-track-glass { height: 100px; background: rgba(255,255,255,0.02); border-radius: 8px; position: relative; overflow: hidden; cursor: crosshair; }
+                .bar-fill-red { position: absolute; bottom: 0; width: 100%; background: #ff0000; box-shadow: 0 0 15px #ff0000; transition: height 0.3s; }
+                .bar-label { font-size: 0.7rem; color: #444; margin-top: 10px; display: block; font-weight: 800; }
+
+                /* CALENDAR */
+                .calendar-glass-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
+                .calendar-header-day { text-align: center; font-size: 0.7rem; color: #ff0000; font-weight: 900; }
+                .cal-glass-cell { 
+                    aspect-ratio: 1.1; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); 
+                    border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+                    cursor: pointer; transition: 0.3s; position: relative;
+                }
+                .cal-glass-cell:hover { background: rgba(255,0,0,0.1); border-color: #ff0000; }
+                .cal-glass-cell.active { background: rgba(255,0,0,0.2); border-color: #ff0000; box-shadow: inset 0 0 10px rgba(255,0,0,0.2); }
+                .day-number { font-weight: 900; font-size: 1rem; }
+                .note-text-inside { font-size: 0.5rem; color: #ff0000; font-weight: 800; margin-top: 5px; max-width: 90%; text-align: center; overflow: hidden; }
+
+                /* MODAL */
+                .glass-modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+                .glass-popup { background: rgba(20,20,20,0.9); border: 1px solid #ff0000; padding: 35px; border-radius: 30px; width: 350px; text-align: center; }
+                .glass-popup input { width: 100%; background: #000; border: 1px solid #333; padding: 12px; color: #fff; border-radius: 10px; margin: 20px 0; outline: none; }
+                .popup-buttons { display: flex; gap: 10px; }
+                .btn-save-red { flex: 1; background: #ff0000; color: #fff; border: none; padding: 12px; border-radius: 10px; font-weight: 900; cursor: pointer; }
+                .btn-close-glass { flex: 1; background: #222; color: #888; border: none; padding: 12px; border-radius: 10px; font-weight: 900; cursor: pointer; }
+
+                /* BOOKINGS */
+                .bookings-flex { display: flex; flex-direction: column; gap: 10px; }
+                .booking-glass-item { display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 20px; border-left: 4px solid #ff0000; }
+                .b-date { font-size: 1.5rem; font-weight: 900; color: #ff0000; }
+                .b-info h5 { margin: 0; font-weight: 900; text-transform: uppercase; }
+                .b-info small { color: #555; }
+
+                @media (max-width: 950px) { .cabinet-grid { grid-template-columns: 1fr; } }
+            `}</style>
         </section>
     );
 }
