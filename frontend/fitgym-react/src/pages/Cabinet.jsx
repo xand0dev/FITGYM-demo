@@ -1,5 +1,4 @@
-// src/pages/Cabinet.jsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { authRequest } from '../utils/api';
 import AOS from 'aos';
@@ -9,111 +8,225 @@ export default function Cabinet() {
     const { user, logout } = useAuth();
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
+    
+    // Завантаження збережених даних з localStorage або значення за замовчуванням
+    const [firstName, setFirstName] = useState(() => localStorage.getItem('gym_fname') || user?.first_name || 'Поліна');
+    const [lastName, setLastName] = useState(() => localStorage.getItem('gym_lname') || user?.last_name || 'Товстуха');
+    const [activity, setActivity] = useState(() => JSON.parse(localStorage.getItem('gym_activity')) || [30, 50, 45, 80, 60, 20, 70]);
+    const [userNotes, setUserNotes] = useState(() => JSON.parse(localStorage.getItem('gym_notes')) || {});
+    
+    const [avatar, setAvatar] = useState('/img/муж1.png');
+    const [activeDay, setActiveDay] = useState(null);
+    const [tempNote, setTempNote] = useState('');
+    const fileInputRef = useRef(null);
+
+    // Зберігання при зміні даних
+    useEffect(() => {
+        localStorage.setItem('gym_fname', firstName);
+        localStorage.setItem('gym_lname', lastName);
+        localStorage.setItem('gym_activity', JSON.stringify(activity));
+        localStorage.setItem('gym_notes', JSON.stringify(userNotes));
+    }, [firstName, lastName, activity, userNotes]);
 
     useEffect(() => {
-        AOS.init();
+        AOS.init({ duration: 800 });
         loadSchedule();
     }, []);
 
     const loadSchedule = async () => {
         try {
-            // Запит на отримання моїх тренувань
             const data = await authRequest('/api/my-bookings/');
             setBookings(Array.isArray(data) ? data : []);
-        } catch (e) {
-            console.error("Помилка завантаження бронювань:", e);
-        } finally {
-            setLoading(false);
-        }
+        } catch (e) { console.error(e); } finally { setLoading(false); }
     };
 
-    const handleCancel = async (id) => {
-        if (!confirm('Ви впевнені, що хочете скасувати запис?')) return;
-        try {
-            await authRequest(`/api/my-bookings/${id}/`, 'DELETE');
-            // Прибираємо видалене тренування зі списку без перезавантаження
-            setBookings(bookings.filter(b => b.id !== id));
-        } catch (e) {
-            alert('Помилка: ' + e.message);
-        }
+    const handleActivityChange = (index, e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const heightPercent = Math.round(((rect.bottom - e.clientY) / rect.height) * 100);
+        const newActivity = [...activity];
+        newActivity[index] = Math.max(5, Math.min(100, heightPercent));
+        setActivity(newActivity);
+    };
+
+    const saveNote = () => {
+        setUserNotes({ ...userNotes, [activeDay]: tempNote });
+        setActiveDay(null);
     };
 
     return (
-        <section id="cabinet" className="section container" style={{minHeight: '80vh'}}>
-            <h2 className="section-title" data-aos="fade-up">Особистий Кабінет</h2>
-
-            <div className="cabinet-grid">
-                {/* --- ЛІВА КОЛОНКА: ПРОФІЛЬ --- */}
-                <div className="profile-card" data-aos="fade-right">
-                    <div className="profile-header">
-                        {/* Аватар (заглушка або реальний, якщо є) */}
-                        <img 
-                            id="user-avatar" 
-                            src="/img/муж1.png" 
-                            alt="User" 
-                            className="user-avatar" 
-                            onError={(e) => e.target.src = 'https://via.placeholder.com/100'}
-                        />
-                        <h3 id="user-name">{user?.username || 'Клієнт'}</h3>
-                        <p className="user-role">
-                            {user?.is_staff ? 'Адміністратор' : 'Учасник клубу'}
-                        </p>
-                    </div>
+        <section className="ultimate-glass-cabinet">
+            <div className="bg-image-layer"></div>
+            
+            <div className="container position-relative z-3">
+                <div className="cabinet-grid">
                     
-                    <div className="profile-details">
-                        <p><i className="fas fa-user"></i> <span>{user?.first_name} {user?.last_name}</span></p>
-                        <p><i className="fas fa-envelope"></i> <span>{user?.email}</span></p>
-                        <p><i className="fas fa-phone"></i> <span>{user?.contact || user?.phone || 'Не вказано'}</span></p>
-                    </div>
-
-                    <button onClick={logout} className="btn btn-primary" style={{marginTop: '20px', width: '100%'}}>
-                        <i className="fas fa-sign-out-alt"></i> Вийти
-                    </button>
-                </div>
-
-                {/* --- ПРАВА КОЛОНКА: СПИСОК ТРЕНУВАНЬ --- */}
-                <div className="schedule-card" data-aos="fade-left">
-                    <h3 className="schedule-title">Мої тренування</h3>
-                    
-                    <div className="user-schedule-list">
-                        {loading ? (
-                            <p className="text-center">Завантаження...</p>
-                        ) : bookings.length === 0 ? (
-                            <div className="text-center" style={{padding: '20px', color: '#888'}}>
-                                <i className="fas fa-calendar-times fa-3x" style={{marginBottom:'10px'}}></i>
-                                <p>У вас поки немає активних записів.</p>
+                    {/* ЛІВА ПАНЕЛЬ */}
+                    <aside className="glass-aside" data-aos="fade-right">
+                        <div className="profile-top">
+                            <div className="avatar-circle-red" onClick={() => fileInputRef.current.click()}>
+                                <img src={avatar} alt="User" />
+                                <input type="file" ref={fileInputRef} hidden onChange={(e) => setAvatar(URL.createObjectURL(e.target.files[0]))} />
                             </div>
-                        ) : (
-                            bookings.map(item => (
-                                <div key={item.id} className="booking-card">
-                                    <div className="booking-info">
-                                        <h4>{item.session?.class_name || 'Тренування'}</h4>
-                                        <p>
-                                            <i className="far fa-clock"></i> {new Date(item.session?.start_at).toLocaleString('uk-UA')}
-                                        </p>
-                                        <p>
-                                            <i className="fas fa-user-ninja"></i> Тренер: {item.session?.instructor_name || 'Черговий'}
-                                        </p>
-                                        <span>Статус: <strong>{item.status || 'Active'}</strong></span>
-                                    </div>
-                                    
-                                    <button 
-                                        className="btn-cancel" 
-                                        onClick={() => handleCancel(item.id)}
-                                        title="Скасувати запис"
-                                    >
-                                        <i className="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            ))
-                        )}
-                    </div>
+                            {/* ПІБ ЧЕРВОНИМ КОЛЬОРОМ */}
+                            <h2 className="user-fullname-red">{firstName} <br/> {lastName}</h2>
+                        </div>
 
-                    <a href="/#schedule" className="btn btn-ghost" style={{width: '100%', marginTop: '20px', textAlign:'center'}}>
-                        <i className="fas fa-calendar-plus"></i> Записатись ще
-                    </a>
+                        <div className="edit-section">
+                            <div className="glass-field">
+                                <label>РЕДАГУВАТИ ІМ'Я</label>
+                                <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                            </div>
+                            <div className="glass-field">
+                                <label>РЕДАГУВАТИ ПРІЗВИЩЕ</label>
+                                <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                            </div>
+                        </div>
+
+                        <button onClick={logout} className="logout-glass-btn">ВИЙТИ З АКАУНТУ</button>
+                    </aside>
+
+                    {/* ПРАВА ПАНЕЛЬ */}
+                    <main className="main-glass-content">
+                        
+                        {/* ГРУПОВІ ЗАНЯТТЯ */}
+                        <div className="glass-card mb-4" data-aos="fade-up">
+                            <h4 className="title-tech">Групові тренування (Записи)</h4>
+                            <div className="bookings-flex">
+                                {loading ? <p>Завантаження...</p> : bookings.length === 0 ? (
+                                    <p className="no-data-text">Ви ще не записані на групові заняття.</p>
+                                ) : (
+                                    bookings.map(item => (
+                                        <div key={item.id} className="booking-glass-item">
+                                            <div className="b-date">{new Date(item.session?.start_at).getDate()}</div>
+                                            <div className="b-info">
+                                                <h5>{item.session?.class_name}</h5>
+                                                <small>{item.session?.instructor_name} • {new Date(item.session?.start_at).getHours()}:00</small>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                        {/* АКТИВНІСТЬ */}
+                        <div className="glass-card mb-4" data-aos="fade-up">
+                            <h4 className="title-tech">Тижнева активність</h4>
+                            <div className="chart-glass-container">
+                                {activity.map((h, i) => (
+                                    <div key={i} className="chart-column">
+                                        <div className="bar-track-glass" onClick={(e) => handleActivityChange(i, e)}>
+                                            <div className="bar-fill-red" style={{height: `${h}%`}}></div>
+                                        </div>
+                                        <span className="bar-label">{['Пн','Вт','Ср','Чт','Пт','Сб','Нд'][i]}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* КАЛЕНДАР */}
+                        <div className="glass-card" data-aos="fade-up">
+                            <h4 className="title-tech">Календар тренувань</h4>
+                            <div className="calendar-glass-grid">
+                                {['Пн','Вт','Ср','Чт','Пт','Сб','Нд'].map(d => <div key={d} className="calendar-header-day">{d}</div>)}
+                                {[...Array(35)].map((_, i) => {
+                                    const day = i - 2; 
+                                    if (day <= 0 || day > 30) return <div key={i}></div>;
+                                    return (
+                                        <div key={i} className={`cal-glass-cell ${userNotes[day] ? 'active' : ''}`} onClick={() => {setActiveDay(day); setTempNote(userNotes[day] || '');}}>
+                                            <span className="day-number">{day}</span>
+                                            {userNotes[day] && <div className="note-text-inside">{userNotes[day]}</div>}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                    </main>
                 </div>
             </div>
+
+            {/* ВПЛИВАЮЧЕ ВІКНО */}
+            {activeDay && (
+                <div className="glass-modal-overlay">
+                    <div className="glass-popup">
+                        <h5>Запис на {activeDay} число</h5>
+                        <input type="text" value={tempNote} onChange={(e)=>setTempNote(e.target.value)} placeholder="Введіть ваше тренування..." />
+                        <div className="popup-buttons">
+                            <button className="btn-save-red" onClick={saveNote}>Зберегти</button>
+                            <button className="btn-close-glass" onClick={()=>setActiveDay(null)}>Закрити</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <style>{`
+                .ultimate-glass-cabinet { min-height: 100vh; padding: 100px 0; color: #fff; position: relative; }
+                .bg-image-layer { 
+                    position: absolute; top:0; left:0; width:100%; height:100%; 
+                    background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=2070') center/cover;
+                    z-index: 1; backdrop-filter: blur(15px);
+                }
+                .cabinet-grid { display: grid; grid-template-columns: 320px 1fr; gap: 30px; position: relative; z-index: 5; }
+
+                /* GLASS PANELS */
+                .glass-aside, .glass-card { 
+                    background: rgba(255, 255, 255, 0.05); 
+                    backdrop-filter: blur(25px); 
+                    border: 1px solid rgba(255, 255, 255, 0.1); 
+                    border-radius: 30px; padding: 35px;
+                }
+
+                /* PROFILE */
+                .avatar-circle-red { width: 130px; height: 130px; border-radius: 50%; border: 3px solid #ff0000; margin: 0 auto 20px; overflow: hidden; cursor: pointer; box-shadow: 0 0 20px rgba(255,0,0,0.3); }
+                .avatar-circle-red img { width: 100%; height: 100%; object-fit: cover; }
+                .user-fullname-red { color: #ff0000; text-align: center; font-weight: 900; text-transform: uppercase; font-size: 1.4rem; line-height: 1.2; margin-bottom: 30px; }
+
+                .glass-field label { display: block; font-size: 0.6rem; font-weight: 900; color: #555; margin-bottom: 5px; }
+                .glass-field input { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 12px; color: #fff; border-radius: 12px; margin-bottom: 20px; outline: none; }
+                
+                .logout-glass-btn { width: 100%; background: none; border: 1px solid #ff0000; color: #ff0000; padding: 12px; border-radius: 15px; font-weight: 900; cursor: pointer; transition: 0.3s; }
+                .logout-glass-btn:hover { background: #ff0000; color: #fff; }
+
+                /* TECH TITLE */
+                .title-tech { font-size: 1rem; font-weight: 900; text-transform: uppercase; border-left: 5px solid #ff0000; padding-left: 15px; margin-bottom: 30px; }
+
+                /* ACTIVITY */
+                .chart-glass-container { display: flex; justify-content: space-between; align-items: flex-end; height: 130px; }
+                .chart-column { width: 12%; text-align: center; }
+                .bar-track-glass { height: 100px; background: rgba(255,255,255,0.02); border-radius: 8px; position: relative; overflow: hidden; cursor: crosshair; }
+                .bar-fill-red { position: absolute; bottom: 0; width: 100%; background: #ff0000; box-shadow: 0 0 15px #ff0000; transition: height 0.3s; }
+                .bar-label { font-size: 0.7rem; color: #444; margin-top: 10px; display: block; font-weight: 800; }
+
+                /* CALENDAR */
+                .calendar-glass-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
+                .calendar-header-day { text-align: center; font-size: 0.7rem; color: #ff0000; font-weight: 900; }
+                .cal-glass-cell { 
+                    aspect-ratio: 1.1; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); 
+                    border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+                    cursor: pointer; transition: 0.3s; position: relative;
+                }
+                .cal-glass-cell:hover { background: rgba(255,0,0,0.1); border-color: #ff0000; }
+                .cal-glass-cell.active { background: rgba(255,0,0,0.2); border-color: #ff0000; box-shadow: inset 0 0 10px rgba(255,0,0,0.2); }
+                .day-number { font-weight: 900; font-size: 1rem; }
+                .note-text-inside { font-size: 0.5rem; color: #ff0000; font-weight: 800; margin-top: 5px; max-width: 90%; text-align: center; overflow: hidden; }
+
+                /* MODAL */
+                .glass-modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+                .glass-popup { background: rgba(20,20,20,0.9); border: 1px solid #ff0000; padding: 35px; border-radius: 30px; width: 350px; text-align: center; }
+                .glass-popup input { width: 100%; background: #000; border: 1px solid #333; padding: 12px; color: #fff; border-radius: 10px; margin: 20px 0; outline: none; }
+                .popup-buttons { display: flex; gap: 10px; }
+                .btn-save-red { flex: 1; background: #ff0000; color: #fff; border: none; padding: 12px; border-radius: 10px; font-weight: 900; cursor: pointer; }
+                .btn-close-glass { flex: 1; background: #222; color: #888; border: none; padding: 12px; border-radius: 10px; font-weight: 900; cursor: pointer; }
+
+                /* BOOKINGS */
+                .bookings-flex { display: flex; flex-direction: column; gap: 10px; }
+                .booking-glass-item { display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 20px; border-left: 4px solid #ff0000; }
+                .b-date { font-size: 1.5rem; font-weight: 900; color: #ff0000; }
+                .b-info h5 { margin: 0; font-weight: 900; text-transform: uppercase; }
+                .b-info small { color: #555; }
+
+                @media (max-width: 950px) { .cabinet-grid { grid-template-columns: 1fr; } }
+            `}</style>
         </section>
     );
 }
