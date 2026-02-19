@@ -1,0 +1,4900 @@
+
+
+=========================================
+ФАЙЛ: src\App.css
+=========================================
+
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+
+=========================================
+ФАЙЛ: src\App.jsx
+=========================================
+
+// src/App.jsx
+import { Routes, Route, Navigate } from 'react-router-dom';
+import Layout from './components/Layout';
+import Home from './pages/Home';
+import Cabinet from './pages/Cabinet';
+import AdminPanel from './pages/AdminPanel';
+import LoginModal from './components/LoginModal';
+import RegisterModal from './components/RegisterModal';
+import ToastContainer from './components/ToastContainer'; // <--- НОВЕ
+import GlobalConfirmModal from './components/GlobalConfirmModal'; // <--- НОВЕ
+import { useAuth } from './context/AuthContext';
+import { useUI } from './context/UIContext';
+
+const PrivateRoute = ({ children, adminOnly = false }) => {
+    const { user, loading } = useAuth();
+    if (loading) return null;
+    if (!user) return <Navigate to="/" />;
+    if (adminOnly && !user.is_staff) return <Navigate to="/" />;
+    return children;
+};
+
+function App() {
+  const { isLoginOpen, closeLogin, isRegisterOpen, closeRegister } = useUI();
+
+  return (
+    <>
+      {/* Глобальні сповіщення та модалки */}
+      <ToastContainer />
+      <GlobalConfirmModal />
+
+      <Routes>
+        <Route path="/" element={<Layout />}>
+            <Route index element={<Home />} />
+            <Route path="cabinet" element={
+                <PrivateRoute><Cabinet /></PrivateRoute>
+            } />
+        </Route>
+
+        <Route path="/admin" element={
+            <PrivateRoute adminOnly={true}><AdminPanel /></PrivateRoute>
+        } />
+
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+
+      {isLoginOpen && <LoginModal onClose={closeLogin} />}
+      {isRegisterOpen && <RegisterModal onClose={closeRegister} />}
+    </>
+  );
+}
+
+export default App;
+
+=========================================
+ФАЙЛ: src\components\AdminPanel.jsx
+=========================================
+
+// src/components/AdminPanel.jsx
+import { useState, useEffect } from 'react';
+import { authRequest } from '../utils/api';
+
+export default function AdminPanel() {
+    const [trainers, setTrainers] = useState([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    
+    // Стан для форми
+    const [formData, setFormData] = useState({
+        id: null,
+        username: '', password: '', // Для створення
+        name: '', specialization: '', phone: ''
+    });
+
+    // 1. Завантаження даних при старті
+    useEffect(() => {
+        loadTrainers();
+    }, []);
+
+    const loadTrainers = async () => {
+        try {
+            const data = await authRequest('/api/admin/instructors/');
+            setTrainers(data);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    // 2. Відкриття модалки
+    const openModal = (trainer = null) => {
+        if (trainer) {
+            // Редагування
+            setFormData({
+                id: trainer.id,
+                username: '', password: '', // Приховуємо/очищаємо
+                name: trainer.full_name || trainer.name,
+                specialization: trainer.specialties || trainer.specialization,
+                phone: trainer.contact || trainer.phone
+            });
+        } else {
+            // Створення
+            setFormData({
+                id: null,
+                username: '', password: '',
+                name: '', specialization: '', phone: ''
+            });
+        }
+        setIsModalOpen(true);
+    };
+
+    // 3. Збереження (Твоя логіка split name тут!)
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        
+        // Розбиваємо ім'я
+        const nameParts = formData.name.trim().split(' ');
+        const firstName = nameParts[0];
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        const payload = {
+            first_name: firstName,
+            last_name: lastName,
+            specialties: formData.specialization,
+            contact: formData.phone
+        };
+
+        try {
+            if (formData.id) {
+                // UPDATE
+                await authRequest(`/api/admin/instructors/${formData.id}/`, 'PUT', payload);
+            } else {
+                // CREATE
+                payload.username = formData.username;
+                payload.password = formData.password;
+                await authRequest('/api/admin/instructors/', 'POST', payload);
+            }
+            setIsModalOpen(false);
+            loadTrainers(); // Перезавантажити таблицю
+        } catch (err) {
+            alert('Помилка: ' + err.message);
+        }
+    };
+
+    // 4. Видалення
+    const handleDelete = async (id) => {
+        if (!confirm('Видалити?')) return;
+        try {
+            await authRequest(`/api/admin/instructors/${id}/`, 'DELETE');
+            loadTrainers();
+        } catch (e) {
+            alert('Помилка видалення');
+        }
+    };
+
+    return (
+        <div className="dashboard-container">
+            {/* Меню зліва спрощене */}
+            <aside className="dashboard-sidebar" style={{width: '250px', float:'left', height:'100vh', background:'#111', color:'#fff', padding:'20px'}}>
+                <h2>FITGYM</h2>
+                <p>Тренери (Active)</p>
+                <button onClick={() => { localStorage.removeItem('fp_token'); window.location.reload(); }}>Вихід</button>
+            </aside>
+
+            <main className="dashboard-main" style={{marginLeft: '250px', padding: '20px'}}>
+                <h1>Управління персоналом</h1>
+                <button className="btn btn-primary" onClick={() => openModal(null)}>+ Додати Тренера</button>
+                
+                <table className="data-table" style={{width: '100%', marginTop: '20px', borderCollapse: 'collapse'}}>
+                    <thead>
+                        <tr style={{background: '#333', color: '#fff'}}>
+                            <th>Ім'я</th>
+                            <th>Спеціалізація</th>
+                            <th>Телефон</th>
+                            <th>Дії</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {trainers.map(t => (
+                            <tr key={t.id} style={{borderBottom: '1px solid #333'}}>
+                                <td>{t.full_name || t.name}</td>
+                                <td>{t.specialties || t.specialization}</td>
+                                <td>{t.contact || t.phone}</td>
+                                <td>
+                                    <button onClick={() => openModal(t)}>Edit</button>
+                                    <button onClick={() => handleDelete(t.id)} style={{color:'red', marginLeft:'10px'}}>Delete</button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </main>
+
+            {/* МОДАЛКА */}
+            {isModalOpen && (
+                <div className="modal-overlay" style={{
+                    position:'fixed', top:0, left:0, width:'100%', height:'100%', 
+                    background:'rgba(0,0,0,0.8)', display:'flex', justifyContent:'center', alignItems:'center'
+                }}>
+                    <div className="modal-content" style={{background:'#1e1e1e', padding:'20px', borderRadius:'10px', width:'400px'}}>
+                        <h2>{formData.id ? 'Редагувати' : 'Новий'} Тренер</h2>
+                        <form onSubmit={handleSubmit}>
+                            {/* Показуємо логін/пароль тільки якщо це Створення (немає ID) */}
+                            {!formData.id && (
+                                <>
+                                    <input 
+                                        placeholder="Логін" required 
+                                        value={formData.username}
+                                        onChange={e => setFormData({...formData, username: e.target.value})}
+                                        style={{display:'block', width:'100%', margin:'10px 0'}}
+                                    />
+                                    <input 
+                                        type="password" placeholder="Пароль" required 
+                                        value={formData.password}
+                                        onChange={e => setFormData({...formData, password: e.target.value})}
+                                        style={{display:'block', width:'100%', margin:'10px 0'}}
+                                    />
+                                    <hr />
+                                </>
+                            )}
+                            
+                            <input 
+                                placeholder="Повне ім'я" required 
+                                value={formData.name}
+                                onChange={e => setFormData({...formData, name: e.target.value})}
+                                style={{display:'block', width:'100%', margin:'10px 0'}}
+                            />
+                            <input 
+                                placeholder="Спеціалізація" required 
+                                value={formData.specialization}
+                                onChange={e => setFormData({...formData, specialization: e.target.value})}
+                                style={{display:'block', width:'100%', margin:'10px 0'}}
+                            />
+                            <input 
+                                placeholder="Телефон" 
+                                value={formData.phone}
+                                onChange={e => setFormData({...formData, phone: e.target.value})}
+                                style={{display:'block', width:'100%', margin:'10px 0'}}
+                            />
+
+                            <div style={{marginTop: '20px', display:'flex', justifyContent:'space-between'}}>
+                                <button type="button" onClick={() => setIsModalOpen(false)}>Скасувати</button>
+                                <button type="submit" className="btn btn-primary">Зберегти</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+=========================================
+ФАЙЛ: src\components\BMICalculator.jsx
+=========================================
+
+// src/components/BMICalculator.jsx
+import { useState } from 'react';
+
+export default function BMICalculator() {
+    const [height, setHeight] = useState('');
+    const [weight, setWeight] = useState('');
+    const [age, setAge] = useState('');
+    const [gender, setGender] = useState('');
+    const [activity, setActivity] = useState('');
+    
+    const [result, setResult] = useState(null); // { bmi: 22.5, status: 'normal' }
+
+    const calculateBMI = (e) => {
+        e.preventDefault();
+        
+        if (!height || !weight) return;
+
+        // Формула: вага (кг) / (зріст (м) * зріст (м))
+        const h = parseFloat(height) / 100; // переводимо см в метри
+        const w = parseFloat(weight);
+        
+        if (h <= 0 || w <= 0) {
+            alert("Будь ласка, введіть коректні дані");
+            return;
+        }
+
+        const bmiValue = (w / (h * h)).toFixed(1);
+        let status = '';
+
+        if (bmiValue < 18.5) status = 'underweight';
+        else if (bmiValue >= 18.5 && bmiValue <= 24.9) status = 'normal';
+        else if (bmiValue >= 25.0 && bmiValue <= 29.9) status = 'overweight';
+        else status = 'obese';
+
+        setResult({ bmi: bmiValue, status });
+    };
+
+    return (
+        <section id="calculator" className="section container">
+            <h2 className="section-title">Визнач свій індекс маси тіла (ІМТ)</h2>
+            <p className="section-subtitle">ІМТ допомагає визначити, чи знаходиться ваша вага в межах норми. Введіть свої дані та отримайте результат.</p>
+
+            <div className="imt-wrapper">
+                {/* --- ТАБЛИЦЯ --- */}
+                <div className="imt-table-container">
+                    <table className="imt-table">
+                        <thead>
+                            <tr>
+                                <th>ІМТ</th>
+                                <th>ВАГОВИЙ СТАТУС</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr className={result?.status === 'underweight' ? 'active' : ''}>
+                                <td>Нижче 18.5</td>
+                                <td>Недостатня вага</td>
+                            </tr>
+                            <tr className={result?.status === 'normal' ? 'active' : ''}>
+                                <td>18.5 – 24.9</td>
+                                <td>Нормальна вага</td>
+                            </tr>
+                            <tr className={result?.status === 'overweight' ? 'active' : ''}>
+                                <td>25.0 – 29.9</td>
+                                <td>Зайва вага</td>
+                            </tr>
+                            <tr className={result?.status === 'obese' ? 'active' : ''}>
+                                <td>30.0 і вище</td>
+                                <td>Ожиріння</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p className="imt-note">*ІМТ: Індекс маси тіла</p>
+                </div>
+
+                {/* --- ФОРМА --- */}
+                <div className="imt-form-container">
+                    <form className="imt-form" onSubmit={calculateBMI}>
+                        <div className="form-row">
+                            <input 
+                                type="number" placeholder="Зріст / см" required min="100" max="250"
+                                value={height} onChange={e => setHeight(e.target.value)}
+                            />
+                            <input 
+                                type="number" placeholder="Вага / кг" required min="30" max="250"
+                                value={weight} onChange={e => setWeight(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="form-row">
+                            <input 
+                                type="number" placeholder="Вік" required min="16" max="99"
+                                value={age} onChange={e => setAge(e.target.value)}
+                            />
+                            <select required value={gender} onChange={e => setGender(e.target.value)}>
+                                <option value="" disabled>Стать</option>
+                                <option value="male">Чоловік</option>
+                                <option value="female">Жінка</option>
+                            </select>
+                        </div>
+
+                        <div className="form-row">
+                            <select required value={activity} onChange={e => setActivity(e.target.value)}>
+                                <option value="" disabled>Оберіть фіз. активність</option>
+                                <option value="sedentary">Мінімальна (Сидячий спосіб)</option>
+                                <option value="light">Легка (1-3 р/тиждень)</option>
+                                <option value="moderate">Помірна (3-5 р/тиждень)</option>
+                                <option value="active">Висока (6-7 р/тиждень)</option>
+                                <option value="extreme">Екстремальна (Щоденно)</option>
+                            </select>
+                        </div>
+
+                        {/* Блок результату */}
+                        <div className={`imt-result-box ${result ? result.status : ''}`}>
+                            {result ? (
+                                <span>Ваш ІМТ: {result.bmi}</span>
+                            ) : (
+                                <span>Введіть дані для розрахунку</span>
+                            )}
+                        </div>
+
+                        <button type="submit" className="btn btn-primary imt-submit-btn" style={{width: '100%'}}>
+                            ОБЧИСЛИТИ
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    );
+}
+
+=========================================
+ФАЙЛ: src\components\Carousel.jsx
+=========================================
+
+import { useState, useEffect, useRef } from 'react';
+
+const IMAGES = [
+    '/img/training_1.jpg',
+    '/img/training_2.jpg',
+    '/img/training_3.jpg',
+    '/img/training_4.jpg',
+    '/img/training_5.jpg',
+];
+
+// Подвоюємо масив для створення ефекту безкінечності
+const INFINITE_IMAGES = [...IMAGES, ...IMAGES];
+
+export default function Carousel() {
+    const [offset, setOffset] = useState(0);
+    const containerRef = useRef(null);
+    const SLIDE_WIDTH = 320; // Трохи збільшимо ширину слайда для солідності
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setOffset((prev) => {
+                const maxOffset = IMAGES.length * SLIDE_WIDTH;
+                // Якщо дійшли до середини дубльованого списку, плавно повертаємось
+                return prev >= maxOffset ? 0 : prev + SLIDE_WIDTH;
+            });
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <section className="carousel-section" style={{ background: '#fff', padding: '100px 0' }}>
+            <div className="container">
+                <div className="carousel-header" style={{ marginBottom: '40px', borderLeft: '8px solid #ff0000', paddingLeft: '20px' }}>
+                    <h2 style={{ 
+                        fontFamily: "'Montserrat', sans-serif", 
+                        fontWeight: '900', 
+                        fontSize: '2.5rem', 
+                        textTransform: 'uppercase', 
+                        margin: 0 
+                    }}>
+                        Наші <span style={{ color: '#ff0000' }}>Тренування</span>
+                    </h2>
+                </div>
+
+                <div className="carousel-container" style={{ overflow: 'hidden', cursor: 'grab' }}>
+                    <div 
+                        className="carousel-wrapper" 
+                        style={{ 
+                            display: 'flex',
+                            transition: offset === 0 ? 'none' : 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+                            transform: `translate3d(-${offset}px, 0, 0)` 
+                        }}
+                    >
+                        {INFINITE_IMAGES.map((src, index) => (
+                            <div key={index} className="carousel-slide-modern">
+                                <div className="slide-overlay">
+                                    <span>FITGYM PRO</span>
+                                </div>
+                                <img src={src} alt={`Training ${index}`} />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                
+                {/* Індикатори (крапки) */}
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '30px' }}>
+                    {IMAGES.map((_, i) => (
+                        <div 
+                            key={i} 
+                            style={{ 
+                                width: '12px', 
+                                height: '12px', 
+                                borderRadius: '50%', 
+                                background: offset / SLIDE_WIDTH === i ? '#ff0000' : '#ddd',
+                                transition: '0.3s'
+                            }} 
+                        />
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+}
+
+=========================================
+ФАЙЛ: src\components\Categories.jsx
+=========================================
+
+import React, { useState } from 'react';
+
+const CategoryCard = ({ title, img, isLarge, isTall, onClick }) => (
+    <div 
+        className="category-card" 
+        onClick={onClick}
+        style={{
+            position: 'relative',
+            gridColumn: isLarge ? 'span 2' : 'span 1',
+            gridRow: isTall ? 'span 2' : 'span 1',
+            overflow: 'hidden',
+            border: '3px solid #000',
+            background: '#fff',
+            height: '100%',
+            minHeight: '220px',
+            cursor: 'pointer'
+        }}
+    >
+        <img src={img} alt={title} style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            filter: 'grayscale(100%) brightness(0.7)',
+            transition: '0.8s cubic-bezier(0.4, 0, 0.2, 1)'
+        }} className="cat-img" />
+        
+        <div className="cat-overlay" style={{
+            position: 'absolute',
+            top: 0, left: 0, width: '100%', height: '100%',
+            background: 'rgba(0, 0, 0, 0.4)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: '0.4s'
+        }}>
+            <h3 style={{
+                fontSize: 'clamp(1.2rem, 2vw, 2rem)',
+                fontWeight: '950',
+                textTransform: 'uppercase',
+                color: '#fff',
+                letterSpacing: '3px',
+                textAlign: 'center',
+                textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
+            }}>{title}</h3>
+            <div className="cat-line" style={{ width: '0%', height: '4px', background: '#ff0000', marginTop: '10px', transition: '0.5s' }}></div>
+        </div>
+    </div>
+);
+
+export default function Categories() {
+    const [selectedId, setSelectedId] = useState(null);
+
+    const categoriesData = [
+        { id: 1, title: "Важка атлетика", img: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48", isLarge: true, desc: "Робота з вільними вагами для нарощування м'язової маси та сили. Професійні помости та грифи для твого прогресу." },
+        { id: 2, title: "Кардіо зона", img: "https://images.unsplash.com/photo-1538805060514-97d9cc17730c", isTall: true, desc: "Сучасні бігові доріжки та еліптичні тренажери для зміцнення серця та спалювання калорій." },
+        { id: 3, title: "Йога та Flex", img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b", desc: "Гнучкість, баланс та ментальне здоров'я. Ідеально підходить для відновлення після навантажень." },
+        { id: 4, title: "Кросфіт", img: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438", desc: "Високоінтенсивні функціональні тренування для справжніх атлетів. Витривалість на межі можливостей." },
+        { id: 5, title: "Персональні заняття", img: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b", isLarge: true, desc: "Індивідуальний підхід від наших топ-тренерів. Програма, розроблена спеціально під твої цілі." }
+    ];
+
+    const current = categoriesData.find(c => c.id === selectedId);
+
+    return (
+        <section id="categories" style={{ padding: '100px 0', background: '#f9f9f9' }}>
+            <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 5%' }}>
+                <div style={{ marginBottom: '50px', borderLeft: '8px solid #ff0000', paddingLeft: '20px' }}>
+                    <h2 style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: '900', textTransform: 'uppercase', margin: 0 }}>
+                        ОБЕРИ СВІЙ <span style={{color: '#ff0000'}}>ШЛЯХ</span>
+                    </h2>
+                </div>
+                
+                <div className="bento-grid" style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                    gridAutoRows: '240px',
+                    gap: '20px'
+                }}>
+                    {categoriesData.map(cat => (
+                        <CategoryCard 
+                            key={cat.id}
+                            title={cat.title} 
+                            img={cat.img} 
+                            isLarge={cat.isLarge} 
+                            isTall={cat.isTall}
+                            onClick={() => setSelectedId(cat.id)} 
+                        />
+                    ))}
+                </div>
+            </div>
+
+            {/* ПОВНОЕКРАННЕ ВІКНО З ФОТОМ */}
+            {current && (
+                <div className="modal-photo-overlay" onClick={() => setSelectedId(null)}>
+                    {/* Фонове зображення */}
+                    <div className="modal-bg-image" style={{ backgroundImage: `url(${current.img})` }}></div>
+                    
+                    <div className="modal-photo-content" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <span className="modal-tag">FITGYM / КАТЕГОРІЯ</span>
+                            <button className="modal-close-x" onClick={() => setSelectedId(null)}>ЗАКРИТИ ×</button>
+                        </div>
+                        
+                        <div className="modal-main">
+                            <h2 className="modal-big-title">{current.title}</h2>
+                            <p className="modal-text-desc">{current.desc}</p>
+                            <div className="modal-footer-cta">
+                                <a href="#plans" className="modal-link-btn" onClick={() => setSelectedId(null)}>Обрати абонемент →</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <style>{`
+                .category-card:hover .cat-img { filter: grayscale(0%) brightness(0.6); transform: scale(1.05); }
+                .category-card:hover .cat-overlay { background: rgba(255, 0, 0, 0.3) !important; }
+                .category-card:hover .cat-line { width: 60% !important; }
+
+                .modal-photo-overlay {
+                    position: fixed;
+                    top: 0; left: 0; width: 100%; height: 100%;
+                    z-index: 100000;
+                    display: flex; align-items: center; justify-content: center;
+                    background: #000;
+                    animation: fadeIn 0.5s ease;
+                }
+
+                .modal-bg-image {
+                    position: absolute;
+                    top: 0; left: 0; width: 100%; height: 100%;
+                    background-size: cover;
+                    background-position: center;
+                    filter: brightness(0.3); /* Затемнення фото */
+                    transition: 0.5s;
+                }
+
+                .modal-photo-content {
+                    position: relative;
+                    width: 100%;
+                    max-width: 1000px;
+                    padding: 60px;
+                    color: #fff;
+                    animation: slideUp 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+                }
+
+                .modal-header { display: flex; justify-content: space-between; margin-bottom: 100px; }
+                .modal-tag { font-weight: 900; letter-spacing: 4px; color: #ff0000; font-size: 0.8rem; }
+                .modal-close-x { background: none; border: none; color: #fff; font-weight: 700; cursor: pointer; letter-spacing: 1px; }
+
+                .modal-big-title { 
+                    font-size: clamp(3rem, 10vw, 7rem); 
+                    font-weight: 950; 
+                    text-transform: uppercase; 
+                    margin-bottom: 30px; 
+                    line-height: 0.85;
+                    letter-spacing: -4px;
+                }
+
+                .modal-text-desc { 
+                    font-size: 1.3rem; 
+                    max-width: 600px; 
+                    line-height: 1.6; 
+                    color: rgba(255,255,255,0.8);
+                    font-weight: 500;
+                }
+
+                .modal-footer-cta { margin-top: 50px; }
+                .modal-link-btn { 
+                    color: #fff; 
+                    font-size: 1.8rem; 
+                    font-weight: 900; 
+                    text-decoration: none; 
+                    border-bottom: 5px solid #ff0000;
+                    padding-bottom: 5px;
+                    transition: 0.3s;
+                }
+                .modal-link-btn:hover { color: #ff0000; }
+
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes slideUp { 
+                    from { opacity: 0; transform: translateY(40px); } 
+                    to { opacity: 1; transform: translateY(0); } 
+                }
+
+                @media (max-width: 768px) {
+                    .modal-photo-content { padding: 30px; }
+                    .modal-header { margin-bottom: 50px; }
+                    .modal-big-title { letter-spacing: -2px; }
+                }
+
+                @media (max-width: 600px) {
+                    .bento-grid { grid-template-columns: 1fr !important; grid-auto-rows: 250px !important; }
+                    .category-card { grid-column: span 1 !important; grid-row: span 1 !important; }
+                }
+            `}</style>
+        </section>
+    );
+}
+
+=========================================
+ФАЙЛ: src\components\Contacts.jsx
+=========================================
+
+export default function Contacts() {
+    // Зменшений та більш компактний стиль заголовка
+    const titleStyle = {
+        fontFamily: "'Montserrat', sans-serif",
+        fontWeight: '900',
+        fontStyle: 'italic',
+        fontSize: 'clamp(2rem, 5vw, 3.2rem)', // Зменшено з 4rem до 3.2rem
+        textTransform: 'uppercase',
+        lineHeight: '1', // Трохи збільшено для кращої читабельності
+        letterSpacing: '-1px', // Менш агресивна щільність
+        color: '#000',
+        marginBottom: '40px'
+    };
+
+    const labelStyle = {
+        fontFamily: "'Inter', sans-serif",
+        fontSize: '0.7rem',
+        fontWeight: '800',
+        textTransform: 'uppercase',
+        letterSpacing: '2px',
+        color: '#ff0000',
+        display: 'block',
+        marginBottom: '6px'
+    };
+
+    const valueStyle = {
+        fontFamily: "'Inter', sans-serif",
+        fontSize: '1.15rem',
+        fontWeight: '700',
+        color: '#000',
+        marginBottom: '30px',
+        lineHeight: '1.2'
+    };
+
+    return (
+        <section id="contacts" style={{ padding: '100px 0', background: '#fff' }}>
+            <div className="container" style={{ 
+                display: 'flex', 
+                gap: '40px', 
+                flexWrap: 'wrap',
+                alignItems: 'flex-start' 
+            }}>
+                
+                {/* ЛІВА ЧАСТИНА */}
+                <div style={{ flex: '1', minWidth: '300px' }} data-aos="fade-right">
+                    <h2 style={titleStyle}>
+                        Контакти та <br />
+                        <span style={{ 
+                            color: 'transparent', 
+                            WebkitTextStroke: '1.5px #000',
+                            opacity: 0.8 
+                        }}>Розташування</span>
+                    </h2>
+
+                    <div>
+                        <span style={labelStyle}>Телефон</span>
+                        <p style={valueStyle}>+38 (097) 123-45-67</p>
+                    </div>
+
+                    <div>
+                        <span style={labelStyle}>Email</span>
+                        <p style={valueStyle}>info@fitgym.ua</p>
+                    </div>
+
+                    <div>
+                        <span style={labelStyle}>Адреса</span>
+                        <p style={valueStyle}>вул. Вінницька, 42а, <br/> м. Бердичів</p>
+                    </div>
+
+                    <div style={{ width: '40px', height: '4px', background: '#ff0000' }}></div>
+                </div>
+
+                {/* ПРАВА ЧАСТИНА: ЧОРНА МАПА */}
+                <div style={{ flex: '1.4', minWidth: '350px' }} data-aos="fade-left">
+                    <div style={{ 
+                        border: '8px solid #000', 
+                        boxShadow: '12px 12px 0px #ff0000',
+                        position: 'relative',
+                        background: '#000' 
+                    }}>
+                        <iframe 
+                            loading="lazy" 
+                            title="Мапа Бердичів"
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2551.4876!2d28.5836!3d49.8956!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDnCsDUzJzQ0LjIiTiAyOMKwMzUnMDAuOSJF!5e0!3m2!1suk!2sua!4v1645171200000!5m2!1suk!2sua"
+                            style={{ 
+                                width: '100%', 
+                                height: '420px', 
+                                border: 0, 
+                                display: 'block',
+                                filter: 'grayscale(1) invert(1) contrast(1.2)' 
+                            }}
+                            allowFullScreen=""
+                        ></iframe>
+                        
+                        <div style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            width: '18px',
+                            height: '18px',
+                            background: '#ff0000',
+                            borderRadius: '50%',
+                            border: '3px solid #fff',
+                            transform: 'translate(-50%, -50%)',
+                            pointerEvents: 'none',
+                            boxShadow: '0 0 15px rgba(255, 0, 0, 0.5)'
+                        }}></div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    );
+}
+
+=========================================
+ФАЙЛ: src\components\Footer.jsx
+=========================================
+
+import React from 'react';
+import { Link } from 'react-router-dom';
+
+export default function Footer() {
+    return (
+        <footer className="footer">
+            <div className="container footer-content">
+                <div className="footer-grid">
+                    
+                    {/* Лого та опис */}
+                    <div className="footer-brand">
+                        <h2 className="footer-logo">FIT<span>GYM</span></h2>
+                        <p className="footer-about">
+                            Найсучасніший фітнес-центр у Бердичеві. Твій результат — наш пріоритет. 
+                            Працюємо 24/7 для твоєї досконалості.
+                        </p>
+                        <div className="footer-socials">
+                            <a href="#"><i className="fab fa-instagram"></i></a>
+                            <a href="#"><i className="fab fa-facebook-f"></i></a>
+                            <a href="#"><i className="fab fa-tiktok"></i></a>
+                        </div>
+                    </div>
+
+                    {/* Навігація */}
+                    <div className="footer-links">
+                        <h4>Навігація</h4>
+                        <ul>
+                            <li><a href="#categories">Тренування</a></li>
+                            <li><a href="#trainers">Тренери</a></li>
+                            <li><a href="#plans">Тарифи</a></li>
+                            <li><a href="#schedule">Розклад</a></li>
+                        </ul>
+                    </div>
+
+                    {/* Контакти */}
+                    <div className="footer-contacts">
+                        <h4>Контакти</h4>
+                        <p><i className="fas fa-map-marker-alt"></i> м. Бердичів, вул. Європейська, 15</p>
+                        <p><i className="fas fa-phone"></i> +38 (097) 123-45-67</p>
+                        <p><i className="fas fa-envelope"></i> info@fitgym.ua</p>
+                    </div>
+
+                </div>
+
+                <div className="footer-bottom">
+                    <p>&copy; 2026 FITGYM BERDYCHIV. Всі права захищені.</p>
+                   
+                </div>
+            </div>
+
+            <style>{`
+                .footer {
+                    background: #000;
+                    color: #fff;
+                    padding: 80px 0 30px;
+                    border-top: 5px solid #ff0000;
+                }
+                .footer-grid {
+                    display: grid;
+                    grid-template-columns: 2fr 1fr 1.5fr;
+                    gap: 60px;
+                    margin-bottom: 60px;
+                }
+                .footer-logo {
+                    font-size: 2.5rem;
+                    font-weight: 950;
+                    margin-bottom: 20px;
+                    letter-spacing: -2px;
+                }
+                .footer-logo span { color: #ff0000; }
+                .footer-about { color: #888; line-height: 1.6; max-width: 350px; }
+                
+                .footer-links h4, .footer-contacts h4 {
+                    text-transform: uppercase;
+                    font-weight: 900;
+                    margin-bottom: 25px;
+                    letter-spacing: 1px;
+                }
+                .footer-links ul { list-style: none; padding: 0; }
+                .footer-links li { margin-bottom: 12px; }
+                .footer-links a { 
+                    color: #888; 
+                    text-decoration: none; 
+                    transition: 0.3s;
+                    font-weight: 600;
+                }
+                .footer-links a:hover { color: #ff0000; padding-left: 5px; }
+
+                .footer-contacts p { 
+                    color: #888; 
+                    margin-bottom: 15px; 
+                    display: flex; 
+                    align-items: center; 
+                    gap: 12px; 
+                }
+                .footer-contacts i { color: #ff0000; }
+
+                .footer-socials { display: flex; gap: 20px; margin-top: 25px; }
+                .footer-socials a { 
+                    width: 40px; height: 40px; 
+                    background: #222; 
+                    display: flex; align-items: center; justify-content: center;
+                    color: #fff; text-decoration: none;
+                    transition: 0.3s;
+                }
+                .footer-socials a:hover { background: #ff0000; transform: translateY(-5px); }
+
+                .footer-bottom {
+                    border-top: 1px solid #222;
+                    padding-top: 30px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    color: #444;
+                    font-size: 0.9rem;
+                    font-weight: 700;
+                }
+                .developer span { color: #666; }
+
+                @media (max-width: 768px) {
+                    .footer-grid { grid-template-columns: 1fr; gap: 40px; text-align: center; }
+                    .footer-about { margin: 0 auto; }
+                    .footer-socials { justify-content: center; }
+                    .footer-bottom { flex-direction: column; gap: 10px; }
+                }
+            `}</style>
+        </footer>
+    );
+}
+
+=========================================
+ФАЙЛ: src\components\GlobalConfirmModal.jsx
+=========================================
+
+// src/components/GlobalConfirmModal.jsx
+import { useUI } from '../context/UIContext';
+
+export default function GlobalConfirmModal() {
+    const { confirmModal, closeConfirm, executeConfirm } = useUI();
+
+    if (!confirmModal.isOpen) return null;
+
+    return (
+        <div className="modal-overlay" style={{ display: 'flex', zIndex: 10001 }}>
+            <div className="modal-content" style={{ maxWidth: '400px', textAlign: 'center' }}>
+                <h3 style={{ marginTop: 0, color: 'var(--text)' }}>Підтвердження</h3>
+                <p style={{ fontSize: '1.1rem', marginBottom: '25px', color: '#ccc' }}>
+                    {confirmModal.message}
+                </p>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
+                    <button onClick={closeConfirm} className="btn btn-ghost">
+                        Скасувати
+                    </button>
+                    <button onClick={executeConfirm} className="btn btn-primary">
+                        Так, я впевнений
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+=========================================
+ФАЙЛ: src\components\Header.jsx
+=========================================
+
+// src/components/Header.jsx
+import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useUI } from '../context/UIContext';
+import { useState, useEffect } from 'react';
+
+export default function Header() {
+    const { user, logout } = useAuth();
+    const { openLogin, openRegister } = useUI();
+    
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [isScrolled, setIsScrolled] = useState(false);
+
+    // Ефект для відстеження скролу (щоб змінювати колір хедера)
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 50);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Функція закриття меню після кліку (для мобільного)
+    const closeMenu = () => setMobileMenuOpen(false);
+
+    return (
+        <header className={`site-header ${isScrolled ? 'scrolled' : ''}`}>
+            <div className="container header-inner">
+                {/* ЛОГОТИП */}
+                <Link to="/" className="logo" onClick={closeMenu}>
+                    FIT<span>GYM</span>
+                </Link>
+                
+                {/* НАВІГАЦІЯ */}
+                {/* Додаємо клас 'open', якщо меню активне */}
+                <nav className={`nav-primary ${mobileMenuOpen ? 'open' : ''}`}>
+                    <Link to="/" onClick={closeMenu}>Головна</Link>
+                    <a href="/#schedule" onClick={closeMenu}>Розклад</a>
+                    <a href="/#trainers" onClick={closeMenu}>Тренери</a>
+                    <a href="/#plans" onClick={closeMenu}>Абонементи</a>
+                    
+                    {user?.is_staff && (
+                        <Link to="/admin" onClick={closeMenu} style={{ color: 'var(--accent)' }}>
+                            <i className="fas fa-cogs"></i> Адмін
+                        </Link>
+                    )}
+                    
+                    {user && (
+                         <Link to="/cabinet" onClick={closeMenu}>
+                             <i className="fas fa-user-circle"></i> Кабінет
+                         </Link>
+                    )}
+
+                    {/* На мобільному дублюємо кнопку виходу/входу в меню для зручності */}
+                    <div className="mobile-auth-actions">
+                        {user ? (
+                            <button onClick={() => { logout(); closeMenu(); }} className="btn btn-ghost">Вийти</button>
+                        ) : (
+                            <>
+                                <button className="btn btn-ghost" onClick={() => { openLogin(); closeMenu(); }}>Вхід</button>
+                                <button className="btn btn-primary" onClick={() => { openRegister(); closeMenu(); }}>Реєстрація</button>
+                            </>
+                        )}
+                    </div>
+                </nav>
+
+                {/* ПРАВА ЧАСТИНА (Десктоп) */}
+                <div id="authArea">
+                    {user ? (
+                        <div className="user-greeting">
+                            <span className="hide-on-mobile">Привіт, <b>{user.username}</b></span>
+                            <button onClick={logout} className="btn-icon-logout" title="Вихід">
+                                <i className="fas fa-sign-out-alt"></i>
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="guest-actions">
+                            <button className="nav-link-btn" onClick={openLogin}>Вхід</button>
+                            <button className="btn btn-primary btn-sm" onClick={openRegister}>Реєстрація</button>
+                        </div>
+                    )}
+                </div>
+
+                {/* БУРГЕР КНОПКА */}
+                <button 
+                    className={`hamburger ${mobileMenuOpen ? 'active' : ''}`} 
+                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                >
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </header>
+    );
+}
+
+=========================================
+ФАЙЛ: src\components\Hero.jsx
+=========================================
+
+import { useAuth } from '../context/AuthContext';
+
+export default function Hero() {
+    const { user } = useAuth();
+
+    return (
+        <section className="hero-modern" style={{padding: '80px 0', background: '#fff', color: '#000', overflow: 'hidden'}}>
+            <div className="container" style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', minHeight: '600px'}}>
+                
+                {/* ЛІВА ЧАСТИНА: ТЕКСТ */}
+                <div className="hero-content" style={{flex: '1', minWidth: '350px', paddingRight: '20px', zIndex: 2}} data-aos="fade-right">
+                    <h1 style={{
+                        fontSize: 'clamp(3rem, 6vw, 5.5rem)', 
+                        fontWeight: '900', 
+                        lineHeight: '0.9', 
+                        marginBottom: '25px', 
+                        textTransform: 'uppercase', 
+                        color: '#111',
+                        letterSpacing: '-2px'
+                    }}>
+                        TOP<br/>
+                        SCORER TO<br/>
+                        <span style={{color: '#aaa'}}>THE FINAL</span><br/>
+                        <span style={{color: '#ddd'}}>MATCH</span>
+                    </h1>
+                    
+                    <p style={{fontSize: '1.1rem', color: '#666', marginBottom: '40px', maxWidth: '480px', lineHeight: '1.6', fontWeight: '500'}}>
+                        Ваша фітнесова подорож починається тут. Приєднуйтесь до нашого клубу та досягайте цілей з професіоналами.
+                    </p>
+
+                    <div className="hero-actions">
+                        {/* ЗАЛИШАЄМО ТІЛЬКИ ОДНУ КНОПКУ ДЛЯ ВСІХ КОРИСТУВАЧІВ */}
+                        <a 
+                            href="#plans" 
+                            className="btn"
+                            style={{
+                                background: '#111', 
+                                color: '#fff', 
+                                padding: '16px 45px', 
+                                borderRadius: '6px', 
+                                fontWeight: '700', 
+                                textDecoration: 'none', 
+                                display: 'inline-block',
+                                fontSize: '0.9rem',
+                                letterSpacing: '1px'
+                            }}
+                        >
+                            ОБРАТИ АБОНЕМЕНТ
+                        </a>
+                    </div>
+                </div>
+
+                {/* ПРАВА ЧАСТИНА: ФОТО */}
+                <div className="hero-image-block" style={{flex: '1', minWidth: '350px', position: 'relative', display: 'flex', justifyContent: 'center'}} data-aos="fade-left">
+                    <img 
+                        src="https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=2069&auto=format&fit=crop" 
+                        alt="Athlete" 
+                        style={{
+                            width: '100%', 
+                            height: 'auto', 
+                            display: 'block', 
+                            objectFit: 'contain', 
+                            maxHeight: '650px', 
+                            filter: 'grayscale(100%) contrast(1.1)', 
+                            maskImage: 'linear-gradient(to bottom, black 80%, transparent 100%)', 
+                            WebkitMaskImage: 'linear-gradient(to bottom, black 80%, transparent 100%)'
+                        }} 
+                    />
+                </div>
+
+            </div>
+        </section>
+    );
+}
+
+=========================================
+ФАЙЛ: src\components\Layout.jsx
+=========================================
+
+// src/components/Layout.jsx
+import Header from './Header';
+import Footer from './Footer';
+import { Outlet } from 'react-router-dom';
+
+export default function Layout({ openLogin, openRegister }) {
+    return (
+        <div className="page-wrapper">
+            <Header openLogin={openLogin} openRegister={openRegister} />
+            
+            <main>
+                {/* ОСЬ ТУТ МАГІЯ: Ми передаємо функції вниз у дочірні сторінки (Home)
+                   через context. Тепер Home зможе їх дістати.
+                */}
+                <Outlet context={{ openLogin, openRegister }} />
+            </main>
+
+            <Footer />
+        </div>
+    );
+}
+
+=========================================
+ФАЙЛ: src\components\Login.jsx
+=========================================
+
+// src/components/Login.jsx
+import { useState } from 'react';
+import { BASE_URL } from '../utils/api';
+import { useNavigate } from 'react-router-dom';
+
+export default function Login() {
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const navigate = useNavigate();
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        try {
+            const res = await fetch(`${BASE_URL}/api/login/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            if (data.token) {
+                localStorage.setItem('fp_token', JSON.stringify(data.token));
+                navigate('/admin'); // Перекидаємо в адмінку
+            } else {
+                alert('Помилка входу');
+            }
+        } catch (err) {
+            alert('Помилка: ' + err.message);
+        }
+    };
+
+    return (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '100px' }}>
+            <form onSubmit={handleLogin} className="admin-form" style={{ width: '300px' }}>
+                <h2>Вхід</h2>
+                <input 
+                    type="text" 
+                    placeholder="Логін" 
+                    value={username} 
+                    onChange={e => setUsername(e.target.value)} 
+                    style={{ display: 'block', width: '100%', marginBottom: '10px' }}
+                />
+                <input 
+                    type="password" 
+                    placeholder="Пароль" 
+                    value={password} 
+                    onChange={e => setPassword(e.target.value)}
+                    style={{ display: 'block', width: '100%', marginBottom: '10px' }}
+                />
+                <button type="submit" className="btn btn-primary">Увійти</button>
+            </form>
+        </div>
+    );
+}
+
+=========================================
+ФАЙЛ: src\components\LoginModal.jsx
+=========================================
+
+import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { BASE_URL } from '../utils/api';
+
+export default function LoginModal({ onClose }) {
+    const { login } = useAuth();
+    const [formData, setFormData] = useState({ username: '', password: '' });
+    const [error, setError] = useState('');
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        try {
+            const res = await fetch(`${BASE_URL}/api/login/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+            const data = await res.json();
+            
+            if (!res.ok) throw new Error(data.detail || 'Невірний логін або пароль');
+            if (data.token) {
+                login(data.token, formData.username);
+                onClose();
+            }
+        } catch (err) {
+            setError(err.message);
+        }
+    };
+
+    return (
+        <div className="modal-overlay" style={{
+            display: 'flex',
+            position: 'fixed',
+            top: 0, left: 0, width: '100%', height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            backdropFilter: 'blur(4px)', // Легке розмиття фону
+            zIndex: 99999,
+            alignItems: 'center',
+            justifyContent: 'center'
+        }}>
+            <div className="modal-content-premium" style={{
+                background: '#fff',
+                padding: '50px 40px',
+                width: '100%',
+                maxWidth: '400px',
+                borderRadius: '2px', // Ледь помітне заокруглення
+                position: 'relative',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                borderTop: '5px solid #ff0000' // Тонка акцентна лінія зверху
+            }}>
+                <button 
+                    onClick={onClose} 
+                    style={{
+                        position: 'absolute', top: '15px', right: '15px', 
+                        background: 'none', border: 'none', color: '#ccc', 
+                        fontSize: '24px', cursor: 'pointer', transition: '0.2s'
+                    }}
+                    onMouseEnter={(e) => e.target.style.color = '#000'}
+                    onMouseLeave={(e) => e.target.style.color = '#ccc'}
+                >×</button>
+                
+                <div style={{ textAlign: 'center', marginBottom: '35px' }}>
+                    <h2 style={{
+                        fontFamily: "'Montserrat', sans-serif",
+                        fontWeight: '800',
+                        fontSize: '1.8rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px',
+                        color: '#000',
+                        margin: 0
+                    }}>ВХІД</h2>
+                    <div style={{ width: '40px', height: '2px', background: '#ff0000', margin: '10px auto' }}></div>
+                </div>
+                
+                {error && <p style={{color: '#ff0000', textAlign: 'center', fontSize: '0.85rem', marginBottom: '20px', fontWeight: '600'}}>{error}</p>}
+                
+                <form onSubmit={handleSubmit}>
+                    <input 
+                        placeholder="Логін" required 
+                        value={formData.username}
+                        onChange={e => setFormData({...formData, username: e.target.value})}
+                        style={{
+                            width: '100%', padding: '14px', marginBottom: '15px', 
+                            border: '1px solid #eee', background: '#fcfcfc',
+                            borderRadius: '0', outline: 'none', boxSizing: 'border-box'
+                        }}
+                    />
+                    <input 
+                        type="password" placeholder="Пароль" required 
+                        value={formData.password}
+                        onChange={e => setFormData({...formData, password: e.target.value})}
+                        style={{
+                            width: '100%', padding: '14px', marginBottom: '25px', 
+                            border: '1px solid #eee', background: '#fcfcfc',
+                            borderRadius: '0', outline: 'none', boxSizing: 'border-box'
+                        }}
+                    />
+                    <button type="submit" style={{
+                        width: '100%', padding: '15px', background: '#000', 
+                        color: '#fff', border: 'none', fontWeight: '700', 
+                        fontSize: '0.9rem', cursor: 'pointer', 
+                        textTransform: 'uppercase', letterSpacing: '1.5px',
+                        transition: '0.3s'
+                    }}
+                    className="submit-btn-hover"
+                    >
+                        Авторизуватися
+                    </button>
+                </form>
+            </div>
+
+            <style>{`
+                .submit-btn-hover:hover {
+                    background: #ff0000;
+                    letter-spacing: 2px;
+                }
+                input:focus {
+                    border-color: #ff0000 !important;
+                }
+            `}</style>
+        </div>
+    );
+}
+
+=========================================
+ФАЙЛ: src\components\Plans.jsx
+=========================================
+
+import React from 'react';
+
+const PlanCard = ({ title, price, features, isFeatured }) => (
+    <div className={`plan-card ${isFeatured ? 'featured' : ''}`} data-aos={isFeatured ? "zoom-in" : "fade-up"}>
+        {isFeatured && <div className="plan-badge">Популярний</div>}
+        <h3 className="plan-title">{title}</h3>
+        <div className="plan-price">
+            <span className="currency">₴</span>
+            {price}
+            <span className="period">/ міс</span>
+        </div>
+        <div className="plan-divider"></div>
+        <ul className="plan-features">
+            {features.map((f, i) => (
+                <li key={i}><i className="fas fa-check"></i> {f}</li>
+            ))}
+        </ul>
+        <button className="plan-button">Обрати план</button>
+    </div>
+);
+
+export default function Plans() {
+    return (
+        <section id="plans" className="plans-section">
+            {/* Шар затемнення для фону */}
+            <div className="plans-overlay"></div>
+            
+            <div className="container plans-content">
+                <div className="plans-header">
+                    <h2 className="plans-main-title">
+                        Оберіть свій <span className="accent-text">рівень</span>
+                    </h2>
+                    <p className="plans-subtitle">Прозорі ціни для твоїх перемог</p>
+                </div>
+
+                <div className="plans-grid">
+                    <PlanCard 
+                        title="Базовий" 
+                        price="800" 
+                        features={["8 тренувань на місяць", "Доступ до кардіо зони", "Роздягальня та душ"]} 
+                    />
+                    <PlanCard 
+                        title="Безліміт" 
+                        price="1200" 
+                        isFeatured 
+                        features={["Необмежена кількість відвідувань", "Всі зони залу", "1 безкоштовне тренування", "Доступ 24/7"]} 
+                    />
+                    <PlanCard 
+                        title="PRO" 
+                        price="2500" 
+                        features={["Безлімітний доступ", "Персональний план харчування", "Заморозка абонементу", "Пріоритетний запис"]} 
+                    />
+                </div>
+            </div>
+
+            <style>{`
+                .plans-section {
+                    position: relative;
+                    padding: 120px 0;
+                    /* ЗАМІНИ ЦЕ ПОСИЛАННЯ НА СВОЄ ФОТО ЗАЛУ */
+                    background-image: url('https://images.unsplash.com/photo-1540497077202-7c8a3999166f?q=80&w=2070');
+                    background-size: cover;
+                    background-position: center;
+                    background-attachment: fixed; /* Ефект паралаксу */
+                    overflow: hidden;
+                }
+
+                .plans-overlay {
+                    position: absolute;
+                    top: 0; left: 0; width: 100%; height: 100%;
+                    background: rgba(0, 0, 0, 0.8); /* Темний фільтр поверх фото */
+                    z-index: 1;
+                }
+
+                .plans-content {
+                    position: relative;
+                    z-index: 2;
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    padding: 0 5%;
+                }
+
+                .plans-header {
+                    text-align: center;
+                    margin-bottom: 70px;
+                    color: #fff;
+                }
+
+                .plans-main-title {
+                    font-size: clamp(2.5rem, 6vw, 4.5rem);
+                    font-weight: 950;
+                    text-transform: uppercase;
+                    line-height: 0.9;
+                    margin-bottom: 15px;
+                }
+
+                .accent-text { color: #ff0000; }
+
+                .plans-subtitle {
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 3px;
+                    opacity: 0.8;
+                }
+
+                .plans-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                    gap: 30px;
+                    align-items: stretch;
+                }
+
+                /* СТИЛІ КАРТОК */
+                .plan-card {
+                    background: #fff;
+                    border: 3px solid #000;
+                    padding: 50px 30px;
+                    position: relative;
+                    transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                }
+
+                .plan-card:hover {
+                    transform: translateY(-15px);
+                    box-shadow: 20px 20px 0px #000;
+                }
+
+                .plan-card.featured {
+                    border-color: #ff0000;
+                    box-shadow: 15px 15px 0px #ff0000;
+                }
+
+                .plan-badge {
+                    position: absolute;
+                    top: -15px;
+                    background: #ff0000;
+                    color: #fff;
+                    padding: 5px 20px;
+                    font-weight: 900;
+                    text-transform: uppercase;
+                    font-size: 0.8rem;
+                    border: 2px solid #000;
+                }
+
+                .plan-title {
+                    font-size: 1.8rem;
+                    font-weight: 950;
+                    text-transform: uppercase;
+                    margin-bottom: 25px;
+                    color: #000;
+                }
+
+                .plan-price {
+                    font-size: 4.5rem;
+                    font-weight: 950;
+                    color: #ff0000;
+                    line-height: 1;
+                    margin-bottom: 10px;
+                }
+
+                .currency { font-size: 1.5rem; vertical-align: super; }
+                .period { font-size: 1rem; color: #666; font-weight: 700; }
+
+                .plan-divider {
+                    width: 60px; height: 5px;
+                    background: #000;
+                    margin: 30px 0;
+                }
+
+                .plan-features {
+                    list-style: none;
+                    padding: 0;
+                    margin-bottom: 40px;
+                    width: 100%;
+                    flex-grow: 1;
+                }
+
+                .plan-features li {
+                    margin-bottom: 15px;
+                    font-weight: 700;
+                    color: #333;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    font-size: 0.95rem;
+                }
+
+                .plan-features i { color: #ff0000; }
+
+                .plan-button {
+                    width: 100%;
+                    padding: 18px;
+                    background: #000;
+                    color: #fff;
+                    border: none;
+                    font-weight: 900;
+                    text-transform: uppercase;
+                    cursor: pointer;
+                    transition: 0.3s;
+                    letter-spacing: 1px;
+                }
+
+                .plan-button:hover {
+                    background: #ff0000;
+                }
+
+                .plan-card.featured .plan-button { background: #ff0000; }
+                .plan-card.featured .plan-button:hover { background: #000; }
+
+                @media (max-width: 600px) {
+                    .plan-card.featured { transform: none; }
+                    .plan-card.featured:hover { transform: translateY(-10px); }
+                }
+            `}</style>
+        </section>
+    );
+}
+
+=========================================
+ФАЙЛ: src\components\Preloader.jsx
+=========================================
+
+import React, { useEffect, useState } from 'react';
+
+export default function Preloader() {
+    const [visible, setVisible] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setVisible(false);
+        }, 1500); // Зникне через 1.5 секунди
+        return () => clearTimeout(timer);
+    }, []);
+
+    if (!visible) return null;
+
+    return (
+        <div className="preloader-overlay">
+            <div className="preloader-content">
+                <h1 className="preloader-logo">FIT<span className="red">GYM</span></h1>
+                <div className="preloader-bar">
+                    <div className="preloader-progress"></div>
+                </div>
+                <p className="preloader-text">ГОТУЄМО ЗАЛ ДО ТРЕНУВАННЯ...</p>
+            </div>
+
+            <style>{`
+                .preloader-overlay {
+                    position: fixed;
+                    top: 0; left: 0; width: 100%; height: 100%;
+                    background: #000;
+                    display: flex; align-items: center; justify-content: center;
+                    z-index: 999999;
+                }
+                .preloader-content { text-align: center; }
+                .preloader-logo {
+                    font-size: 5rem;
+                    font-weight: 950;
+                    color: #fff;
+                    margin-bottom: 20px;
+                    letter-spacing: -2px;
+                    animation: pulse 1s infinite alternate;
+                }
+                .red { color: #ff0000; }
+                .preloader-bar {
+                    width: 200px;
+                    height: 4px;
+                    background: #222;
+                    margin: 0 auto 15px;
+                    position: relative;
+                    overflow: hidden;
+                }
+                .preloader-progress {
+                    width: 0%;
+                    height: 100%;
+                    background: #ff0000;
+                    animation: load 1.5s ease-in-out forwards;
+                }
+                .preloader-text {
+                    color: #666;
+                    font-weight: 800;
+                    font-size: 0.8rem;
+                    letter-spacing: 2px;
+                }
+                @keyframes load { to { width: 100%; } }
+                @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.05); } }
+            `}</style>
+        </div>
+    );
+}
+
+=========================================
+ФАЙЛ: src\components\RegisterModal.jsx
+=========================================
+
+import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { BASE_URL } from '../utils/api';
+
+export default function RegisterModal({ onClose }) {
+    const { login } = useAuth();
+    const [formData, setFormData] = useState({
+        username: '',
+        email: '',
+        password: '',
+        confirmPassword: ''
+    });
+    const [error, setError] = useState('');
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+
+        if (formData.password !== formData.confirmPassword) {
+            setError('Паролі не збігаються');
+            return;
+        }
+
+        try {
+            const res = await fetch(`${BASE_URL}/api/register/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: formData.username,
+                    email: formData.email,
+                    password: formData.password
+                })
+            });
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.detail || 'Помилка реєстрації');
+            
+            if (data.token) {
+                login(data.token, formData.username);
+                onClose();
+            }
+        } catch (err) {
+            setError(err.message);
+        }
+    };
+
+    return (
+        <div className="modal-overlay" style={{
+            display: 'flex',
+            position: 'fixed',
+            top: 0, left: 0, width: '100%', height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 99999,
+            alignItems: 'center',
+            justifyContent: 'center'
+        }}>
+            <div className="modal-content-premium" style={{
+                background: '#fff',
+                padding: '40px',
+                width: '100%',
+                maxWidth: '420px',
+                borderRadius: '2px',
+                position: 'relative',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                borderTop: '5px solid #ff0000'
+            }}>
+                <button 
+                    onClick={onClose} 
+                    style={{
+                        position: 'absolute', top: '15px', right: '15px', 
+                        background: 'none', border: 'none', color: '#ccc', 
+                        fontSize: '24px', cursor: 'pointer', transition: '0.2s'
+                    }}
+                    onMouseEnter={(e) => e.target.style.color = '#000'}
+                    onMouseLeave={(e) => e.target.style.color = '#ccc'}
+                >×</button>
+                
+                <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                    <h2 style={{
+                        fontFamily: "'Montserrat', sans-serif",
+                        fontWeight: '800',
+                        fontSize: '1.8rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px',
+                        color: '#000',
+                        margin: 0
+                    }}>Реєстрація</h2>
+                    <div style={{ width: '40px', height: '2px', background: '#ff0000', margin: '10px auto' }}></div>
+                </div>
+                
+                {error && <p style={{color: '#ff0000', textAlign: 'center', fontSize: '0.85rem', marginBottom: '15px', fontWeight: '600'}}>{error}</p>}
+                
+                <form onSubmit={handleSubmit}>
+                    <input 
+                        placeholder="Логін" required 
+                        value={formData.username}
+                        onChange={e => setFormData({...formData, username: e.target.value})}
+                        style={inputStyle}
+                    />
+                    <input 
+                        type="email" placeholder="Email" required 
+                        value={formData.email}
+                        onChange={e => setFormData({...formData, email: e.target.value})}
+                        style={inputStyle}
+                    />
+                    <input 
+                        type="password" placeholder="Пароль" required 
+                        value={formData.password}
+                        onChange={e => setFormData({...formData, password: e.target.value})}
+                        style={inputStyle}
+                    />
+                    <input 
+                        type="password" placeholder="Підтвердіть пароль" required 
+                        value={formData.confirmPassword}
+                        onChange={e => setFormData({...formData, confirmPassword: e.target.value})}
+                        style={{...inputStyle, marginBottom: '25px'}}
+                    />
+                    
+                    <button type="submit" style={{
+                        width: '100%', padding: '15px', background: '#000', 
+                        color: '#fff', border: 'none', fontWeight: '700', 
+                        fontSize: '0.9rem', cursor: 'pointer', 
+                        textTransform: 'uppercase', letterSpacing: '1.5px',
+                        transition: '0.3s'
+                    }}
+                    className="submit-btn-hover"
+                    >
+                        Створити акаунт
+                    </button>
+                </form>
+            </div>
+
+            <style>{`
+                .submit-btn-hover:hover {
+                    background: #ff0000;
+                    letter-spacing: 2px;
+                }
+                input:focus {
+                    border-color: #ff0000 !important;
+                }
+            `}</style>
+        </div>
+    );
+}
+
+const inputStyle = {
+    width: '100%', 
+    padding: '12px 14px', 
+    marginBottom: '12px', 
+    border: '1px solid #eee', 
+    background: '#fcfcfc',
+    borderRadius: '0', 
+    outline: 'none', 
+    boxSizing: 'border-box',
+    fontFamily: 'inherit'
+};
+
+=========================================
+ФАЙЛ: src\components\Schedule.jsx
+=========================================
+
+// src/components/Schedule.jsx
+import { useState, useRef } from 'react';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import ukLocale from '@fullcalendar/core/locales/uk';
+import { publicRequest, authRequest } from '../utils/api';
+import { useAuth } from '../context/AuthContext';
+import { useUI } from '../context/UIContext';
+
+export default function Schedule() {
+    const { user } = useAuth();
+    const { openLogin, addToast, confirmAction } = useUI();
+    
+    const [selectedEvent, setSelectedEvent] = useState(null);
+    const calendarRef = useRef(null);
+
+    const fetchEvents = async (info, successCallback, failureCallback) => {
+        try {
+            const url = `/api/schedule/?start=${info.startStr}&end=${info.endStr}`;
+            const data = await publicRequest(url);
+            
+            const events = data.map(item => ({
+                id: item.id,
+                title: item.class_name || 'Тренування',
+                start: item.start_at,
+                end: item.end_at,
+                backgroundColor: 'var(--accent)',
+                borderColor: 'var(--accent)',
+                extendedProps: {
+                    instructor: item.instructor_name,
+                    capacity: item.capacity,
+                    booked: item.booked_count
+                }
+            }));
+            successCallback(events);
+        } catch (error) {
+            console.error("Calendar Error:", error);
+            failureCallback(error);
+        }
+    };
+
+    const handleEventClick = (info) => {
+        setSelectedEvent({
+            id: info.event.id,
+            title: info.event.title,
+            start: info.event.start,
+            instructor: info.event.extendedProps.instructor,
+            capacity: info.event.extendedProps.capacity,
+            booked: info.event.extendedProps.booked
+        });
+    };
+
+    const handleBooking = () => {
+        if (!user) {
+            addToast('Спершу увійдіть у систему', 'error');
+            openLogin();
+            return;
+        }
+
+        confirmAction(
+            `Записатися на заняття "${selectedEvent.title}"?`,
+            async () => {
+                try {
+                    await authRequest('/api/book/', 'POST', { 
+                        session: selectedEvent.id 
+                    });
+                    
+                    addToast('Ви успішно записалися!', 'success');
+                    setSelectedEvent(null);
+                    
+                    if (calendarRef.current) {
+                        calendarRef.current.getApi().refetchEvents();
+                    }
+                } catch (e) {
+                    addToast(e.message || 'Помилка бронювання', 'error');
+                }
+            }
+        );
+    };
+
+    // Форматування дати для модалки
+    const formatDate = (date) => {
+        if (!date) return '';
+        return new Intl.DateTimeFormat('uk-UA', {
+            day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
+        }).format(date);
+    };
+
+    return (
+        <section id="schedule" className="section container">
+            <h2 className="section-title">Актуальний розклад занять</h2>
+            
+            <div className="calendar-wrapper">
+                <FullCalendar
+                    ref={calendarRef}
+                    plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                    initialView="timeGridWeek"
+                    headerToolbar={{
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: 'dayGridMonth,timeGridWeek'
+                    }}
+                    locale={ukLocale}
+                    slotMinTime="08:00:00"
+                    slotMaxTime="22:00:00"
+                    allDaySlot={false}
+                    slotLabelFormat={{
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    }}
+                    eventTimeFormat={{
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    }}
+                    events={fetchEvents}
+                    eventClick={handleEventClick}
+                    height="auto"
+                    aspectRatio={1.5}
+                />
+            </div>
+
+            {/* Вбудована модалка для деталей події */}
+            {selectedEvent && (
+                <div className="modal-overlay active">
+                    <div className="modal-content booking-modal">
+                        <button className="modal-close" onClick={() => setSelectedEvent(null)}>×</button>
+
+                        <h3 className="modal-title">{selectedEvent.title}</h3>
+                        
+                        <div className="booking-details">
+                            <p>
+                                <i className="far fa-clock"></i> 
+                                <strong>Час:</strong> {formatDate(selectedEvent.start)}
+                            </p>
+                            <p>
+                                <i className="fas fa-user-tie"></i>
+                                <strong>Тренер:</strong> {selectedEvent.instructor || 'Черговий'}
+                            </p>
+                            {selectedEvent.capacity && (
+                                <p>
+                                    <i className="fas fa-users"></i>
+                                    <strong>Місця:</strong> {selectedEvent.booked || 0} / {selectedEvent.capacity}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="booking-footer">
+                            <button onClick={() => setSelectedEvent(null)} className="btn btn-ghost">Скасувати</button>
+                            <button onClick={handleBooking} className="btn btn-primary">Записатися</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </section>
+    );
+}
+
+=========================================
+ФАЙЛ: src\components\Stats.jsx
+=========================================
+
+import React, { useState, useEffect, useRef } from 'react';
+
+const StatItem = ({ endValue, suffix, label }) => {
+    const [count, setCount] = useState(0);
+    const [isVisible, setIsVisible] = useState(false);
+    const domRef = useRef();
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting) setIsVisible(true);
+        }, { threshold: 0.3 });
+        observer.observe(domRef.current);
+        return () => observer.disconnect();
+    }, []);
+
+    useEffect(() => {
+        if (!isVisible) return;
+        let start = 0;
+        const duration = 2000;
+        const increment = endValue / (duration / 16);
+
+        const timer = setInterval(() => {
+            start += increment;
+            if (start >= endValue) {
+                setCount(endValue);
+                clearInterval(timer);
+            } else {
+                setCount(Math.floor(start));
+            }
+        }, 16);
+        return () => clearInterval(timer);
+    }, [isVisible, endValue]);
+
+    return (
+        <div ref={domRef} className="stat-box" style={{
+            flex: '1',
+            minWidth: '240px', // Трохи збільшили ширину, щоб влізало "1200 М²"
+            padding: '40px 20px',
+            border: '2px solid #000',
+            background: '#fff',
+            transition: '0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center'
+        }}>
+            <div style={{
+                fontSize: 'clamp(3rem, 5vw, 4.5rem)',
+                fontWeight: '950',
+                color: '#111',
+                lineHeight: '1',
+                marginBottom: '10px',
+                fontFamily: "'Montserrat', sans-serif",
+                whiteSpace: 'nowrap', // Забороняє переносу, щоб символ не відпадав
+                display: 'flex',
+                alignItems: 'baseline'
+            }}>
+                <span style={{ marginRight: '5px' }}>{count}</span>
+                <span style={{ color: '#ff0000', fontSize: '0.6em' }}>{suffix}</span>
+            </div>
+            
+            <div style={{
+                fontSize: '0.85rem',
+                fontWeight: '800',
+                color: '#666',
+                textTransform: 'uppercase',
+                letterSpacing: '2px',
+                textAlign: 'center'
+            }}>
+                {label}
+            </div>
+            
+            <div className="stat-line"></div>
+        </div>
+    );
+};
+
+export default function Stats() {
+    return (
+        <section style={{ padding: '100px 0', background: '#f9f9f9', overflow: 'hidden' }}>
+            <div className="container" style={{
+                maxWidth: '1200px',
+                margin: '0 auto',
+                padding: '0 40px',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                gap: '25px'
+            }}>
+                <StatItem endValue={1200} suffix="М²" label="ПРОСТОРУ" />
+                <StatItem endValue={15} suffix="" label="ЕКСПЕРТІВ" />
+                <StatItem endValue={500} suffix="+" label="КЛІЄНТІВ" />
+                <StatItem endValue={24} suffix="/7" label="ДОСТУПУ" />
+            </div>
+
+            <style>{`
+                .stat-box {
+                    box-sizing: border-box;
+                }
+                .stat-box:hover {
+                    transform: translate(-10px, -10px);
+                    box-shadow: 15px 15px 0px #000;
+                    border-color: #ff0000;
+                }
+                .stat-line {
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    width: 0%;
+                    height: 6px;
+                    background: #ff0000;
+                    transition: 0.6s;
+                }
+                .stat-box:hover .stat-line {
+                    width: 100%;
+                }
+            `}</style>
+        </section>
+    );
+}
+
+=========================================
+ФАЙЛ: src\components\ToastContainer.jsx
+=========================================
+
+// src/components/ToastContainer.jsx
+import { useUI } from '../context/UIContext';
+
+export default function ToastContainer() {
+    const { toasts, removeToast } = useUI();
+
+    if (toasts.length === 0) return null;
+
+    return (
+        <div id="toast-container">
+            {toasts.map(toast => (
+                <div 
+                    key={toast.id} 
+                    className={`toast ${toast.type}`}
+                    onClick={() => removeToast(toast.id)}
+                    style={{ cursor: 'pointer' }}
+                >
+                    {toast.type === 'success' && <i className="fas fa-check-circle" style={{marginRight: 8}}></i>}
+                    {toast.type === 'error' && <i className="fas fa-exclamation-circle" style={{marginRight: 8}}></i>}
+                    {toast.message}
+                </div>
+            ))}
+        </div>
+    );
+}
+
+=========================================
+ФАЙЛ: src\context\AuthContext.jsx
+=========================================
+
+// src/context/AuthContext.jsx
+
+/**
+ * Провайдер авторизації.
+ * Перевіряє токен при завантаженні, зберігає дані юзера.
+ * Надає: user, login, logout, loading.
+ */
+
+import { createContext, useState, useEffect, useContext } from 'react';
+import { authRequest, getToken } from '../utils/api';
+
+const AuthContext = createContext();
+
+export function AuthProvider({ children }) {
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    // Перевірка токена при запуску
+    useEffect(() => {
+        checkAuth();
+    }, []);
+
+    const checkAuth = async () => {
+        const token = getToken();
+        if (token) {
+            try {
+                // Отримуємо профіль
+                const data = await authRequest('/api/me/');
+                // Бекенд іноді повертає масив
+                const profile = Array.isArray(data) ? data[0] : data;
+                setUser(profile);
+            } catch (e) {
+                console.error("Auth Failed", e);
+                localStorage.removeItem('fp_token');
+                setUser(null);
+            }
+        }
+        setLoading(false);
+    };
+
+    const login = (token, username) => {
+        localStorage.setItem('fp_token', JSON.stringify(token));
+        localStorage.setItem('fp_user_name', JSON.stringify(username));
+        checkAuth(); // Оновлюємо дані користувача
+    };
+
+    const logout = () => {
+        localStorage.removeItem('fp_token');
+        localStorage.removeItem('fp_user_name');
+        localStorage.removeItem('fp_is_staff');
+        setUser(null);
+        window.location.href = '/'; // Жорсткий редірект на головну
+    };
+
+    return (
+        <AuthContext.Provider value={{ user, login, logout, loading }}>
+            {!loading && children}
+        </AuthContext.Provider>
+    );
+}
+
+export const useAuth = () => useContext(AuthContext);
+
+=========================================
+ФАЙЛ: src\context\UIContext.jsx
+=========================================
+
+// src/context/UIContext.jsx
+import { createContext, useContext, useState, useCallback } from 'react';
+
+const UIContext = createContext();
+
+export function UIProvider({ children }) {
+    // --- AUTH MODALS ---
+    const [isLoginOpen, setLoginOpen] = useState(false);
+    const [isRegisterOpen, setRegisterOpen] = useState(false);
+
+    // --- TOASTS (Повідомлення) ---
+    const [toasts, setToasts] = useState([]);
+
+    // --- CONFIRM MODAL (Підтвердження) ---
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        message: '',
+        onConfirm: null
+    });
+
+    // === ACTIONS ===
+    
+    // Auth
+    const openLogin = () => setLoginOpen(true);
+    const closeLogin = () => setLoginOpen(false);
+    const openRegister = () => setRegisterOpen(true);
+    const closeRegister = () => setRegisterOpen(false);
+
+    // Toast Logic
+    const addToast = useCallback((message, type = 'success') => {
+        const id = Date.now();
+        setToasts(prev => [...prev, { id, message, type }]);
+        // Автоматичне видалення через 3 сек
+        setTimeout(() => removeToast(id), 3000);
+    }, []);
+
+    const removeToast = useCallback((id) => {
+        setToasts(prev => prev.filter(t => t.id !== id));
+    }, []);
+
+    // Confirm Logic
+    const confirmAction = (message, onConfirm) => {
+        setConfirmModal({ isOpen: true, message, onConfirm });
+    };
+
+    const closeConfirm = () => {
+        setConfirmModal({ isOpen: false, message: '', onConfirm: null });
+    };
+
+    const executeConfirm = () => {
+        if (confirmModal.onConfirm) confirmModal.onConfirm();
+        closeConfirm();
+    };
+
+    return (
+        <UIContext.Provider value={{ 
+            isLoginOpen, openLogin, closeLogin, 
+            isRegisterOpen, openRegister, closeRegister,
+            // Toasts
+            toasts, addToast, removeToast,
+            // Confirm
+            confirmModal, confirmAction, closeConfirm, executeConfirm
+        }}>
+            {children}
+        </UIContext.Provider>
+    );
+}
+
+export const useUI = () => useContext(UIContext);
+
+=========================================
+ФАЙЛ: src\index.css
+=========================================
+
+/* src/index.css */
+:root, body, #root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+#root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Якщо твій .page-wrapper теж має бути на всю ширину */
+.page-wrapper {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Переконайся, що main розтягується */
+main {
+    flex: 1;
+    width: 100%;
+}
+
+
+
+=========================================
+ФАЙЛ: src\main.jsx
+=========================================
+
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.jsx'
+import { BrowserRouter } from 'react-router-dom'
+import { AuthProvider } from './context/AuthContext'
+import { UIProvider } from './context/UIContext' // Важливо!
+import './index.css' // Або './App.css' залежно від того, що у тебе є
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <AuthProvider>
+        <UIProvider> {/* <--- UIProvider має бути всередині або зовні AuthProvider, головне щоб обгортав App */}
+            <App />
+        </UIProvider>
+      </AuthProvider>
+    </BrowserRouter>
+  </React.StrictMode>,
+)
+
+=========================================
+ФАЙЛ: src\pages\AdminPanel.jsx
+=========================================
+
+import { useState, useEffect, useRef } from 'react';
+import { authRequest, publicRequest } from '../utils/api';
+import { useAuth } from '../context/AuthContext';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import ukLocale from '@fullcalendar/core/locales/uk'; 
+
+export default function AdminPanel() {
+    const { user, logout } = useAuth();
+    
+    const [activeTab, setActiveTab] = useState('dashboard'); 
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    
+    const [trainers, setTrainers] = useState([]);
+    const [clients, setClients] = useState([]);
+    const [workoutTypes, setWorkoutTypes] = useState([]);
+    const [clientSearch, setClientSearch] = useState('');
+    
+    const [modalType, setModalType] = useState(null); 
+    // Ініціалізуємо пустими рядками, щоб React не сварився
+    const [formData, setFormData] = useState({
+        username: '', password: '', name: '', email: '', phone: '', specialization: '', 
+        start: '', end: '', capacity: 20
+    });
+
+    const calendarRef = useRef(null);
+
+    useEffect(() => {
+        // Динамічно додаємо клас на body для стилів адмінки
+        document.body.classList.add('admin-body');
+        
+        loadWorkoutTypes(); 
+        if (activeTab === 'trainers') loadTrainers();
+        if (activeTab === 'clients') loadClients();
+
+        // Прибираємо клас при виході зі сторінки
+        return () => document.body.classList.remove('admin-body');
+    }, [activeTab]);
+
+    const loadTrainers = async () => {
+        try {
+            const data = await authRequest('/api/admin/instructors/');
+            setTrainers(Array.isArray(data) ? data : []);
+        } catch (e) { console.error(e); }
+    };
+
+    const loadClients = async () => {
+        try {
+            const data = await authRequest('/api/admin/members/');
+            setClients(Array.isArray(data) ? data : []);
+        } catch (e) { console.error(e); }
+    };
+
+    const loadWorkoutTypes = async () => {
+        try {
+            const data = await publicRequest('/api/classes/');
+            setWorkoutTypes(Array.isArray(data) ? data : []);
+        } catch (e) { console.error(e); }
+    };
+
+    const fetchEvents = async (info, successCallback, failureCallback) => {
+        try {
+            const url = `/api/schedule/?start=${info.startStr}&end=${info.endStr}`;
+            const data = await publicRequest(url);
+            
+            const events = data.map(item => ({
+                id: item.id,
+                title: item.class_name || 'Тренування',
+                start: item.start_at,
+                end: item.end_at,
+                backgroundColor: '#e60000', 
+                borderColor: '#e60000',
+                extendedProps: {
+                    capacity: item.capacity,
+                    instructor_name: item.instructor_name 
+                }
+            }));
+            successCallback(events);
+        } catch (error) { failureCallback(error); }
+    };
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            let endpoint = '', payload = {}, method = formData.id ? 'PUT' : 'POST';
+
+            if (modalType === 'trainer') {
+                endpoint = formData.id ? `/api/admin/instructors/${formData.id}/` : '/api/admin/instructors/';
+                const nameParts = (formData.name || '').trim().split(' ');
+                payload = {
+                    first_name: nameParts[0],
+                    last_name: nameParts.slice(1).join(' ') || '',
+                    specialties: formData.specialization,
+                    contact: formData.phone
+                };
+                if (!formData.id) { payload.username = formData.username; payload.password = formData.password; }
+            }
+            else if (modalType === 'client') {
+                endpoint = formData.id ? `/api/admin/members/${formData.id}/` : '/api/admin/members/';
+                const nameParts = (formData.name || '').trim().split(' ');
+                payload = {
+                    first_name: nameParts[0],
+                    last_name: nameParts.slice(1).join(' ') || '',
+                    email: formData.email,
+                    contact: formData.phone,
+                    status: formData.status || 'active'
+                };
+                if (!formData.id) { payload.username = formData.username; payload.password = formData.password; }
+            }
+            else if (modalType === 'event') {
+                endpoint = formData.id ? `/api/admin/schedule/${formData.id}/` : '/api/admin/schedule/';
+                const formatDateTime = (dateStr) => (!dateStr) ? null : (dateStr.length === 16 ? `${dateStr}:00` : dateStr);
+                
+                payload = {
+                    class_type: parseInt(formData.class_type_id), // ID типу
+                    instructor: parseInt(formData.instructor_id), // ID тренера
+                    start_at: formatDateTime(formData.start),
+                    end_at: formatDateTime(formData.end),
+                    capacity: parseInt(formData.capacity)
+                };
+            }
+
+            await authRequest(endpoint, method, payload);
+            
+            if (modalType === 'trainer') loadTrainers();
+            if (modalType === 'client') loadClients();
+            if (modalType === 'event' && calendarRef.current) calendarRef.current.getApi().refetchEvents();
+
+            setModalType(null);
+            alert('Збережено!');
+        } catch (err) { alert('Помилка: ' + err.message); }
+    };
+
+    const handleDelete = async () => {
+        if (!confirm('Видалити?')) return;
+        try {
+            let endpoint = '';
+            if (modalType === 'trainer') endpoint = `/api/admin/instructors/${formData.id}/`;
+            if (modalType === 'client') endpoint = `/api/admin/members/${formData.id}/`;
+            if (modalType === 'event') endpoint = `/api/admin/schedule/${formData.id}/`;
+
+            await authRequest(endpoint, 'DELETE');
+            
+            if (modalType === 'trainer') loadTrainers();
+            if (modalType === 'client') loadClients();
+            if (modalType === 'event' && calendarRef.current) calendarRef.current.getApi().refetchEvents();
+            
+            setModalType(null);
+        } catch (err) { alert('Помилка: ' + err.message); }
+    };
+
+    const openEventModal = (event = null, startStr = null) => {
+        if (trainers.length === 0) loadTrainers();
+        if (workoutTypes.length === 0) loadWorkoutTypes();
+
+        if (startStr) {
+            const startDate = new Date(startStr);
+            const now = new Date();
+            startDate.setHours(now.getHours() + 1, 0, 0, 0);
+            const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+            const toLocalISO = (d) => { const offset = d.getTimezoneOffset() * 60000; return new Date(d.getTime() - offset).toISOString().slice(0, 16); };
+
+            setFormData({
+                class_type_id: workoutTypes.length > 0 ? workoutTypes[0].id : '',
+                instructor_id: trainers.length > 0 ? trainers[0].id : '',
+                start: toLocalISO(startDate),
+                end: toLocalISO(endDate),
+                capacity: 20
+            });
+        } else if (event) {
+            const toLocalISO = (d) => { const offset = d.getTimezoneOffset() * 60000; return new Date(d.getTime() - offset).toISOString().slice(0, 16); };
+            setFormData({
+                id: event.id,
+                class_type_id: '', 
+                instructor_id: '', 
+                start: toLocalISO(event.start),
+                end: toLocalISO(event.end),
+                capacity: event.extendedProps.capacity || 20
+            });
+        }
+        setModalType('event');
+    };
+
+    // Обгортаємо все в клас admin-wrapper
+    return (
+        <div className={`admin-wrapper ${sidebarOpen ? 'sidebar-open' : ''}`}>
+            
+            {/* SIDEBAR */}
+            <aside className={`admin-sidebar ${sidebarOpen ? 'active' : ''}`}>
+                <div className="admin-logo">FIT<span>GYM</span> ADMIN</div>
+                <nav className="admin-menu">
+                    <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}><i className="fas fa-chart-line"></i> Огляд</button>
+                    <button className={activeTab === 'schedule' ? 'active' : ''} onClick={() => setActiveTab('schedule')}><i className="fas fa-calendar-alt"></i> Розклад</button>
+                    <button className={activeTab === 'clients' ? 'active' : ''} onClick={() => setActiveTab('clients')}><i className="fas fa-users"></i> Клієнти</button>
+                    <button className={activeTab === 'trainers' ? 'active' : ''} onClick={() => setActiveTab('trainers')}><i className="fas fa-dumbbell"></i> Тренери</button>
+                </nav>
+                <div className="admin-footer">
+                    <button onClick={logout}><i className="fas fa-sign-out-alt"></i> Вихід</button>
+                </div>
+            </aside>
+
+            {/* MAIN */}
+            <main className="admin-content">
+                <header className="admin-topbar">
+                    <button className="mobile-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+                    <h2>Панель керування</h2>
+                    <div className="admin-user">
+                        <span>{user?.username}</span> 
+                        <div className="avatar">A</div>
+                    </div>
+                </header>
+
+                <div className="admin-page-content">
+                    {activeTab === 'dashboard' && (
+                        <div className="admin-grid">
+                            <div className="admin-card"><h3>Клієнтів</h3><div className="val">{clients.length}</div></div>
+                            <div className="admin-card"><h3>Тренерів</h3><div className="val">{trainers.length}</div></div>
+                            <div className="admin-card"><h3>Типів занять</h3><div className="val">{workoutTypes.length}</div></div>
+                        </div>
+                    )}
+
+                    {activeTab === 'schedule' && (
+                        <div className="admin-section">
+                            <div style={{textAlign:'right', marginBottom:15}}>
+                                <button className="admin-btn" onClick={() => openEventModal(null, new Date().toISOString())}>+ Додати заняття</button>
+                            </div>
+                            <div className="admin-calendar-box">
+                                <FullCalendar
+                                    ref={calendarRef}
+                                    plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                                    initialView="timeGridWeek"
+                                    locale={ukLocale}
+                                    slotMinTime="08:00:00" slotMaxTime="22:00:00" allDaySlot={false} height="auto"
+                                    headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' }}
+                                    events={fetchEvents}
+                                    dateClick={(info) => openEventModal(null, info.dateStr)}
+                                    eventClick={(info) => openEventModal(info.event)}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'clients' && (
+                        <div className="admin-section">
+                            <div className="admin-controls">
+                                <input placeholder="Пошук..." value={clientSearch} onChange={e => setClientSearch(e.target.value)} />
+                                <button className="admin-btn" onClick={() => { setFormData({}); setModalType('client'); }}>+ Додати</button>
+                            </div>
+                            <div className="table-wrap">
+                                <table className="admin-table">
+                                    <thead><tr><th>Ім'я</th><th>Email</th><th>Телефон</th><th>Статус</th><th>Дії</th></tr></thead>
+                                    <tbody>
+                                        {clients.filter(c => (c.full_name||'').toLowerCase().includes(clientSearch.toLowerCase())).map(c => (
+                                            <tr key={c.id}>
+                                                <td>{c.full_name}</td><td>{c.email}</td><td>{c.contact}</td>
+                                                <td><span className={`badge ${c.status}`}>{c.status}</span></td>
+                                                <td>
+                                                    <button onClick={() => { setFormData({ id: c.id, name: c.full_name, email: c.email, phone: c.contact, status: c.status }); setModalType('client'); }}>✏️</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                    
+                     {activeTab === 'trainers' && (
+                        <div className="admin-section">
+                            <div className="admin-controls">
+                                <h3>Тренери</h3>
+                                <button className="admin-btn" onClick={() => { setFormData({}); setModalType('trainer'); }}>+ Додати</button>
+                            </div>
+                            <table className="admin-table">
+                                <thead><tr><th>Ім'я</th><th>Спец.</th><th>Телефон</th><th>Дії</th></tr></thead>
+                                <tbody>
+                                    {trainers.map(t => (
+                                        <tr key={t.id}>
+                                            <td>{t.full_name}</td><td>{t.specialties}</td><td>{t.contact}</td>
+                                            <td>
+                                                <button onClick={() => { setFormData({ id: t.id, name: t.full_name, specialization: t.specialties, phone: t.contact }); setModalType('trainer'); }}>✏️</button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            </main>
+
+            {/* ADMIN MODAL */}
+            {modalType && (
+                <div className="admin-modal-overlay">
+                    <div className="admin-modal">
+                        <button className="close-btn" onClick={() => setModalType(null)}>×</button>
+                        <h2>{formData.id ? 'Редагувати' : 'Створити'}</h2>
+                        <form onSubmit={handleSubmit}>
+                            {(modalType === 'client' || modalType === 'trainer') && (
+                                <>
+                                    {!formData.id && (
+                                        <div className="row">
+                                            <input placeholder="Username" name="username" value={formData.username} onChange={handleInputChange} required />
+                                            <input placeholder="Password" type="password" name="password" value={formData.password} onChange={handleInputChange} required />
+                                        </div>
+                                    )}
+                                    <input placeholder="ПІБ" name="name" value={formData.name} onChange={handleInputChange} required />
+                                    {modalType === 'client' && <input placeholder="Email" name="email" value={formData.email} onChange={handleInputChange} required />}
+                                    <div className="row">
+                                        <input placeholder="Телефон" name="phone" value={formData.phone} onChange={handleInputChange} />
+                                        {modalType === 'client' && (
+                                            <select name="status" value={formData.status} onChange={handleInputChange}>
+                                                <option value="active">Active</option><option value="inactive">Inactive</option>
+                                            </select>
+                                        )}
+                                        {modalType === 'trainer' && <input placeholder="Спеціалізація" name="specialization" value={formData.specialization} onChange={handleInputChange} required />}
+                                    </div>
+                                </>
+                            )}
+                            
+                            {modalType === 'event' && (
+                                <>
+                                    <label>Тип заняття</label>
+                                    <select name="class_type_id" value={formData.class_type_id} onChange={handleInputChange} required>
+                                        <option value="">Оберіть...</option>
+                                        {workoutTypes.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                                    </select>
+                                    
+                                    <label>Тренер</label>
+                                    <select name="instructor_id" value={formData.instructor_id} onChange={handleInputChange} required>
+                                        <option value="">Оберіть...</option>
+                                        {trainers.map(t => <option key={t.id} value={t.id}>{t.full_name}</option>)}
+                                    </select>
+
+                                    <div className="row">
+                                        <div><label>Початок</label><input type="datetime-local" name="start" value={formData.start} onChange={handleInputChange} required /></div>
+                                        <div><label>Кінець</label><input type="datetime-local" name="end" value={formData.end} onChange={handleInputChange} required /></div>
+                                    </div>
+                                    <label>Кількість місць</label>
+                                    <input type="number" name="capacity" value={formData.capacity} onChange={handleInputChange} />
+                                </>
+                            )}
+
+                            <div className="actions">
+                                {formData.id && <button type="button" className="del-btn" onClick={handleDelete}>Видалити</button>}
+                                <button type="submit" className="save-btn">Зберегти</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+=========================================
+ФАЙЛ: src\pages\Cabinet.jsx
+=========================================
+
+// src/pages/Cabinet.jsx
+import { useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { authRequest } from '../utils/api';
+import AOS from 'aos';
+import 'aos/dist/aos.css';
+
+export default function Cabinet() {
+    const { user, logout } = useAuth();
+    const [bookings, setBookings] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        AOS.init();
+        loadSchedule();
+    }, []);
+
+    const loadSchedule = async () => {
+        try {
+            // Запит на отримання моїх тренувань
+            const data = await authRequest('/api/my-bookings/');
+            setBookings(Array.isArray(data) ? data : []);
+        } catch (e) {
+            console.error("Помилка завантаження бронювань:", e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCancel = async (id) => {
+        if (!confirm('Ви впевнені, що хочете скасувати запис?')) return;
+        try {
+            await authRequest(`/api/my-bookings/${id}/`, 'DELETE');
+            // Прибираємо видалене тренування зі списку без перезавантаження
+            setBookings(bookings.filter(b => b.id !== id));
+        } catch (e) {
+            alert('Помилка: ' + e.message);
+        }
+    };
+
+    return (
+        <section id="cabinet" className="section container" style={{minHeight: '80vh'}}>
+            <h2 className="section-title" data-aos="fade-up">Особистий Кабінет</h2>
+
+            <div className="cabinet-grid">
+                {/* --- ЛІВА КОЛОНКА: ПРОФІЛЬ --- */}
+                <div className="profile-card" data-aos="fade-right">
+                    <div className="profile-header">
+                        {/* Аватар (заглушка або реальний, якщо є) */}
+                        <img 
+                            id="user-avatar" 
+                            src="/img/муж1.png" 
+                            alt="User" 
+                            className="user-avatar" 
+                            onError={(e) => e.target.src = 'https://via.placeholder.com/100'}
+                        />
+                        <h3 id="user-name">{user?.username || 'Клієнт'}</h3>
+                        <p className="user-role">
+                            {user?.is_staff ? 'Адміністратор' : 'Учасник клубу'}
+                        </p>
+                    </div>
+                    
+                    <div className="profile-details">
+                        <p><i className="fas fa-user"></i> <span>{user?.first_name} {user?.last_name}</span></p>
+                        <p><i className="fas fa-envelope"></i> <span>{user?.email}</span></p>
+                        <p><i className="fas fa-phone"></i> <span>{user?.contact || user?.phone || 'Не вказано'}</span></p>
+                    </div>
+
+                    <button onClick={logout} className="btn btn-primary" style={{marginTop: '20px', width: '100%'}}>
+                        <i className="fas fa-sign-out-alt"></i> Вийти
+                    </button>
+                </div>
+
+                {/* --- ПРАВА КОЛОНКА: СПИСОК ТРЕНУВАНЬ --- */}
+                <div className="schedule-card" data-aos="fade-left">
+                    <h3 className="schedule-title">Мої тренування</h3>
+                    
+                    <div className="user-schedule-list">
+                        {loading ? (
+                            <p className="text-center">Завантаження...</p>
+                        ) : bookings.length === 0 ? (
+                            <div className="text-center" style={{padding: '20px', color: '#888'}}>
+                                <i className="fas fa-calendar-times fa-3x" style={{marginBottom:'10px'}}></i>
+                                <p>У вас поки немає активних записів.</p>
+                            </div>
+                        ) : (
+                            bookings.map(item => (
+                                <div key={item.id} className="booking-card">
+                                    <div className="booking-info">
+                                        <h4>{item.session?.class_name || 'Тренування'}</h4>
+                                        <p>
+                                            <i className="far fa-clock"></i> {new Date(item.session?.start_at).toLocaleString('uk-UA')}
+                                        </p>
+                                        <p>
+                                            <i className="fas fa-user-ninja"></i> Тренер: {item.session?.instructor_name || 'Черговий'}
+                                        </p>
+                                        <span>Статус: <strong>{item.status || 'Active'}</strong></span>
+                                    </div>
+                                    
+                                    <button 
+                                        className="btn-cancel" 
+                                        onClick={() => handleCancel(item.id)}
+                                        title="Скасувати запис"
+                                    >
+                                        <i className="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    <a href="/#schedule" className="btn btn-ghost" style={{width: '100%', marginTop: '20px', textAlign:'center'}}>
+                        <i className="fas fa-calendar-plus"></i> Записатись ще
+                    </a>
+                </div>
+            </div>
+        </section>
+    );
+}
+
+=========================================
+ФАЙЛ: src\pages\Home.jsx
+=========================================
+
+import { useEffect, useState } from 'react';
+import { publicRequest } from '../utils/api';
+import AOS from 'aos';
+import 'aos/dist/aos.css';
+
+// Імпорт компонентів
+import Preloader from '../components/Preloader'; // Додано Preloader
+import Hero from '../components/Hero';
+import Stats from '../components/Stats'; 
+import Categories from '../components/Categories'; 
+import Plans from '../components/Plans';
+import Contacts from '../components/Contacts';
+import BMICalculator from '../components/BMICalculator';
+import Carousel from '../components/Carousel'; 
+import Schedule from '../components/Schedule';
+import { useAuth } from '../context/AuthContext';
+
+export default function Home() {
+    const [trainers, setTrainers] = useState([]);
+    const { user } = useAuth(); 
+
+    useEffect(() => {
+        // Ініціалізація анімацій при скролі
+        AOS.init({ 
+            duration: 1000, 
+            once: true,
+            offset: 120 
+        });
+        loadTrainers();
+    }, []);
+
+    const loadTrainers = async () => {
+        try {
+            const data = await publicRequest('/api/instructors/');
+            setTrainers(data);
+        } catch (e) { 
+            console.error("Помилка завантаження тренерів:", e); 
+        }
+    };
+
+    return (
+        <>
+            {/* Екран завантаження, що зникне через 1.5 сек */}
+            <Preloader />
+
+            <main style={{ background: '#fff' }}>
+                {/* 1. Головний банер (Брутальний стиль) */}
+                <Hero />
+
+                {/* 2. Анімована статистика (Counter Up) */}
+                <Stats />
+
+                {/* 3. Категорії тренувань (Bento Grid з фоновими фото) */}
+                <Categories />
+
+                {/* 4. Секція Переваг з фоновим фото та паралаксом */}
+                <section id="advantages" className="advantages-section">
+                    <div className="advantages-overlay"></div>
+                    
+                    <div className="container advantages-content">
+                        <h2 className="advantages-title">
+                            ЧОМУ ОБИРАЮТЬ <span className="accent-red">FITGYM</span>?
+                        </h2>
+                        
+                        <div className="advantages-grid">
+                            <div className="advantage-card" data-aos="fade-right">
+                                <i className="fas fa-user-tie fa-3x"></i>
+                                <h3>ПРОФЕСІЙНІ ТРЕНЕРИ</h3>
+                                <p>Сертифіковані фахівці, що допоможуть досягти результату в Бердичеві.</p>
+                            </div>
+                            
+                            <div className="advantage-card" data-aos="fade-up">
+                                <i className="fas fa-dumbbell fa-3x"></i>
+                                <h3>СУЧАСНЕ ОБЛАДНАННЯ</h3>
+                                <p>Найкращі тренажери останнього покоління для твого прогресу.</p>
+                            </div>
+                            
+                            <div className="advantage-card" data-aos="fade-left">
+                                <i className="fas fa-clock fa-3x"></i>
+                                <h3>ЗРУЧНИЙ РОЗКЛАД</h3>
+                                <p>Тренування 24/7, що підлаштовуються під твій ритм життя.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <style>{`
+                        .advantages-section {
+                            position: relative;
+                            padding: 120px 0;
+                            background-image: url('https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=1975');
+                            background-size: cover;
+                            background-position: center;
+                            background-attachment: fixed;
+                            overflow: hidden;
+                        }
+
+                        .advantages-overlay {
+                            position: absolute;
+                            top: 0; left: 0; width: 100%; height: 100%;
+                            background: rgba(0, 0, 0, 0.85);
+                            z-index: 1;
+                        }
+
+                        .advantages-content {
+                            position: relative;
+                            z-index: 2;
+                            max-width: 1200px;
+                            margin: 0 auto;
+                            text-align: center;
+                            color: #fff;
+                        }
+
+                        .advantages-title {
+                            font-size: clamp(2rem, 5vw, 3.5rem);
+                            font-weight: 950;
+                            margin-bottom: 80px;
+                            letter-spacing: -1px;
+                        }
+
+                        .accent-red { color: #ff0000; }
+
+                        .advantages-grid {
+                            display: grid;
+                            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                            gap: 30px;
+                        }
+
+                        .advantage-card {
+                            background: rgba(255, 255, 255, 0.05);
+                            border: 2px solid rgba(255, 255, 255, 0.1);
+                            padding: 60px 40px;
+                            transition: 0.4s;
+                            backdrop-filter: blur(5px);
+                        }
+
+                        .advantage-card:hover {
+                            background: #fff;
+                            transform: translateY(-10px);
+                            border-color: #ff0000;
+                        }
+
+                        .advantage-card i {
+                            color: #ff0000;
+                            margin-bottom: 25px;
+                            transition: 0.4s;
+                        }
+
+                        .advantage-card h3 {
+                            font-size: 1.4rem;
+                            font-weight: 900;
+                            margin-bottom: 15px;
+                            transition: 0.4s;
+                        }
+
+                        .advantage-card p {
+                            font-size: 1rem;
+                            line-height: 1.6;
+                            color: rgba(255, 255, 255, 0.7);
+                            transition: 0.4s;
+                        }
+
+                        .advantage-card:hover h3, 
+                        .advantage-card:hover p {
+                            color: #000;
+                        }
+                    `}</style>
+                </section>
+
+                {/* 5. Розклад занять */}
+                <Schedule />
+
+                {/* 6. Калькулятор BMI */}
+                <BMICalculator />
+
+                {/* 7. Галерея (Слайдер) */}
+                <Carousel /> 
+
+                {/* 8. Секція Команди */}
+                <section id="trainers" className="section container" style={{ padding: '100px 20px' }}>
+                    <h2 style={{ textAlign: 'center', fontSize: '2.8rem', fontWeight: '950', marginBottom: '60px', textTransform: 'uppercase' }}>
+                        Команда <span style={{color: '#ff0000'}}>профі</span>
+                    </h2>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '30px' }}>
+                        {trainers.map(t => (
+                            <div key={t.id} className="trainer-card" data-aos="zoom-in" style={{ 
+                                border: '3px solid #000', 
+                                background: '#fff',
+                                transition: '0.3s'
+                            }}>
+                                <div style={{ height: '350px', background: '#111', color: '#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
+                                    <i className="fas fa-user fa-6x" style={{opacity: '0.2'}}></i>
+                                </div>
+                                <div style={{ padding: '30px', textAlign: 'center' }}>
+                                    <h3 style={{ fontWeight: '900', textTransform: 'uppercase', margin: '0 0 10px 0', fontSize: '1.4rem' }}>{t.full_name || t.name}</h3>
+                                    <p style={{ color: '#ff0000', fontWeight: '800', fontSize: '0.9rem', letterSpacing: '1px', textTransform: 'uppercase' }}>{t.specialties || t.specialization}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                {/* 9. Тарифи з фоновим фото */}
+                <Plans />
+                
+                {/* 10. Контакти */}
+                <Contacts />
+            </main>
+        </>
+    );
+}
+
+=========================================
+ФАЙЛ: src\utils\api.js
+=========================================
+
+// src/utils/api.js
+export const BASE_URL = 'http://127.0.0.1:8000';
+
+export function getToken() {
+    try {
+        return JSON.parse(localStorage.getItem('fp_token'));
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Робить запит до захищеного API, автоматично додаючи токен.
+ * * @param {string} endpoint - Шлях до API (наприклад, '/api/me/')
+ * @param {string} [method='GET'] - HTTP метод (GET, POST, PUT, DELETE)
+ * @param {Object|null} [body=null] - Дані для відправки (для POST/PUT)
+ * @returns {Promise<any>} Відповідь від сервера у форматі JSON
+ * @throws {Error} Якщо статус відповіді не 2xx
+ */
+export async function authRequest(endpoint, method = 'GET', body = null) {
+    const token = getToken();
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Token ${token}`;
+
+    const config = { method, headers };
+    if (body) config.body = JSON.stringify(body);
+
+    const res = await fetch(`${BASE_URL}${endpoint}`, config);
+    
+    if (res.status === 204) return true;
+    
+    // Якщо помилка
+    if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = data.detail || Object.values(data).flat().join(', ') || `Error ${res.status}`;
+        throw new Error(msg);
+    }
+    
+    return res.json();
+}
+
+// Для публічних запитів (тренери, плани)
+export async function publicRequest(endpoint) {
+    const res = await fetch(`${BASE_URL}${endpoint}`);
+    if (!res.ok) throw new Error('API Error');
+    return res.json();
+}
+
+=========================================
+ФАЙЛ: public\css\0-base.css
+=========================================
+
+/* ========================================================== */
+/* 0-base.css: Змінні, Скидання та Основа (RED-BLACK-WHITE)   */
+/* ========================================================== */
+
+/* --- ROOT Variables --- */
+:root {
+    /* Основна палітра */
+    --bg: #ffffff;           /* Чистий білий фон */
+    --surface: #f4f4f4;      /* Світло-сірий для карток або блоків */
+    --text: #000000;         /* Чорний основний текст */
+    --muted: #666666;        /* Темно-сірий для описів */
+    --accent: #ff0000;       /* Чистий червоний акцент */
+    
+    /* Додаткові кольори */
+    --black: #000000;
+    --white: #ffffff;
+    
+    /* Параметри макета */
+    --max-w: 1200px;
+    --radius: 8px;           /* Більш гострі кути для спортивного стилю */
+    --gap: 20px;
+    --header-height: 80px;
+
+    /* Шрифти (Montserrat для заголовків обов'язковий) */
+    --font-main: "Inter", system-ui, sans-serif;
+    --font-accent: "Montserrat", sans-serif;
+}
+
+/* --- BASE --- */
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);   /* Тепер фон білий */
+    color: var(--text);      /* Текст чорний */
+    font-family: var(--font-main);
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+a { color: inherit; text-decoration: none; transition: 0.3s; }
+a:hover { color: var(--accent); }
+
+.container { max-width: var(--max-w); margin: 0 auto; padding: 0 20px; }
+
+/* --- СТИЛІ ДЛЯ ГАМБУРГЕРА (Чорний для білого фону) --- */
+.hamburger {
+    width: 30px;
+    height: 30px;
+    position: relative;
+    cursor: pointer;
+    display: none;
+    z-index: 100;
+}
+
+.hamburger span {
+    display: block;
+    position: absolute;
+    height: 3px;
+    width: 100%;
+    background: var(--black); /* Змінено на чорний для видимості на білому */
+    border-radius: 2px;
+    transition: .25s ease-in-out;
+}
+
+.hamburger span:nth-child(1) { top: 5px; }
+.hamburger span:nth-child(2) { top: 13px; }
+.hamburger span:nth-child(3) { top: 21px; }
+
+/* Анімація хрестика */
+.hamburger.active span:nth-child(1) { top: 13px; transform: rotate(135deg); background: var(--accent); }
+.hamburger.active span:nth-child(2) { opacity: 0; left: -60px; }
+.hamburger.active span:nth-child(3) { top: 13px; transform: rotate(-135deg); background: var(--accent); }
+
+/* --- МЕДІА-ЗАПИТИ --- */
+@media (max-width: 992px) {
+    .hamburger { display: block; }
+    
+    .menu { /* Твоя навігація у Header.jsx */
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 100vh;
+        background: var(--white);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        transform: translateX(100%); /* Виїжджає збоку */
+        transition: transform 0.4s cubic-bezier(0.77,0.2,0.05,1.0);
+        z-index: 99;
+    }
+    
+    .menu.open { transform: translateX(0); }
+}
+/* Універсальний фікс для FITGYM */
+.container {
+    width: 100% !important;
+    max-width: 1200px !important;
+    margin-right: auto !important;
+    margin-left: auto !important;
+    padding-left: 30px !important;  /* ВІДСТУП ЗЛІВА */
+    padding-right: 30px !important; /* ВІДСТУП СПРАВА */
+}
+
+=========================================
+ФАЙЛ: public\css\0-critical.css
+=========================================
+
+/* ===========================
+   0-critical.css — SYSTEM CORE
+   Механіка роботи інтерфейсу. Не для дизайну!
+   =========================== */
+
+/* --- SYSTEM RESET & BASE --- */
+* { box-sizing: border-box; }
+body { margin: 0; padding: 0; }
+
+/* --- MODAL LOGIC (UNBREAKABLE) --- */
+/* Відповідає ТІЛЬКИ за те, щоб вікно перекривало екран і було по центру */
+
+.modal-overlay {
+    /* 1. Стан за замовчуванням - приховано */
+    display: none;
+
+    /* 2. Позиціювання - поверх усього */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999; /* Найвищий пріоритет */
+
+    /* 3. Центрування контенту (Flexbox) */
+    justify-content: center;
+    align-items: center;
+
+    /* 4. Скрол, якщо екран малий */
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Цей селектор гарантує, що JS style.display='flex' спрацює */
+.modal-overlay[style*="display: flex"],
+.modal-overlay[style*="display:flex"] {
+    display: flex !important;
+}
+
+.modal-content {
+    position: relative;
+    /* Максимальні розміри для безпеки на мобільних */
+    max-width: 95vw;
+    max-height: 95vh;
+    /* Якщо контент великий - скролимо */
+    overflow-y: auto;
+}
+
+/* --- UTILITY HELPERS (Structural) --- */
+.d-none { display: none !important; }
+.d-flex { display: flex !important; }
+.d-block { display: block !important; }
+
+=========================================
+ФАЙЛ: public\css\1-layout.css
+=========================================
+
+/* ========================================================== */
+/* 1-layout.css: Структура (Header, Footer, Sections, Grid) */
+/* ========================================================== */
+
+/* ===========================
+   MODERN HEADER STYLES (FIXED)
+   =========================== */
+
+/* 1. Основа Хедера */
+.site-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    padding: 15px 0;
+    transition: all 0.4s ease;
+    background: transparent; /* Прозорий старт */
+    /* Градієнт для читабельності тексту, якщо банер світлий */
+    background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+}
+
+.site-header.scrolled {
+    background: rgba(10, 10, 10, 0.95); /* Майже чорний */
+    backdrop-filter: blur(10px);
+    padding: 10px 0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Розподіл по краях */
+    position: relative;
+}
+
+/* 2. Логотип */
+.logo {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    z-index: 1002;
+}
+.logo span { color: var(--accent); margin-left: 2px; }
+
+/* 3. Навігація (Центрування) */
+.nav-primary {
+    display: flex;
+    align-items: center;
+    gap: 40px; /* Відступ між пунктами */
+    
+    /* Ця магія центрує меню */
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.nav-primary > a {
+    color: #e0e0e0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-decoration: none;
+    transition: color 0.3s ease;
+    position: relative;
+    padding: 5px 0;
+}
+
+.nav-primary > a:hover {
+    color: #fff;
+}
+
+/* Червона лінія при наведенні */
+.nav-primary > a::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--accent);
+    transition: width 0.3s ease;
+    box-shadow: 0 0 8px var(--accent);
+}
+
+.nav-primary > a:hover::after {
+    width: 100%;
+}
+
+/* 4. Права частина (Кнопки) */
+#authArea {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    z-index: 1002;
+}
+
+/* --- ВАЖЛИВО: Ховаємо мобільні кнопки на ПК --- */
+.mobile-auth-actions {
+    display: none;
+}
+
+.nav-link-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: color 0.3s;
+}
+.nav-link-btn:hover { color: var(--accent); }
+
+.btn-sm {
+    padding: 8px 24px;
+    font-size: 0.85rem;
+    border-radius: 30px; /* Овальна кнопка */
+    font-weight: 700;
+}
+
+/* 5. Мобільна версія */
+@media (max-width: 992px) {
+    /* Скидаємо центрування на мобільному */
+    .nav-primary {
+        position: fixed;
+        left: auto;
+        transform: none;
+        top: 0;
+        right: 0;
+        height: 100vh;
+        width: 100%;
+        max-width: 320px;
+        background: #000;
+        flex-direction: column;
+        justify-content: center;
+        padding: 40px;
+        box-shadow: -10px 0 30px rgba(0,0,0,0.8);
+        transition: transform 0.4s cubic-bezier(0.77, 0, 0.175, 1);
+        transform: translateX(100%); /* Сховано */
+        z-index: 1001;
+        gap: 30px;
+    }
+
+    .nav-primary.open {
+        transform: translateX(0); /* Показано */
+    }
+
+    .nav-primary > a {
+        font-size: 1.3rem;
+        width: 100%;
+        text-align: center;
+        border-bottom: 1px solid #222;
+        padding-bottom: 15px;
+    }
+    
+    .nav-primary > a::after { display: none; }
+
+    /* Ховаємо десктопні кнопки */
+    #authArea { display: none; }
+    
+    /* Показуємо кнопки в мобільному меню */
+    .mobile-auth-actions {
+        display: flex; /* Тепер вони видимі тільки тут */
+        flex-direction: column;
+        width: 100%;
+        gap: 15px;
+        margin-top: 20px;
+    }
+    .mobile-auth-actions button { width: 100%; }
+}
+
+/* --- SECTIONS & GRID --- */
+.section { padding: 80px 0; border-top: 1px solid rgba(255, 255, 255, 0.05); }
+.section-title { margin-bottom: 15px; font-size: 2.5rem; text-align: center; color: var(--text); font-weight: 900; }
+.section-subtitle { text-align: center; color: var(--muted); font-size: 1.1rem; margin-bottom: 50px; max-width: 700px; margin-left: auto; margin-right: auto; }
+
+.grid { display: grid; gap: var(--gap); }
+.cols-3 { grid-template-columns: repeat(3, 1fr); }
+
+
+
+/* --- FOOTER (NEW DESIGN) --- */
+.site-footer {
+    padding: 60px 0 30px;
+    background: #000;
+    color: var(--text);
+}
+.footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1.5fr;
+    gap: 40px;
+    align-items: flex-start;
+    margin-bottom: 40px;
+}
+
+.footer-col h3 {
+    font-size: 1.1rem;
+    margin-bottom: 25px;
+    color: var(--text);
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.footer-col ul { list-style: none; padding: 0; margin: 0; }
+.footer-col ul li { margin-bottom: 15px; }
+.footer-col ul li a {
+    color: var(--muted);
+    transition: color 0.2s;
+    font-size: 0.95rem;
+}
+.footer-col ul li a:hover { color: var(--accent); }
+
+.footer-branding .logo-footer {
+    font-weight: 900;
+    font-size: 2.2rem;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    color: var(--text);
+}
+.footer-branding .logo-footer span { color: var(--accent); }
+.footer-branding .tagline {
+    font-size: 1.1rem;
+    color: var(--muted);
+    line-height: 1.4;
+    max-width: 250px;
+    margin-bottom: 30px;
+}
+
+/* App Download Buttons */
+.app-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+.app-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #1a1a1a;
+    color: var(--text);
+    padding: 12px 20px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    transition: background 0.3s, border-color 0.3s;
+    font-weight: 600;
+    text-align: left;
+    min-width: 200px;
+}
+.app-btn:hover {
+    background: #2a2a2a;
+    border-color: var(--accent);
+}
+.app-btn i {
+    font-size: 1.8rem;
+    color: var(--accent);
+}
+.app-btn span {
+    font-size: 0.8rem;
+    line-height: 1.2;
+}
+
+/* Social Icons */
+.social-links {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+}
+.social-links a {
+    display: inline-flex;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: #1a1a1a;
+    color: var(--text);
+    justify-content: center;
+    align-items: center;
+    font-size: 1.4rem;
+    transition: background 0.3s, color 0.3s, transform 0.2s;
+}
+.social-links a:hover {
+    background: var(--accent);
+    color: #fff;
+    transform: translateY(-3px);
+}
+
+/* Footer Bottom Bar */
+.footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 25px;
+    margin-top: 30px;
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+.payment-systems {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+.payment-icon {
+    height: 25px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+.payment-icon:hover {
+    opacity: 1;
+}
+
+=========================================
+ФАЙЛ: public\css\2-components.css
+=========================================
+
+/* ========================================================== */
+/* 2-components.css: Дизайн Компонентів (Visual Layer) */
+/* ========================================================== */
+
+
+
+/* --- BUTTONS --- */
+.btn {
+    display: inline-block; padding: 10px 20px; border-radius: 4px;
+    font-weight: 700; cursor: pointer; border: none; transition: 0.3s;
+    text-transform: uppercase; letter-spacing: 0.5px; text-decoration: none; text-align: center;
+}
+.btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 10px rgba(230, 0, 0, 0.3); }
+.btn-primary:hover { background: #ff1a1a; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(230, 0, 0, 0.4); }
+.btn-ghost { background: transparent; color: var(--text); border: 1px solid rgba(255, 255, 255, 0.3); }
+.btn-ghost:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--accent); }
+
+/* --- HAMBURGER --- */
+.hamburger { display: none; flex-direction: column; gap: 5px; border: none; background: transparent; cursor: pointer; padding: 10px; }
+.hamburger span { width: 28px; height: 3px; background: #fff; border-radius: 2px; transition: 0.3s; }
+
+/* --- AUTH AREA --- */
+#authArea { display: flex; gap: 10px; align-items: center; }
+
+/* --- CARDS --- */
+.card {
+    background: var(--surface); border-radius: 12px; padding: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.08); transition: all 0.3s ease; text-align: center;
+}
+.card:hover { transform: translateY(-5px); border-color: var(--accent); box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5); }
+.card i { color: var(--accent); margin-bottom: 15px; }
+.card-title { font-weight: 800; margin-bottom: 10px; font-size: 1.1rem; color: var(--text); }
+.card-text { color: var(--muted); font-size: 0.9rem; }
+
+/* Trainer Card */
+.trainer-card {
+    background: var(--surface); border-radius: 12px; overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08); transition: all 0.3s ease;
+}
+.trainer-card:hover { border-color: var(--accent); }
+.trainer-card img { width: 100%; height: 280px; object-fit: cover; filter: grayscale(10%); transition: filter 0.3s; }
+.trainer-card:hover img { filter: grayscale(0%); }
+.trainer-card .meta { padding: 15px; text-align: center; }
+.trainer-card h3 { margin: 0; font-size: 1.2rem; color: var(--accent); }
+.trainer-card p { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
+
+/* --- CAROUSEL --- */
+/* --- MODERN CAROUSEL DESIGN --- */
+.carousel-slide-modern {
+    flex: 0 0 300px;
+    margin-right: 20px;
+    height: 400px;
+    position: relative;
+    overflow: hidden;
+    background: #000;
+}
+
+.carousel-slide-modern img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(100%) contrast(1.1); /* Чорно-білий стиль */
+    transition: all 0.5s ease;
+    opacity: 0.8;
+}
+
+.slide-overlay {
+    position: absolute;
+    bottom: -50px; /* Сховано за замовчуванням */
+    left: 0;
+    width: 100%;
+    background: #ff0000;
+    color: #fff;
+    padding: 10px;
+    text-align: center;
+    font-weight: 900;
+    font-size: 0.8rem;
+    z-index: 2;
+    transition: 0.3s ease;
+    text-transform: uppercase;
+}
+
+/* Ефекти при наведенні */
+.carousel-slide-modern:hover img {
+    filter: grayscale(0%) contrast(1); /* Колір повертається */
+    transform: scale(1.1);
+    opacity: 1;
+}
+
+.carousel-slide-modern:hover .slide-overlay {
+    bottom: 0; /* Виїжджає червона плашка */
+}
+
+.carousel-slide-modern::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    border: 0px solid #ff0000;
+    transition: 0.3s;
+    pointer-events: none;
+}
+
+.carousel-slide-modern:hover::after {
+    border: 10px solid #ff0000; /* Червона рамка при наведенні */
+}
+/* --- MODALS (DESIGN ONLY) --- */
+/* Механіка винесена в 0-critical.css. Тут тільки краса. */
+
+.modal-overlay {
+    background-color: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background: #1a1a1a;
+    padding: 40px;
+    border-radius: 12px;
+
+    /* Розміри */
+    width: 90%;
+    max-width: 450px; /* Уніфікували розмір (було 400px і 450px) */
+
+    border: 1px solid #333;
+    border-top: 3px solid var(--accent); /* Додали червону лінію всім модалкам */
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+    color: #fff;
+    animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modalPop {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.modal-close {
+    position: absolute; top: 15px; right: 20px; font-size: 24px;
+    background: none; border: none; color: #888; cursor: pointer; transition: color 0.2s;
+}
+.modal-close:hover { color: var(--accent); }
+
+.modal-content h2 { margin-top: 0; margin-bottom: 20px; text-align: center; color: var(--accent); }
+
+/* Inputs inside Modals */
+.modal-content input {
+    width: 100%; padding: 12px; margin-bottom: 15px; background: #2a2a2a;
+    border: 1px solid #444; color: #fff; border-radius: 5px; outline: none;
+}
+.modal-content input:focus { border-color: var(--accent); }
+
+/* Footer for Booking Modal (перенесено з utilities) */
+.booking-footer {
+    display: flex; justify-content: flex-end; gap: 10px;
+    padding-top: 20px; margin-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+/* --- MODERN TRAINER CARDS --- */
+.trainer-card-modern {
+    background: #fff;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    border: 1px solid #000; /* Тонка чорна рамка як на мапі */
+}
+
+.trainer-img-wrapper {
+    position: relative;
+    height: 450px;
+    overflow: hidden;
+    background: #000;
+}
+
+.trainer-img-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(100%); /* Чорно-білий ефект */
+    transition: 0.6s ease;
+}
+
+.trainer-overlay {
+    position: absolute;
+    bottom: 20px;
+    left: -100px;
+    background: #ff0000;
+    color: #fff;
+    padding: 8px 20px;
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    transition: 0.4s ease;
+    z-index: 2;
+    font-style: italic;
+}
+
+.trainer-card-modern:hover img {
+    filter: grayscale(0%); /* Колір при наведенні */
+    transform: scale(1.1);
+}
+
+.trainer-card-modern:hover .trainer-overlay {
+    left: 0; /* Виїжджає червона плашка */
+}
+
+.trainer-info-modern {
+    padding: 30px 20px;
+    text-align: left;
+}
+
+.trainer-name {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: 1.6rem;
+    text-transform: uppercase;
+    margin: 0 0 10px 0;
+    line-height: 1;
+}
+
+.red-divider {
+    width: 60px;
+    height: 5px;
+    background: #ff0000;
+    margin-bottom: 15px;
+}
+
+.trainer-contact {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    color: #888;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+/* ========================================================== */
+/* ГЛОБАЛЬНИЙ ФІКС АДАПТИВНОСТІ (ПЕРЕБИВАЄ ВСЕ) */
+/* ========================================================== */
+
+@media (max-width: 992px) {
+    /* Hero: змушуємо контент ставати вертикально */
+    .hero-modern .container {
+        flex-direction: column !important;
+        text-align: center !important;
+        height: auto !important;
+        padding-top: 50px !important;
+    }
+
+    .hero-content {
+        padding-right: 0 !important;
+        margin-bottom: 40px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+    }
+
+    /* Масштабування фото в Hero */
+    .hero-image-block {
+        width: 100% !important;
+        max-width: 500px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Текст: плавно зменшуємо гігантські написи */
+    h1 {
+        font-size: clamp(2.5rem, 10vw, 4rem) !important;
+        line-height: 1 !important;
+    }
+
+    /* Картки тренерів: робимо їх зручними для телефону */
+    .trainer-card-modern {
+        max-width: 100% !important;
+        margin-bottom: 30px !important;
+    }
+
+    .trainer-img-wrapper {
+        height: 400px !important; /* Фіксована висота для мобілок */
+    }
+
+    /* Контакти: Мапа під текстом */
+    #contacts .container {
+        flex-direction: column !important;
+        gap: 40px !important;
+    }
+
+    .contact-info-block, .map-wrap {
+        flex: none !important;
+        width: 100% !important;
+    }
+
+    .map-wrap {
+        height: 300px !important;
+        box-shadow: 10px 10px 0px #ff0000 !important; /* Менша тінь для балансу */
+    }
+
+    /* Кнопки: робимо зручнішими для пальців */
+    .btn-main-hero {
+        width: 100% !important;
+        padding: 15px 20px !important;
+    }
+}
+
+/* ФІКС ДЛЯ ПЛАНШЕТІВ (сітка 2 в ряд) */
+@media (min-width: 769px) and (max-width: 1100px) {
+    .pricing-grid, .trainers-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+=========================================
+ФАЙЛ: public\css\3-pages.css
+=========================================
+
+/* ========================================================== */
+/* 3-pages.css: Сторінкові/Секційні стилі (Hero, Pricing, Reviews, Calendar, BMI, Cabinet) */
+/* ========================================================== */
+
+/* --- HERO SECTION --- */
+.hero {
+    background-image: url('../img/bg1.png');
+    background-size: cover;
+    background-position: center center;
+    padding: 120px 0;
+}
+.hero-inner {
+    background: rgba(0, 0, 0, 0.7);
+    padding: 50px 40px;
+    border-radius: 12px;
+    display: inline-block;
+    max-width: 600px;
+    text-align: left;
+}
+.hero h1 { font-size: clamp(32px, 5vw, 52px); margin: 0 0 15px; font-weight: 900; }
+.hero p { color: var(--muted); margin-bottom: 30px; font-size: 1.1rem; }
+.hero-actions { display: flex; gap: 15px; flex-wrap: wrap; }
+
+/* 🌟 --- PLANS --- 🌟 */
+.pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--gap);
+    justify-content: center;
+    align-items: flex-start;
+    margin-top: 40px;
+}
+
+.pricing-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+}
+
+.pricing-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--accent);
+    box-shadow: 0 10px 25px rgba(230, 0, 0, 0.2);
+}
+
+.pricing-card--featured {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+    transform: scale(1.05);
+    box-shadow: 0 15px 30px rgba(230, 0, 0, 0.4);
+    position: relative;
+    z-index: 10;
+}
+.pricing-card--featured .btn-primary {
+    background: #fff;
+    color: var(--accent);
+    box-shadow: none;
+}
+.pricing-card--featured .btn-primary:hover {
+    background: #eee;
+    transform: scale(1.02);
+}
+.pricing-card--featured .plan-name { color: #fff; }
+.pricing-card--featured .plan-price { color: #fff; }
+.pricing-card--featured .plan-features li { color: #fff; }
+.pricing-card--featured .plan-features i { color: #fff; }
+
+.plan-name {
+    font-size: 1.8rem;
+    font-weight: 900;
+    margin-bottom: 15px;
+    color: var(--text);
+    text-transform: uppercase;
+}
+
+.plan-price {
+    font-size: 2.8rem;
+    font-weight: 900;
+    color: var(--accent);
+    margin-bottom: 25px;
+    display: block;
+}
+.plan-price span {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--muted);
+    display: inline-block;
+    margin-left: 5px;
+}
+.pricing-card--featured .plan-price span {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.plan-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 30px;
+    flex-grow: 1;
+    text-align: left;
+}
+
+.plan-features li {
+    margin-bottom: 15px;
+    color: var(--muted);
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.plan-features li:last-child { margin-bottom: 0; }
+.plan-features i {
+    color: var(--accent);
+    font-size: 1.1rem;
+}
+
+.pricing-card .btn {
+    width: 100%;
+    margin-top: auto;
+    padding: 12px 25px;
+}
+
+/* 🌟 --- REVIEWS --- 🌟 */
+.reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    margin-top: 40px;
+}
+.review-item {
+    position: relative;
+    background: var(--surface);
+    padding: 30px;
+    border-radius: var(--radius);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    height: 100%;
+}
+.review-item:hover {
+    transform: translateY(-5px);
+    border-color: var(--accent);
+}
+.review-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+.review-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--accent);
+    flex-shrink: 0;
+}
+.reviewer-meta { line-height: 1.2; }
+.reviewer-meta h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--text);
+    font-weight: 700;
+}
+.reviewer-meta p {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+.review-body {
+    color: var(--muted);
+    font-size: 1rem;
+    margin-bottom: 15px;
+    line-height: 1.5;
+    font-style: italic;
+}
+/* Зірковий рейтинг */
+.review-rating, #ratingStars {
+    color: var(--accent);
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+}
+.star-icon { cursor: pointer; transition: color 0.2s; }
+/* Кнопка видалення */
+.delete-review {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: color 0.2s;
+}
+.delete-review:hover { color: var(--accent); }
+
+/* --- CALENDAR (CUSTOM DARK THEME) --- */
+.calendar-wrapper {
+    background: var(--surface); /* Темно-сірий фон */
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+}
+
+/* Заголовок календаря (місяць/рік) */
+.fc .fc-toolbar-title {
+    color: var(--text);
+    font-size: 1.5rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Кнопки навігації (стрілки, today) */
+.fc .fc-button {
+    background-color: #2a2a2a;
+    border: none;
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: capitalize;
+    border-radius: 6px;
+    padding: 8px 16px;
+    transition: all 0.3s ease;
+}
+
+.fc .fc-button:hover {
+    background-color: #333;
+    color: #fff;
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+    background-color: var(--accent);
+    color: #fff;
+}
+
+/* Сітка календаря */
+.fc-theme-standard td, 
+.fc-theme-standard th {
+    border-color: rgba(255, 255, 255, 0.1); /* Тонкі сірі лінії */
+}
+
+/* Дні тижня (Пн, Вт...) */
+.fc-col-header-cell-cushion {
+    color: var(--muted);
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    padding: 10px 0;
+}
+
+/* Години збоку */
+.fc-timegrid-slot-label-cushion {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+/* Самі події (червоні плашки) */
+.fc-event {
+    border: none;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    padding: 2px 4px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.fc-event:hover {
+    transform: scale(1.02); /* Легке збільшення при наведенні */
+    filter: brightness(1.1);
+}
+
+.fc-event-main {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #fff;
+}
+
+/* Поточний день (підсвітка) */
+.fc-day-today {
+    background: rgba(230, 0, 0, 0.05) !important; /* Легкий червоний відтінок */
+}
+
+/* Прибираємо жовту підсвітку FullCalendar */
+.fc .fc-highlight {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* --- BOOKING MODAL STYLES (PREMIUM) --- */
+
+/* Контейнер модалки */
+.booking-modal {
+    background: #141414; /* Глибокий чорний */
+    border: 1px solid #333;
+    border-top: 4px solid var(--accent); /* Фірмова червона смуга */
+    border-radius: 16px;
+    padding: 35px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8); /* Глибока тінь */
+    position: relative;
+    overflow: hidden;
+}
+
+/* Заголовок */
+.modal-title {
+    margin-top: 0;
+    color: #fff; /* Білий текст виглядає дорожче */
+    font-size: 1.8rem;
+    font-weight: 800;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+}
+
+/* Декоративний елемент під заголовком */
+.modal-title::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: var(--accent);
+    box-shadow: 0 0 10px var(--accent);
+}
+
+/* Блок з деталями (список) */
+.booking-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Окремий рядок інформації */
+.booking-details p {
+    background: rgba(255, 255, 255, 0.03); /* Легка підкладка */
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 1.05rem;
+    color: #ddd;
+    border: 1px solid transparent;
+    transition: 0.3s;
+}
+
+.booking-details p:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Іконки в рядках */
+.booking-details p i {
+    color: var(--accent);
+    font-size: 1.2rem;
+    width: 24px;
+    text-align: center;
+    filter: drop-shadow(0 0 5px rgba(230, 0, 0, 0.4)); /* Світіння іконки */
+}
+
+.booking-details strong {
+    color: #fff;
+    font-weight: 600;
+    margin-right: 5px;
+}
+
+/* Футер з кнопками */
+.booking-footer {
+    margin-top: 30px;
+    display: grid;
+    grid-template-columns: 1fr 1.5fr; /* Кнопка "Записатися" ширша */
+    gap: 15px;
+    padding-top: 0;
+    border: none;
+}
+
+/* Кнопка "Скасувати" */
+.booking-footer .btn-ghost {
+    border: 1px solid #444;
+    color: #aaa;
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 0.9rem;
+    transition: 0.3s;
+}
+
+.booking-footer .btn-ghost:hover {
+    border-color: #fff;
+    color: #fff;
+    background: rgba(255,255,255,0.05);
+}
+
+/* Кнопка "Записатися" */
+.booking-footer .btn-primary {
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    box-shadow: 0 5px 20px rgba(230, 0, 0, 0.3); /* Червона тінь */
+}
+
+.booking-footer .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(230, 0, 0, 0.5);
+}
+
+/* Кнопка закриття (хрестик) */
+.modal-close {
+    top: 20px;
+    right: 20px;
+    color: #555;
+    transition: 0.3s;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.modal-close:hover {
+    color: #fff;
+    background: rgba(255,255,255,0.1);
+}
+
+/* --- CONTACTS (MAP) --- */
+.map-wrap {
+    margin-top: 25px;
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    border-radius: var(--radius);
+    border: 3px solid var(--accent);
+    box-shadow: 0 0 20px rgba(230, 0, 0, 0.4);
+}
+.map-iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    filter: grayscale(80%) invert(95%) hue-rotate(180deg) brightness(85%);
+    transition: filter 0.3s;
+}
+.map-wrap:hover .map-iframe {
+    filter: grayscale(0%) brightness(100%);
+}
+#contacts p { font-size: 1.1rem; }
+
+/* --- СТИЛІ КАЛЬКУЛЯТОРА ІМТ --- */
+.imt-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 50px;
+    align-items: flex-start;
+}
+.imt-table-container {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+.imt-table {
+    width: 100%; border-collapse: collapse; margin-bottom: 15px;
+}
+.imt-table th {
+    background: var(--accent); color: #fff; padding: 15px 10px; text-align: left; text-transform: uppercase; font-size: 0.9rem; font-weight: 700;
+}
+.imt-table tr {
+    border-bottom: 1px solid #333; transition: background 0.3s;
+}
+.imt-table tr:hover { background: #181818; }
+.imt-table td {
+    padding: 12px 10px; font-size: 1rem; color: var(--muted);
+}
+.imt-table td:first-child { color: var(--text); font-weight: 600; }
+.imt-table tr.active { background: var(--accent) !important; color: #fff; }
+.imt-table tr.active td { color: #fff; }
+.imt-note {
+    font-size: 0.85rem; color: var(--muted); padding-left: 10px; margin: 10px 0 0;
+}
+.imt-form-container { padding: 20px 0; }
+.imt-form input[type="number"], .imt-form select {
+    width: 100%; padding: 12px; background: var(--surface); border: 1px solid #333; color: var(--text); border-radius: 4px; transition: border-color 0.3s, box-shadow 0.3s; font-size: 1rem; margin-bottom: 15px;
+}
+.imt-form input:focus, .imt-form select:focus {
+    border-color: var(--accent); box-shadow: 0 0 8px rgba(230, 0, 0, 0.3); outline: none;
+}
+.imt-form .form-row { display: flex; gap: var(--gap); }
+.imt-form .form-row input, .imt-form .form-row select { flex: 1; }
+.imt-result-box {
+    background: #1a1a1a; border: 1px solid var(--accent); padding: 15px; border-radius: 4px; min-height: 50px; margin-bottom: 25px; color: var(--text); font-size: 1.1rem; display: flex; align-items: center; justify-content: center; text-align: center; font-weight: 600;
+}
+.imt-result-box.normal { border-color: #0aa84b; color: #0aa84b; }
+.imt-result-box.overweight { border-color: #ff9900; color: #ff9900; }
+.imt-result-box.obese { border-color: var(--accent); color: var(--accent); }
+
+/* --- REVIEW FORM --- */
+.review-modal-content {
+    max-width: 650px;
+    background: #fff;
+    color: #111;
+    border-top: 5px solid var(--accent);
+    margin: 40px 0;
+}
+.review-modal-content .modal-title {
+    color: #111;
+    font-weight: 900;
+    font-size: 2rem;
+    margin-bottom: 30px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+}
+.review-modal-content .form-label { display: block; font-weight: 700; color: #333; margin-bottom: 10px; font-size: 1.1rem; }
+.review-modal-content input[type="text"], .review-modal-content textarea { width: 100%; padding: 12px; margin-bottom: 25px; background: #f7f7f7; border: 1px solid #ddd; color: #111; border-radius: 4px; transition: border-color 0.3s; }
+.review-modal-content input[type="text"]:focus, .review-modal-content textarea:focus { border-color: var(--accent); box-shadow: 0 0 5px rgba(230, 0, 0, 0.3); outline: none; }
+.radio-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px; }
+.radio-group label { display: flex; align-items: center; cursor: pointer; color: #333; font-weight: 400; }
+.radio-group input[type="radio"] { appearance: none; width: 18px; height: 18px; border: 2px solid #aaa; border-radius: 50%; margin-right: 10px; position: relative; cursor: pointer; flex-shrink: 0; }
+.radio-group input[type="radio"]:checked { border-color: var(--accent); }
+.radio-group input[type="radio"]:checked::before { content: ''; position: absolute; top: 3px; left: 3px; width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+.rating-grid { border: 1px solid #eee; padding: 20px 15px; border-radius: 8px; margin-bottom: 25px; }
+.rating-row { display: grid; grid-template-columns: 2fr 3fr; gap: 15px; align-items: center; padding: 10px 0; border-top: 1px solid #f0f0f0; }
+.rating-row:first-child { border-top: none; padding-top: 0; }
+.rating-row:last-child { padding-bottom: 0; }
+.rating-label { color: #555; font-weight: 500; font-size: 0.95rem; }
+.star-rating-controls { display: flex; justify-content: flex-end; gap: 5px; color: #ccc; }
+.star-rating-controls i.fas { color: var(--accent); }
+.star-rating-controls i { font-size: 1.4rem; cursor: pointer; }
+
+
+/* ========================================================== */
+/* --- CABINET PAGE (FINAL) --- */
+/* ========================================================== */
+
+.cabinet-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: var(--gap);
+    align-items: flex-start;
+}
+
+.profile-card,
+.schedule-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    min-height: 400px; /* Мінімальна висота для краси */
+}
+
+/* --- Ліва картка: Профіль --- */
+.profile-header {
+    text-align: center;
+    padding-bottom: 25px;
+    margin-bottom: 25px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 3px solid var(--accent);
+    margin-bottom: 15px;
+    object-fit: cover;
+}
+
+.profile-header h3 {
+    margin: 0 0 5px;
+    font-size: 1.5rem;
+    color: var(--text);
+}
+
+.user-role {
+    color: var(--muted);
+    font-weight: 600;
+    margin: 0;
+    font-size: 1rem;
+}
+
+.profile-details p {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    font-size: 0.95rem;
+}
+.profile-details p i {
+    color: var(--accent);
+    width: 20px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+.profile-details p span {
+    color: var(--muted);
+    font-weight: 300;
+}
+
+/* --- Права картка: Розклад --- */
+.schedule-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* --- КАРТКА БРОНЮВАННЯ (З кнопкою видалення) --- */
+.booking-card {
+    background: var(--bg);
+    padding: 15px 20px;
+    border-radius: 8px;
+    border-left: 4px solid var(--accent);
+    transition: background 0.3s;
+
+    /* Flexbox для розташування: Текст | Кнопка */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+}
+
+.booking-card:hover {
+    background: #1a1a1a;
+}
+
+.booking-info {
+    flex-grow: 1; /* Текст займає весь простір зліва */
+}
+
+.booking-card h4 {
+    margin: 0 0 5px;
+    color: var(--text);
+    font-size: 1.1rem;
+}
+
+.booking-card p,
+.booking-card span {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin: 3px 0;
+    display: block;
+}
+
+.booking-card p strong {
+    color: var(--accent);
+    text-transform: uppercase;
+}
+
+/* Кнопка скасування (смітник) */
+.btn-cancel {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #666;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.btn-cancel:hover {
+    background: rgba(230, 0, 0, 0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: rotate(90deg); /* Анімація при наведенні */
+}
+
+/* --- FIX: ЛОГІКА ВІДКРИТТЯ МОДАЛКИ (ВАЖЛИВО) --- */
+/* Цей клас примусово вмикає модалку, перебиваючи display:none з critical.css */
+.modal-overlay.active {
+    display: flex !important; 
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 10000;
+    animation: fadeInOverlay 0.3s ease forwards;
+}
+
+@keyframes fadeInOverlay {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Анімація появи картки */
+.modal-overlay.active .modal-content {
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes popIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+=========================================
+ФАЙЛ: public\css\4-utilities.css
+=========================================
+
+/* ========================================================== */
+/* 4-utilities.css: Адаптивність (Media Queries) та Хелпери */
+/* ========================================================== */
+
+/* --- HELPER CLASSES --- */
+.review-hidden { display: none; }
+.text-center { text-align: center; }
+
+/* --- MEDIA QUERIES (АДАПТИВНІСТЬ) --- */
+
+@media (max-width: 1024px) {
+    .hero { padding: 80px 0; }
+    .hero-inner { padding: 30px; }
+    .section { padding: 60px 0; }
+    .footer-grid { grid-template-columns: 1.5fr 1fr 1fr; }
+    .footer-branding { grid-column: span 1; }
+}
+
+@media (max-width: 880px) {
+    /* Layout */
+    .cols-3 { grid-template-columns: repeat(2, 1fr); }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+    .footer-branding { grid-column: span 2; order: -1; }
+    .footer-bottom { flex-direction: column; gap: 15px; text-align: center; }
+    .payment-systems { margin-top: 10px; }
+    .social-links { justify-content: flex-start; }
+
+    /* Pages */
+    .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+    .pricing-card--featured { grid-column: span 2; order: -1; transform: scale(1.02); }
+    .imt-wrapper { grid-template-columns: 1fr; }
+    .cabinet-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+    /* Header/Nav */
+    .nav-primary {
+        display: none; position: absolute; top: 100%; left: 0; width: 100%;
+        flex-direction: column; background: rgba(0, 0, 0, 0.95); padding: 10px 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .nav-primary a { padding: 12px 20px; border-radius: 0; width: 100%; }
+    .nav-primary a::after { content: none; }
+    .hamburger { display: flex; margin-left: 10px; }
+    .header-inner #authArea { display: none; }
+
+    /* Layout */
+    .hero-inner { max-width: 100%; text-align: center; }
+    .hero-actions { justify-content: center; }
+    .section h2 { font-size: 1.8rem; }
+}
+
+@media (max-width: 560px) {
+    /* Layout */
+    .cols-3 { grid-template-columns: 1fr; }
+    .footer-grid { grid-template-columns: 1fr; }
+    .footer-col:first-child { grid-column: span 1; }
+    .footer-col { text-align: center; }
+    .app-buttons { align-items: center; }
+    .social-links { justify-content: center; }
+    .footer-branding .tagline { max-width: 100%; }
+    .section-title { font-size: 2rem; }
+    .section-subtitle { font-size: 1rem; }
+
+    /* Pages */
+    .pricing-grid { grid-template-columns: 1fr; }
+    .pricing-card--featured { grid-column: span 1; transform: scale(1.02); }
+}
+
+=========================================
+ФАЙЛ: public\css\admin_styles.css
+=========================================
+
+/* admin_styles.css - SCOPED & ISOLATED */
+
+/* Змінюємо фон тільки коли ми в адмінці */
+body.admin-body {
+    background-color: #121212 !important;
+    overflow-x: hidden;
+}
+
+.admin-wrapper {
+    display: flex;
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    color: #eee;
+}
+
+/* SIDEBAR */
+.admin-sidebar {
+    width: 250px;
+    background: #050505;
+    border-right: 1px solid #222;
+    position: fixed;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+}
+.admin-logo {
+    height: 70px;
+    display: flex; align-items: center; padding-left: 20px;
+    font-size: 1.4rem; font-weight: 900; color: #fff;
+    border-bottom: 1px solid #222;
+}
+.admin-logo span { color: #e60000; }
+
+.admin-menu { flex: 1; padding: 20px 0; }
+.admin-menu button {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; padding: 15px 25px;
+    background: none; border: none;
+    color: #888; font-size: 1rem; font-weight: 600;
+    cursor: pointer; text-align: left;
+    border-left: 4px solid transparent;
+    transition: 0.2s;
+}
+.admin-menu button:hover { color: #fff; background: #111; }
+.admin-menu button.active { color: #fff; background: #1a1a1a; border-left-color: #e60000; }
+
+.admin-footer { padding: 20px; border-top: 1px solid #222; }
+.admin-footer button { background: none; border: none; color: #d32f2f; cursor: pointer; font-size: 1rem; }
+
+/* CONTENT */
+.admin-content {
+    margin-left: 250px;
+    flex: 1;
+    display: flex; flex-direction: column;
+}
+
+.admin-topbar {
+    height: 70px; background: #181818; border-bottom: 1px solid #222;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 30px; position: sticky; top: 0; z-index: 50;
+}
+.admin-user { display: flex; align-items: center; gap: 10px; }
+.admin-user .avatar { width: 35px; height: 35px; background: #e60000; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; }
+
+.admin-page-content { padding: 30px; }
+
+/* GRIDS & CARDS */
+.admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+.admin-card {
+    background: #1e1e1e; padding: 25px; border-radius: 10px; border: 1px solid #333;
+}
+.admin-card h3 { margin: 0 0 10px; font-size: 0.9rem; color: #888; text-transform: uppercase; }
+.admin-card .val { font-size: 2rem; font-weight: 700; color: #fff; }
+
+/* TABLES & CONTROLS */
+.admin-controls { display: flex; justify-content: space-between; margin-bottom: 20px; gap: 10px; }
+.admin-controls input { background: #222; border: 1px solid #444; color: #fff; padding: 8px 15px; border-radius: 5px; }
+
+.table-wrap { overflow-x: auto; }
+.admin-table { width: 100%; border-collapse: collapse; color: #ccc; }
+.admin-table th { text-align: left; padding: 15px; background: #222; color: #fff; }
+.admin-table td { padding: 15px; border-bottom: 1px solid #2a2a2a; }
+.admin-table tr:hover { background: #252525; }
+
+.badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 700; }
+.badge.active { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
+.badge.inactive { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
+
+/* BUTTONS */
+.admin-btn { background: #e60000; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: 600; }
+.admin-btn:hover { background: #c00000; }
+
+/* CALENDAR OVERRIDES (Specific to admin) */
+.admin-calendar-box { background: #1e1e1e; padding: 20px; border-radius: 10px; }
+.admin-calendar-box .fc-toolbar-title { color: #fff; }
+.admin-calendar-box .fc-button-primary { background: #e60000 !important; border: none !important; }
+
+/* MODAL */
+.admin-modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8); z-index: 2000;
+    display: flex; justify-content: center; align-items: center;
+}
+.admin-modal {
+    background: #181818; padding: 30px; border-radius: 10px; width: 90%; max-width: 450px;
+    position: relative; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+.admin-modal h2 { margin-top: 0; color: #e60000; text-align: center; }
+.close-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; color: #666; font-size: 1.5rem; cursor: pointer; }
+
+.admin-modal input, .admin-modal select {
+    width: 100%; padding: 10px; margin-bottom: 15px;
+    background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 5px;
+}
+.admin-modal label { display: block; margin-bottom: 5px; font-size: 0.9rem; color: #aaa; }
+.admin-modal .row { display: flex; gap: 10px; }
+.admin-modal .row > * { flex: 1; }
+
+.actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+.save-btn { background: #e60000; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+.del-btn { background: #d32f2f; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+
+/* MOBILE */
+.mobile-toggle { display: none; background: none; border: none; color: #fff; font-size: 1.5rem; }
+@media (max-width: 900px) {
+    .admin-sidebar { transform: translateX(-100%); transition: 0.3s; }
+    .admin-content { margin-left: 0; }
+    .sidebar-open .admin-sidebar { transform: translateX(0); }
+    .mobile-toggle { display: block; }
+}
+
+.admin-table button {
+    background: #2a2a2a;       /* Темно-сірий фон */
+    border: 1px solid #444;    /* Тонка рамка */
+    color: #fff;               /* Колір тексту/іконки */
+    width: 36px;               /* Фіксований розмір */
+    height: 36px;
+    border-radius: 6px;        /* Скруглення */
+    cursor: pointer;
+    font-size: 1.1rem;         /* Розмір емодзі */
+    transition: all 0.2s ease;
+    
+    /* Центрування вмісту */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.admin-table button:hover {
+    background: #e60000;       /* Червоний акцент при наведенні */
+    border-color: #e60000;
+    transform: translateY(-2px); /* Легкий підйом */
+    box-shadow: 0 4px 10px rgba(230, 0, 0, 0.4);
+}
