@@ -4,52 +4,36 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import ukLocale from '@fullcalendar/core/locales/uk'; // Українська мова
+import ukLocale from '@fullcalendar/core/locales/uk';
 import { publicRequest, authRequest } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 
-
-/**
- * @component Schedule
- * @description Відображає календар занять (FullCalendar).
- * Дозволяє переглядати події та бронювати їх (клік на подію).
- * * Логіка:
- * 1. Завантажує події з /api/schedule/ при зміні дат.
- * 2. Використовує AuthContext для перевірки прав.
- * 3. Відкриває вбудовану модалку для підтвердження запису.
- */
 export default function Schedule() {
     const { user } = useAuth();
     const { openLogin, addToast, confirmAction } = useUI();
     
-    // Стан для модалки бронювання
     const [selectedEvent, setSelectedEvent] = useState(null);
     const calendarRef = useRef(null);
 
-    // Функція завантаження подій (FullCalendar викликає її сам, коли гортаєш тижні)
     const fetchEvents = async (info, successCallback, failureCallback) => {
         try {
-            // Передаємо start і end дати, щоб не вантажити весь рік одразу
             const url = `/api/schedule/?start=${info.startStr}&end=${info.endStr}`;
             const data = await publicRequest(url);
             
-            // Перетворюємо дані бекенду у формат FullCalendar
             const events = data.map(item => ({
                 id: item.id,
                 title: item.class_name || 'Тренування',
                 start: item.start_at,
                 end: item.end_at,
-                backgroundColor: 'var(--accent)', // Червоний колір
+                backgroundColor: 'var(--accent)',
                 borderColor: 'var(--accent)',
-                // Зберігаємо додаткові дані (ім'я тренера, місця)
                 extendedProps: {
                     instructor: item.instructor_name,
                     capacity: item.capacity,
                     booked: item.booked_count
                 }
             }));
-            
             successCallback(events);
         } catch (error) {
             console.error("Calendar Error:", error);
@@ -57,9 +41,7 @@ export default function Schedule() {
         }
     };
 
-    // Клік на подію
     const handleEventClick = (info) => {
-        // Зберігаємо дані клікнутого тренування і відкриваємо модалку
         setSelectedEvent({
             id: info.event.id,
             title: info.event.title,
@@ -70,24 +52,22 @@ export default function Schedule() {
         });
     };
 
-    // Логіка бронювання
-    const handleBooking = () => { // Прибираємо async тут, він буде всередині confirm
+    const handleBooking = () => {
         if (!user) {
-            addToast('Спершу увійдіть у систему', 'error'); // Замість alert
+            addToast('Спершу увійдіть у систему', 'error');
             openLogin();
             return;
         }
 
-        // Замість window.confirm викликаємо наше красиве вікно
         confirmAction(
-            `Записатися на заняття "${selectedEvent.title}"?`, // Повідомлення
-            async () => { // Функція, яка виконається, якщо натиснуть "ТАК"
+            `Записатися на заняття "${selectedEvent.title}"?`,
+            async () => {
                 try {
                     await authRequest('/api/book/', 'POST', { 
                         session: selectedEvent.id 
                     });
                     
-                    addToast('Ви успішно записалися!', 'success'); // Красивий тост
+                    addToast('Ви успішно записалися!', 'success');
                     setSelectedEvent(null);
                     
                     if (calendarRef.current) {
@@ -100,12 +80,19 @@ export default function Schedule() {
         );
     };
 
+    // Форматування дати для модалки
+    const formatDate = (date) => {
+        if (!date) return '';
+        return new Intl.DateTimeFormat('uk-UA', {
+            day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
+        }).format(date);
+    };
+
     return (
         <section id="schedule" className="section container">
             <h2 className="section-title">Актуальний розклад занять</h2>
             
-            {/* Обгортка для стилів (щоб календар був темним) */}
-            <div className="calendar-wrapper" style={{background: '#1e1e1e', padding: '20px', borderRadius: '12px'}}>
+            <div className="calendar-wrapper">
                 <FullCalendar
                     ref={calendarRef}
                     plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -116,44 +103,52 @@ export default function Schedule() {
                         right: 'dayGridMonth,timeGridWeek'
                     }}
                     locale={ukLocale}
-                    slotMinTime="08:00:00" // Початок робочого дня
-                    slotMaxTime="22:00:00" // Кінець
+                    slotMinTime="08:00:00"
+                    slotMaxTime="22:00:00"
                     allDaySlot={false}
-                    events={fetchEvents} // <--- Магія тут
+                    slotLabelFormat={{
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    }}
+                    eventTimeFormat={{
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    }}
+                    events={fetchEvents}
                     eventClick={handleEventClick}
                     height="auto"
                     aspectRatio={1.5}
                 />
             </div>
 
-            {/* --- МОДАЛКА БРОНЮВАННЯ (Вбудована) --- */}
+            {/* Вбудована модалка для деталей події */}
             {selectedEvent && (
-                <div className="modal-overlay" style={{
-                    display: 'flex', zIndex: 10000, 
-                    position:'fixed', top:0, left:0, width:'100%', height:'100%', 
-                    background:'rgba(0,0,0,0.8)', alignItems:'center', justifyContent:'center'
-                }}>
-                    <div className="modal-content" style={{
-                        background: '#1e1e1e', padding: '30px', borderRadius: '10px', 
-                        width: '400px', position: 'relative', borderTop: '4px solid var(--accent)'
-                    }}>
-                        <button 
-                            onClick={() => setSelectedEvent(null)}
-                            style={{position:'absolute', top:'10px', right:'15px', background:'none', border:'none', color:'#fff', fontSize:'24px', cursor:'pointer'}}
-                        >×</button>
+                <div className="modal-overlay active">
+                    <div className="modal-content booking-modal">
+                        <button className="modal-close" onClick={() => setSelectedEvent(null)}>×</button>
 
-                        <h3 style={{marginTop:0, color: 'var(--accent)'}}>{selectedEvent.title}</h3>
+                        <h3 className="modal-title">{selectedEvent.title}</h3>
                         
-                        <div style={{marginBottom: '20px', lineHeight: '1.6'}}>
-                            <p><strong>🕒 Час:</strong> {selectedEvent.start.toLocaleString()}</p>
-                            <p><strong>🏋️‍♂️ Тренер:</strong> {selectedEvent.instructor || 'Черговий'}</p>
-                            {/* Якщо є дані про місця */}
+                        <div className="booking-details">
+                            <p>
+                                <i className="far fa-clock"></i> 
+                                <strong>Час:</strong> {formatDate(selectedEvent.start)}
+                            </p>
+                            <p>
+                                <i className="fas fa-user-tie"></i>
+                                <strong>Тренер:</strong> {selectedEvent.instructor || 'Черговий'}
+                            </p>
                             {selectedEvent.capacity && (
-                                <p><strong>👥 Місця:</strong> {selectedEvent.booked || 0} / {selectedEvent.capacity}</p>
+                                <p>
+                                    <i className="fas fa-users"></i>
+                                    <strong>Місця:</strong> {selectedEvent.booked || 0} / {selectedEvent.capacity}
+                                </p>
                             )}
                         </div>
 
-                        <div style={{display:'flex', gap:'10px', justifyContent:'flex-end'}}>
+                        <div className="booking-footer">
                             <button onClick={() => setSelectedEvent(null)} className="btn btn-ghost">Скасувати</button>
                             <button onClick={handleBooking} className="btn btn-primary">Записатися</button>
                         </div>

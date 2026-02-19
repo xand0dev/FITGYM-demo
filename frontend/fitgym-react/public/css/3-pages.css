@@ -202,28 +202,242 @@
 }
 .delete-review:hover { color: var(--accent); }
 
-/* --- CALENDAR --- */
-#calendar {
-    background: #181818;
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-top: 1.5rem;
-    box-shadow: 0 0 25px rgba(230, 0, 0, 0.2);
-    min-height: 600px;
+/* --- CALENDAR (CUSTOM DARK THEME) --- */
+.calendar-wrapper {
+    background: var(--surface); /* Темно-сірий фон */
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    overflow: hidden;
 }
-.fc .fc-toolbar-title { color: #fff; font-weight: 600; }
-.fc .fc-button-primary { background: var(--accent); border: none; transition: 0.3s; }
-.fc .fc-button-primary:hover { background: #ff1a1a; }
-.fc .fc-daygrid-day-number, .fc-col-header-cell-cushion { color: #fff; }
-.fc .fc-event { background: var(--accent); border: none; border-radius: 6px; color: #fff; }
-.fc .fc-day-today { background: rgba(255,0,0,0.2) !important; }
-.fc-timegrid-slot-lane {
-    border-bottom-style: solid !important;
-    border-bottom-color: #333 !important;
+
+/* Заголовок календаря (місяць/рік) */
+.fc .fc-toolbar-title {
+    color: var(--text);
+    font-size: 1.5rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
-.fc-timegrid-slot-minor {
-    border-bottom-style: solid !important;
-    border-bottom-color: #2a2a2a !important;
+
+/* Кнопки навігації (стрілки, today) */
+.fc .fc-button {
+    background-color: #2a2a2a;
+    border: none;
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: capitalize;
+    border-radius: 6px;
+    padding: 8px 16px;
+    transition: all 0.3s ease;
+}
+
+.fc .fc-button:hover {
+    background-color: #333;
+    color: #fff;
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+    background-color: var(--accent);
+    color: #fff;
+}
+
+/* Сітка календаря */
+.fc-theme-standard td, 
+.fc-theme-standard th {
+    border-color: rgba(255, 255, 255, 0.1); /* Тонкі сірі лінії */
+}
+
+/* Дні тижня (Пн, Вт...) */
+.fc-col-header-cell-cushion {
+    color: var(--muted);
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    padding: 10px 0;
+}
+
+/* Години збоку */
+.fc-timegrid-slot-label-cushion {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+/* Самі події (червоні плашки) */
+.fc-event {
+    border: none;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    padding: 2px 4px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.fc-event:hover {
+    transform: scale(1.02); /* Легке збільшення при наведенні */
+    filter: brightness(1.1);
+}
+
+.fc-event-main {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #fff;
+}
+
+/* Поточний день (підсвітка) */
+.fc-day-today {
+    background: rgba(230, 0, 0, 0.05) !important; /* Легкий червоний відтінок */
+}
+
+/* Прибираємо жовту підсвітку FullCalendar */
+.fc .fc-highlight {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* --- BOOKING MODAL STYLES (PREMIUM) --- */
+
+/* Контейнер модалки */
+.booking-modal {
+    background: #141414; /* Глибокий чорний */
+    border: 1px solid #333;
+    border-top: 4px solid var(--accent); /* Фірмова червона смуга */
+    border-radius: 16px;
+    padding: 35px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8); /* Глибока тінь */
+    position: relative;
+    overflow: hidden;
+}
+
+/* Заголовок */
+.modal-title {
+    margin-top: 0;
+    color: #fff; /* Білий текст виглядає дорожче */
+    font-size: 1.8rem;
+    font-weight: 800;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+}
+
+/* Декоративний елемент під заголовком */
+.modal-title::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: var(--accent);
+    box-shadow: 0 0 10px var(--accent);
+}
+
+/* Блок з деталями (список) */
+.booking-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Окремий рядок інформації */
+.booking-details p {
+    background: rgba(255, 255, 255, 0.03); /* Легка підкладка */
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 1.05rem;
+    color: #ddd;
+    border: 1px solid transparent;
+    transition: 0.3s;
+}
+
+.booking-details p:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Іконки в рядках */
+.booking-details p i {
+    color: var(--accent);
+    font-size: 1.2rem;
+    width: 24px;
+    text-align: center;
+    filter: drop-shadow(0 0 5px rgba(230, 0, 0, 0.4)); /* Світіння іконки */
+}
+
+.booking-details strong {
+    color: #fff;
+    font-weight: 600;
+    margin-right: 5px;
+}
+
+/* Футер з кнопками */
+.booking-footer {
+    margin-top: 30px;
+    display: grid;
+    grid-template-columns: 1fr 1.5fr; /* Кнопка "Записатися" ширша */
+    gap: 15px;
+    padding-top: 0;
+    border: none;
+}
+
+/* Кнопка "Скасувати" */
+.booking-footer .btn-ghost {
+    border: 1px solid #444;
+    color: #aaa;
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 0.9rem;
+    transition: 0.3s;
+}
+
+.booking-footer .btn-ghost:hover {
+    border-color: #fff;
+    color: #fff;
+    background: rgba(255,255,255,0.05);
+}
+
+/* Кнопка "Записатися" */
+.booking-footer .btn-primary {
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    box-shadow: 0 5px 20px rgba(230, 0, 0, 0.3); /* Червона тінь */
+}
+
+.booking-footer .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(230, 0, 0, 0.5);
+}
+
+/* Кнопка закриття (хрестик) */
+.modal-close {
+    top: 20px;
+    right: 20px;
+    color: #555;
+    transition: 0.3s;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.modal-close:hover {
+    color: #fff;
+    background: rgba(255,255,255,0.1);
 }
 
 /* --- CONTACTS (MAP) --- */
@@ -482,4 +696,29 @@
     border-color: var(--accent);
     color: var(--accent);
     transform: rotate(90deg); /* Анімація при наведенні */
+}
+
+/* --- FIX: ЛОГІКА ВІДКРИТТЯ МОДАЛКИ (ВАЖЛИВО) --- */
+/* Цей клас примусово вмикає модалку, перебиваючи display:none з critical.css */
+.modal-overlay.active {
+    display: flex !important; 
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 10000;
+    animation: fadeInOverlay 0.3s ease forwards;
+}
+
+@keyframes fadeInOverlay {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Анімація появи картки */
+.modal-overlay.active .modal-content {
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes popIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
 }
