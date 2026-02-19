@@ -1,218 +1,113 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-const PlanCard = ({ title, price, features, isFeatured }) => (
-    <div className={`plan-card ${isFeatured ? 'featured' : ''}`} data-aos={isFeatured ? "zoom-in" : "fade-up"}>
-        {isFeatured && <div className="plan-badge">Популярний</div>}
+const Modal = ({ isOpen, onClose, planTitle }) => {
+    if (!isOpen) return null;
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal-body" onClick={(e) => e.stopPropagation()}>
+                <button className="close-modal" onClick={onClose}>&times;</button>
+                <h3 className="modal-header">Оформити підписку</h3>
+                <p className="modal-text">Тариф: <span className="accent-text">{planTitle}</span></p>
+                <form className="modal-form" onSubmit={(e) => e.preventDefault()}>
+                    <input type="text" placeholder="Ім'я" required />
+                    <input type="tel" placeholder="Телефон" required />
+                    <button type="submit" className="plan-button small-btn">Замовити</button>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+const PlanCard = ({ title, price, features, isFeatured, onSelect }) => (
+    <div className={`plan-card ${isFeatured ? 'featured' : ''}`}>
+        {isFeatured && <div className="plan-badge">Top</div>}
         <h3 className="plan-title">{title}</h3>
         <div className="plan-price">
-            <span className="currency">₴</span>
-            {price}
-            <span className="period">/ міс</span>
+            <span className="currency">₴</span>{price}<span className="period">/міс</span>
         </div>
-        <div className="plan-divider"></div>
         <ul className="plan-features">
-            {features.map((f, i) => (
-                <li key={i}><i className="fas fa-check"></i> {f}</li>
-            ))}
+            {features.map((f, i) => <li key={i}>✓ {f}</li>)}
         </ul>
-        <button className="plan-button">Обрати план</button>
+        <button className="plan-button" onClick={() => onSelect(title)}>Обрати</button>
     </div>
 );
 
 export default function Plans() {
+    const [isModalOpen, setModalOpen] = useState(false);
+    const [selectedPlan, setSelectedPlan] = useState('');
+
+    const handlePlanSelect = (title) => {
+        setSelectedPlan(title);
+        setModalOpen(true);
+    };
+
     return (
         <section id="plans" className="plans-section">
-            {/* Шар затемнення для фону */}
             <div className="plans-overlay"></div>
-            
             <div className="container plans-content">
                 <div className="plans-header">
-                    <h2 className="plans-main-title">
-                        Оберіть свій <span className="accent-text">рівень</span>
-                    </h2>
-                    <p className="plans-subtitle">Прозорі ціни для твоїх перемог</p>
+                    <h2 className="plans-main-title">Наші <span className="accent-text">Тарифи</span></h2>
                 </div>
-
                 <div className="plans-grid">
-                    <PlanCard 
-                        title="Базовий" 
-                        price="800" 
-                        features={["8 тренувань на місяць", "Доступ до кардіо зони", "Роздягальня та душ"]} 
-                    />
-                    <PlanCard 
-                        title="Безліміт" 
-                        price="1200" 
-                        isFeatured 
-                        features={["Необмежена кількість відвідувань", "Всі зони залу", "1 безкоштовне тренування", "Доступ 24/7"]} 
-                    />
-                    <PlanCard 
-                        title="PRO" 
-                        price="2500" 
-                        features={["Безлімітний доступ", "Персональний план харчування", "Заморозка абонементу", "Пріоритетний запис"]} 
-                    />
+                    <PlanCard title="Базовий" price="800" features={["8 тренувань", "Кардіо зона", "Душ"]} onSelect={handlePlanSelect} />
+                    <PlanCard title="Безліміт" price="1200" isFeatured features={["Безліміт", "Всі зони", "24/7"]} onSelect={handlePlanSelect} />
+                    <PlanCard title="PRO" price="2500" features={["Персональний план", "Заморозка", "Пріоритет"]} onSelect={handlePlanSelect} />
                 </div>
             </div>
+            <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} planTitle={selectedPlan} />
 
             <style>{`
                 .plans-section {
                     position: relative;
-                    padding: 120px 0;
-                    /* ЗАМІНИ ЦЕ ПОСИЛАННЯ НА СВОЄ ФОТО ЗАЛУ */
-                    background-image: url('https://images.unsplash.com/photo-1540497077202-7c8a3999166f?q=80&w=2070');
-                    background-size: cover;
-                    background-position: center;
-                    background-attachment: fixed; /* Ефект паралаксу */
-                    overflow: hidden;
+                    padding: 60px 0;
+                    background: url('https://images.unsplash.com/photo-1540497077202-7c8a3999166f?q=80&w=2070') center/cover fixed;
+                    min-height: 600px;
+                    display: flex;
+                    align-items: center;
                 }
-
-                .plans-overlay {
-                    position: absolute;
-                    top: 0; left: 0; width: 100%; height: 100%;
-                    background: rgba(0, 0, 0, 0.8); /* Темний фільтр поверх фото */
-                    z-index: 1;
-                }
-
-                .plans-content {
-                    position: relative;
-                    z-index: 2;
-                    max-width: 1200px;
-                    margin: 0 auto;
-                    padding: 0 5%;
-                }
-
-                .plans-header {
-                    text-align: center;
-                    margin-bottom: 70px;
-                    color: #fff;
-                }
-
-                .plans-main-title {
-                    font-size: clamp(2.5rem, 6vw, 4.5rem);
-                    font-weight: 950;
-                    text-transform: uppercase;
-                    line-height: 0.9;
-                    margin-bottom: 15px;
-                }
-
+                .plans-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1; }
+                .plans-content { position: relative; z-index: 2; max-width: 1000px; margin: 0 auto; width: 100%; padding: 0 15px; }
+                .plans-header { text-align: center; margin-bottom: 40px; color: #fff; }
+                .plans-main-title { font-size: 2.2rem; font-weight: 800; text-transform: uppercase; }
                 .accent-text { color: #ff0000; }
 
-                .plans-subtitle {
-                    font-weight: 700;
-                    text-transform: uppercase;
-                    letter-spacing: 3px;
-                    opacity: 0.8;
-                }
+                .plans-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
 
-                .plans-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                    gap: 30px;
-                    align-items: stretch;
-                }
-
-                /* СТИЛІ КАРТОК */
                 .plan-card {
                     background: #fff;
-                    border: 3px solid #000;
-                    padding: 50px 30px;
+                    padding: 25px 20px;
+                    border-radius: 12px;
+                    text-align: center;
+                    transition: 0.3s;
                     position: relative;
-                    transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
                 }
+                .plan-card:hover { transform: translateY(-5px); }
+                .plan-card.featured { border: 2px solid #ff0000; }
+                .plan-badge { position: absolute; top: -10px; background: #ff0000; color: #fff; padding: 2px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
+                
+                .plan-title { font-size: 1.2rem; font-weight: 700; color: #333; margin-bottom: 10px; }
+                .plan-price { font-size: 2.2rem; font-weight: 800; color: #ff0000; margin-bottom: 15px; }
+                .currency { font-size: 1rem; vertical-align: super; }
+                .period { font-size: 0.8rem; color: #888; }
 
-                .plan-card:hover {
-                    transform: translateY(-15px);
-                    box-shadow: 20px 20px 0px #000;
-                }
-
-                .plan-card.featured {
-                    border-color: #ff0000;
-                    box-shadow: 15px 15px 0px #ff0000;
-                }
-
-                .plan-badge {
-                    position: absolute;
-                    top: -15px;
-                    background: #ff0000;
-                    color: #fff;
-                    padding: 5px 20px;
-                    font-weight: 900;
-                    text-transform: uppercase;
-                    font-size: 0.8rem;
-                    border: 2px solid #000;
-                }
-
-                .plan-title {
-                    font-size: 1.8rem;
-                    font-weight: 950;
-                    text-transform: uppercase;
-                    margin-bottom: 25px;
-                    color: #000;
-                }
-
-                .plan-price {
-                    font-size: 4.5rem;
-                    font-weight: 950;
-                    color: #ff0000;
-                    line-height: 1;
-                    margin-bottom: 10px;
-                }
-
-                .currency { font-size: 1.5rem; vertical-align: super; }
-                .period { font-size: 1rem; color: #666; font-weight: 700; }
-
-                .plan-divider {
-                    width: 60px; height: 5px;
-                    background: #000;
-                    margin: 30px 0;
-                }
-
-                .plan-features {
-                    list-style: none;
-                    padding: 0;
-                    margin-bottom: 40px;
-                    width: 100%;
-                    flex-grow: 1;
-                }
-
-                .plan-features li {
-                    margin-bottom: 15px;
-                    font-weight: 700;
-                    color: #333;
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    font-size: 0.95rem;
-                }
-
-                .plan-features i { color: #ff0000; }
+                .plan-features { list-style: none; padding: 0; margin-bottom: 20px; text-align: left; }
+                .plan-features li { font-size: 0.85rem; color: #555; margin-bottom: 8px; font-weight: 600; }
 
                 .plan-button {
-                    width: 100%;
-                    padding: 18px;
-                    background: #000;
-                    color: #fff;
-                    border: none;
-                    font-weight: 900;
-                    text-transform: uppercase;
-                    cursor: pointer;
-                    transition: 0.3s;
-                    letter-spacing: 1px;
+                    width: 100%; padding: 10px; background: #000; color: #fff; border: none; border-radius: 6px;
+                    font-weight: bold; text-transform: uppercase; cursor: pointer; transition: 0.3s; font-size: 0.85rem;
                 }
+                .plan-button:hover { background: #ff0000; }
+                .featured .plan-button { background: #ff0000; }
 
-                .plan-button:hover {
-                    background: #ff0000;
-                }
-
-                .plan-card.featured .plan-button { background: #ff0000; }
-                .plan-card.featured .plan-button:hover { background: #000; }
-
-                @media (max-width: 600px) {
-                    .plan-card.featured { transform: none; }
-                    .plan-card.featured:hover { transform: translateY(-10px); }
-                }
+                /* MODAL */
+                .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+                .modal-body { background: rgba(255,255,255,0.1); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.2); padding: 30px; border-radius: 15px; width: 90%; max-width: 320px; color: #fff; text-align: center; position: relative; }
+                .close-modal { position: absolute; top: 10px; right: 15px; background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; }
+                .modal-header { font-size: 1.2rem; text-transform: uppercase; margin-bottom: 5px; }
+                .modal-text { font-size: 0.9rem; margin-bottom: 20px; }
+                .modal-form { display: flex; flex-direction: column; gap: 10px; }
+                .modal-form input { padding: 10px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; color: #fff; font-size: 0.9rem; }
             `}</style>
         </section>
     );
