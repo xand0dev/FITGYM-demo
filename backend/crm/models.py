@@ -13,11 +13,9 @@ class Workout(models.Model):
 
 
 # === ПРОФІЛЬ ТРЕНЕРА ===
-# Розширює вбудованого User
 class Instructor(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     specialties = models.TextField()
-    # 👇 НОВЕ ПОЛЕ
     contact = models.CharField(max_length=20, blank=True, null=True, help_text="Номер телефону")
 
     def __str__(self):
@@ -25,7 +23,6 @@ class Instructor(models.Model):
 
 
 # === ПРОФІЛЬ КЛІЄНТА ===
-# Розширює вбудованого User
 class Member(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     contact = models.CharField(max_length=50, blank=True, null=True)
@@ -62,7 +59,17 @@ class MembershipHistory(models.Model):
         return f"{self.member} - {self.membership_type.name}"
 
 
-# === КОНКРЕТНЕ ЗАНЯТТЯ (напр. "Йога для початківців") ===
+# === ПРИМІЩЕННЯ / ЗАЛИ (НОВЕ) ===
+class Room(models.Model):
+    name = models.CharField(max_length=100, help_text="Наприклад: Зал Йоги, Басейн")
+    capacity = models.IntegerField(default=20, help_text="Максимальна місткість залу")
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.name} (до {self.capacity} осіб)"
+
+
+# === КОНКРЕТНЕ ЗАНЯТТЯ ===
 class Class(models.Model):
     workout = models.ForeignKey(Workout, on_delete=models.SET_NULL, null=True, blank=True)
     name = models.CharField(max_length=100)
@@ -70,33 +77,71 @@ class Class(models.Model):
     default_capacity = models.IntegerField(default=15)
 
     class Meta:
-        verbose_name_plural = "Classes"  # Щоб в адмінці було "Classes", а не "Classs"
+        verbose_name_plural = "Classes"
 
     def __str__(self):
         return self.name
 
 
-# === СЕСІЯ В РОЗКЛАДІ (напр. "Йога для початківців" о 18:00) ===
+# === СЕСІЯ В РОЗКЛАДІ ===
 class ClassSession(models.Model):
     class_type = models.ForeignKey(Class, on_delete=models.CASCADE)
     instructor = models.ForeignKey(Instructor, on_delete=models.SET_NULL, null=True, blank=True)
+    room = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True, blank=True)  # 👇 НОВЕ ПОЛЕ
     start_at = models.DateTimeField()
     end_at = models.DateTimeField()
     capacity = models.IntegerField()
 
     class Meta:
-        ordering = ['start_at']  # Сортувати за часом початку
+        ordering = ['start_at']
 
     def __str__(self):
-        return f"{self.class_type.name} at {self.start_at.strftime('%Y-%m-%d %H:%M')}"
+        room_name = self.room.name if self.room else "Без залу"
+        return f"{self.class_type.name} at {self.start_at.strftime('%Y-%m-%d %H:%M')} ({room_name})"
 
 
 # === ЗАПИС КЛІЄНТА НА ЗАНЯТТЯ ===
 class Booking(models.Model):
+    STATUS_CHOICES = [
+        ('booked', 'Записано'),
+        ('attended', 'Відвідав'),
+        ('missed', 'Пропустив'),
+        ('cancelled', 'Скасовано'),
+    ]
+
     session = models.ForeignKey(ClassSession, on_delete=models.CASCADE)
     member = models.ForeignKey(Member, on_delete=models.CASCADE)
     booked_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=20, default='booked')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='booked')  # 👇 ОНОВЛЕНО
 
     def __str__(self):
-        return f"{self.member} booked for {self.session}"
+        return f"{self.member} booked for {self.session} ({self.get_status_display()})"
+
+
+# === ТРАНЗАКЦІЇ ТА ОПЛАТИ (НОВЕ) ===
+class Payment(models.Model):
+    PAYMENT_METHOD_CHOICES = [
+        ('cash', 'Готівка'),
+        ('card', 'Картка (Термінал)'),
+        ('online', 'Онлайн оплата'),
+    ]
+    STATUS_CHOICES = [
+        ('pending', 'В обробці'),
+        ('completed', 'Успішно'),
+        ('failed', 'Помилка'),
+    ]
+
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='payments')
+    # Прив'язуємо оплату до конкретного купленого абонемента (необов'язково, якщо це оплата за щось інше)
+    membership_history = models.ForeignKey(MembershipHistory, on_delete=models.SET_NULL, null=True, blank=True)
+
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_date = models.DateTimeField(auto_now_add=True)
+    payment_method = models.CharField(max_length=50, choices=PAYMENT_METHOD_CHOICES, default='cash')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='completed')
+
+    # Токен від платіжної системи (безпечно зберігати)
+    gateway_transaction_id = models.CharField(max_length=100, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.member} - {self.amount} ({self.get_status_display()})"
