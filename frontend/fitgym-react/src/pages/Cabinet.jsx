@@ -9,9 +9,11 @@ export default function Cabinet() {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     
-    // Завантаження збережених даних з localStorage або значення за замовчуванням
+    // Стан даних користувача (пріоритет: localStorage -> дані з контексту -> дефолт)
     const [firstName, setFirstName] = useState(() => localStorage.getItem('gym_fname') || user?.first_name || 'Поліна');
     const [lastName, setLastName] = useState(() => localStorage.getItem('gym_lname') || user?.last_name || 'Товстуха');
+    const [email, setEmail] = useState(() => localStorage.getItem('gym_email') || user?.email || 'polina.t@fitgym.com');
+    
     const [activity, setActivity] = useState(() => JSON.parse(localStorage.getItem('gym_activity')) || [30, 50, 45, 80, 60, 20, 70]);
     const [userNotes, setUserNotes] = useState(() => JSON.parse(localStorage.getItem('gym_notes')) || {});
     
@@ -20,13 +22,14 @@ export default function Cabinet() {
     const [tempNote, setTempNote] = useState('');
     const fileInputRef = useRef(null);
 
-    // Зберігання при зміні даних
+    // Автоматичне збереження локальних змін
     useEffect(() => {
         localStorage.setItem('gym_fname', firstName);
         localStorage.setItem('gym_lname', lastName);
+        localStorage.setItem('gym_email', email);
         localStorage.setItem('gym_activity', JSON.stringify(activity));
         localStorage.setItem('gym_notes', JSON.stringify(userNotes));
-    }, [firstName, lastName, activity, userNotes]);
+    }, [firstName, lastName, email, activity, userNotes]);
 
     useEffect(() => {
         AOS.init({ duration: 800 });
@@ -60,32 +63,41 @@ export default function Cabinet() {
             <div className="container position-relative z-3">
                 <div className="cabinet-grid">
                     
-                    {/* ЛІВА ПАНЕЛЬ */}
+                    {/* ЛІВА ПАНЕЛЬ: ПРОФІЛЬ ТА КЕРУВАННЯ */}
                     <aside className="glass-aside" data-aos="fade-right">
-                        <div className="profile-top">
+                        <div className="profile-top text-center">
                             <div className="avatar-circle-red" onClick={() => fileInputRef.current.click()}>
                                 <img src={avatar} alt="User" />
                                 <input type="file" ref={fileInputRef} hidden onChange={(e) => setAvatar(URL.createObjectURL(e.target.files[0]))} />
                             </div>
-                            {/* ПІБ ЧЕРВОНИМ КОЛЬОРОМ */}
+                            
                             <h2 className="user-fullname-red">{firstName} <br/> {lastName}</h2>
+                            <p className="user-email-text">{email}</p>
+                            
+                            <div className="subscription-status">
+                                <span className="status-dot"></span> PRO MEMBER
+                            </div>
                         </div>
 
                         <div className="edit-section">
                             <div className="glass-field">
-                                <label>РЕДАГУВАТИ ІМ'Я</label>
+                                <label>ІМ'Я</label>
                                 <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
                             </div>
                             <div className="glass-field">
-                                <label>РЕДАГУВАТИ ПРІЗВИЩЕ</label>
+                                <label>ПРІЗВИЩЕ</label>
                                 <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                            </div>
+                            <div className="glass-field">
+                                <label>EMAIL АДРЕСА</label>
+                                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
                             </div>
                         </div>
 
                         <button onClick={logout} className="logout-glass-btn">ВИЙТИ З АКАУНТУ</button>
                     </aside>
 
-                    {/* ПРАВА ПАНЕЛЬ */}
+                    {/* ПРАВА ПАНЕЛЬ: КОНТЕНТ */}
                     <main className="main-glass-content">
                         
                         {/* ГРУПОВІ ЗАНЯТТЯ */}
@@ -140,12 +152,11 @@ export default function Cabinet() {
                                 })}
                             </div>
                         </div>
-
                     </main>
                 </div>
             </div>
 
-            {/* ВПЛИВАЮЧЕ ВІКНО */}
+            {/* ВСПЛИВАЮЧЕ ВІКНО */}
             {activeDay && (
                 <div className="glass-modal-overlay">
                     <div className="glass-popup">
@@ -163,68 +174,68 @@ export default function Cabinet() {
                 .ultimate-glass-cabinet { min-height: 100vh; padding: 100px 0; color: #fff; position: relative; }
                 .bg-image-layer { 
                     position: absolute; top:0; left:0; width:100%; height:100%; 
-                    background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=2070') center/cover;
+                    background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=2070') center/cover;
                     z-index: 1; backdrop-filter: blur(15px);
                 }
                 .cabinet-grid { display: grid; grid-template-columns: 320px 1fr; gap: 30px; position: relative; z-index: 5; }
 
                 /* GLASS PANELS */
                 .glass-aside, .glass-card { 
-                    background: rgba(255, 255, 255, 0.05); 
+                    background: rgba(255, 255, 255, 0.03); 
                     backdrop-filter: blur(25px); 
-                    border: 1px solid rgba(255, 255, 255, 0.1); 
+                    border: 1px solid rgba(255, 255, 255, 0.08); 
                     border-radius: 30px; padding: 35px;
+                    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
                 }
 
-                /* PROFILE */
-                .avatar-circle-red { width: 130px; height: 130px; border-radius: 50%; border: 3px solid #ff0000; margin: 0 auto 20px; overflow: hidden; cursor: pointer; box-shadow: 0 0 20px rgba(255,0,0,0.3); }
+                /* PROFILE & EMAIL */
+                .avatar-circle-red { width: 130px; height: 130px; border-radius: 50%; border: 3px solid #ff0000; margin: 0 auto 20px; overflow: hidden; cursor: pointer; box-shadow: 0 0 25px rgba(255,0,0,0.4); transition: 0.3s; }
+                .avatar-circle-red:hover { transform: scale(1.05); }
                 .avatar-circle-red img { width: 100%; height: 100%; object-fit: cover; }
-                .user-fullname-red { color: #ff0000; text-align: center; font-weight: 900; text-transform: uppercase; font-size: 1.4rem; line-height: 1.2; margin-bottom: 30px; }
-
-                .glass-field label { display: block; font-size: 0.6rem; font-weight: 900; color: #555; margin-bottom: 5px; }
-                .glass-field input { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 12px; color: #fff; border-radius: 12px; margin-bottom: 20px; outline: none; }
                 
-                .logout-glass-btn { width: 100%; background: none; border: 1px solid #ff0000; color: #ff0000; padding: 12px; border-radius: 15px; font-weight: 900; cursor: pointer; transition: 0.3s; }
-                .logout-glass-btn:hover { background: #ff0000; color: #fff; }
+                .user-fullname-red { color: #ff0000; font-weight: 900; text-transform: uppercase; font-size: 1.5rem; line-height: 1.1; margin-bottom: 5px; text-shadow: 0 0 10px rgba(255,0,0,0.2); }
+                .user-email-text { font-size: 0.8rem; color: rgba(255,255,255,0.4); margin-bottom: 20px; font-family: 'Courier New', monospace; }
+                
+                .subscription-status { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,0,0,0.1); border: 1px solid #ff0000; padding: 5px 15px; border-radius: 20px; font-size: 0.7rem; font-weight: 900; color: #ff0000; letter-spacing: 1px; margin-bottom: 30px; }
+                .status-dot { width: 6px; height: 6px; background: #ff0000; border-radius: 50%; box-shadow: 0 0 8px #ff0000; animation: pulse 1.5s infinite; }
 
-                /* TECH TITLE */
-                .title-tech { font-size: 1rem; font-weight: 900; text-transform: uppercase; border-left: 5px solid #ff0000; padding-left: 15px; margin-bottom: 30px; }
+                @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
 
-                /* ACTIVITY */
+                /* FORM FIELDS */
+                .glass-field { margin-bottom: 15px; }
+                .glass-field label { display: block; font-size: 0.65rem; font-weight: 900; color: #ff0000; margin-bottom: 6px; letter-spacing: 1px; opacity: 0.8; }
+                .glass-field input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 12px; color: #fff; border-radius: 12px; outline: none; transition: 0.3s; }
+                .glass-field input:focus { border-color: #ff0000; background: rgba(255,255,255,0.1); }
+                
+                .logout-glass-btn { width: 100%; background: none; border: 1px solid #ff0000; color: #ff0000; padding: 12px; border-radius: 15px; font-weight: 900; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+                .logout-glass-btn:hover { background: #ff0000; color: #fff; box-shadow: 0 0 20px rgba(255,0,0,0.4); }
+
+                /* TITLES */
+                .title-tech { font-size: 1rem; font-weight: 900; text-transform: uppercase; border-left: 5px solid #ff0000; padding-left: 15px; margin-bottom: 30px; letter-spacing: 1px; }
+
+                /* CHART & CALENDAR (STYLES REMAIN SAME AS YOURS) */
                 .chart-glass-container { display: flex; justify-content: space-between; align-items: flex-end; height: 130px; }
                 .chart-column { width: 12%; text-align: center; }
                 .bar-track-glass { height: 100px; background: rgba(255,255,255,0.02); border-radius: 8px; position: relative; overflow: hidden; cursor: crosshair; }
                 .bar-fill-red { position: absolute; bottom: 0; width: 100%; background: #ff0000; box-shadow: 0 0 15px #ff0000; transition: height 0.3s; }
-                .bar-label { font-size: 0.7rem; color: #444; margin-top: 10px; display: block; font-weight: 800; }
+                .bar-label { font-size: 0.7rem; color: #666; margin-top: 10px; display: block; font-weight: 800; }
 
-                /* CALENDAR */
                 .calendar-glass-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
                 .calendar-header-day { text-align: center; font-size: 0.7rem; color: #ff0000; font-weight: 900; }
-                .cal-glass-cell { 
-                    aspect-ratio: 1.1; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); 
-                    border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; 
-                    cursor: pointer; transition: 0.3s; position: relative;
-                }
+                .cal-glass-cell { aspect-ratio: 1.1; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; position: relative; }
                 .cal-glass-cell:hover { background: rgba(255,0,0,0.1); border-color: #ff0000; }
-                .cal-glass-cell.active { background: rgba(255,0,0,0.2); border-color: #ff0000; box-shadow: inset 0 0 10px rgba(255,0,0,0.2); }
+                .cal-glass-cell.active { background: rgba(255,0,0,0.2); border-color: #ff0000; }
                 .day-number { font-weight: 900; font-size: 1rem; }
-                .note-text-inside { font-size: 0.5rem; color: #ff0000; font-weight: 800; margin-top: 5px; max-width: 90%; text-align: center; overflow: hidden; }
+                .note-text-inside { font-size: 0.5rem; color: #ff0000; font-weight: 800; margin-top: 5px; text-align: center; }
 
-                /* MODAL */
                 .glass-modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 1000; display: flex; align-items: center; justify-content: center; }
                 .glass-popup { background: rgba(20,20,20,0.9); border: 1px solid #ff0000; padding: 35px; border-radius: 30px; width: 350px; text-align: center; }
-                .glass-popup input { width: 100%; background: #000; border: 1px solid #333; padding: 12px; color: #fff; border-radius: 10px; margin: 20px 0; outline: none; }
-                .popup-buttons { display: flex; gap: 10px; }
                 .btn-save-red { flex: 1; background: #ff0000; color: #fff; border: none; padding: 12px; border-radius: 10px; font-weight: 900; cursor: pointer; }
                 .btn-close-glass { flex: 1; background: #222; color: #888; border: none; padding: 12px; border-radius: 10px; font-weight: 900; cursor: pointer; }
 
-                /* BOOKINGS */
-                .bookings-flex { display: flex; flex-direction: column; gap: 10px; }
                 .booking-glass-item { display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 20px; border-left: 4px solid #ff0000; }
                 .b-date { font-size: 1.5rem; font-weight: 900; color: #ff0000; }
-                .b-info h5 { margin: 0; font-weight: 900; text-transform: uppercase; }
-                .b-info small { color: #555; }
-
+                
                 @media (max-width: 950px) { .cabinet-grid { grid-template-columns: 1fr; } }
             `}</style>
         </section>
