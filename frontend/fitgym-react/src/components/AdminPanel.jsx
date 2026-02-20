@@ -1,191 +1,164 @@
-// src/components/AdminPanel.jsx
-import { useState, useEffect } from 'react';
-import { authRequest } from '../utils/api';
+import { useState, useEffect, useRef } from 'react';
+import { authRequest, publicRequest } from '../utils/api';
+import { useAuth } from '../context/AuthContext';
+
+// ІМПОРТ RECHARTS
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend
+} from 'recharts';
+
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import ukLocale from '@fullcalendar/core/locales/uk';
+
+const dataAttendance = [
+  { day: 'Пн', visits: 45 }, { day: 'Вт', visits: 52 }, { day: 'Ср', visits: 48 },
+  { day: 'Чт', visits: 70 }, { day: 'Пт', visits: 61 }, { day: 'Сб', visits: 38 }, { day: 'Нд', visits: 20 }
+];
+
+const dataClasses = [
+  { name: 'Кросфіт', value: 400 }, { name: 'Йога', value: 300 },
+  { name: 'Бокс', value: 200 }, { name: 'TRX', value: 278 }
+];
+
+const COLORS = ['#e60000', '#ff4d4d', '#990000', '#4d0000'];
 
 export default function AdminPanel() {
+    const { user, logout } = useAuth();
+    const [activeTab, setActiveTab] = useState('dashboard');
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [trainers, setTrainers] = useState([]);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    
-    // Стан для форми
-    const [formData, setFormData] = useState({
-        id: null,
-        username: '', password: '', // Для створення
-        name: '', specialization: '', phone: ''
-    });
+    const [clients, setClients] = useState([]);
 
-    // 1. Завантаження даних при старті
     useEffect(() => {
-        loadTrainers();
-    }, []);
+        document.body.classList.add('admin-body');
+        loadData();
+        return () => document.body.classList.remove('admin-body');
+    }, [activeTab]);
 
-    const loadTrainers = async () => {
+    const loadData = async () => {
         try {
-            const data = await authRequest('/api/admin/instructors/');
-            setTrainers(data);
-        } catch (e) {
-            console.error(e);
-        }
-    };
-
-    // 2. Відкриття модалки
-    const openModal = (trainer = null) => {
-        if (trainer) {
-            // Редагування
-            setFormData({
-                id: trainer.id,
-                username: '', password: '', // Приховуємо/очищаємо
-                name: trainer.full_name || trainer.name,
-                specialization: trainer.specialties || trainer.specialization,
-                phone: trainer.contact || trainer.phone
-            });
-        } else {
-            // Створення
-            setFormData({
-                id: null,
-                username: '', password: '',
-                name: '', specialization: '', phone: ''
-            });
-        }
-        setIsModalOpen(true);
-    };
-
-    // 3. Збереження (Твоя логіка split name тут!)
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        
-        // Розбиваємо ім'я
-        const nameParts = formData.name.trim().split(' ');
-        const firstName = nameParts[0];
-        const lastName = nameParts.slice(1).join(' ') || '';
-
-        const payload = {
-            first_name: firstName,
-            last_name: lastName,
-            specialties: formData.specialization,
-            contact: formData.phone
-        };
-
-        try {
-            if (formData.id) {
-                // UPDATE
-                await authRequest(`/api/admin/instructors/${formData.id}/`, 'PUT', payload);
-            } else {
-                // CREATE
-                payload.username = formData.username;
-                payload.password = formData.password;
-                await authRequest('/api/admin/instructors/', 'POST', payload);
-            }
-            setIsModalOpen(false);
-            loadTrainers(); // Перезавантажити таблицю
-        } catch (err) {
-            alert('Помилка: ' + err.message);
-        }
-    };
-
-    // 4. Видалення
-    const handleDelete = async (id) => {
-        if (!confirm('Видалити?')) return;
-        try {
-            await authRequest(`/api/admin/instructors/${id}/`, 'DELETE');
-            loadTrainers();
-        } catch (e) {
-            alert('Помилка видалення');
-        }
+            const [t, c] = await Promise.all([
+                authRequest('/api/admin/instructors/'),
+                authRequest('/api/admin/members/')
+            ]);
+            setTrainers(t || []);
+            setClients(c || []);
+        } catch (e) { console.error(e); }
     };
 
     return (
-        <div className="dashboard-container">
-            {/* Меню зліва спрощене */}
-            <aside className="dashboard-sidebar" style={{width: '250px', float:'left', height:'100vh', background:'#111', color:'#fff', padding:'20px'}}>
-                <h2>FITGYM</h2>
-                <p>Тренери (Active)</p>
-                <button onClick={() => { localStorage.removeItem('fp_token'); window.location.reload(); }}>Вихід</button>
+        <div className={`admin-wrapper ${sidebarOpen ? 'sidebar-open' : ''}`}>
+            <aside className={`admin-sidebar ${sidebarOpen ? 'active' : ''}`}>
+                <div className="admin-logo">FIT<span>GYM</span> ADMIN</div>
+                <nav className="admin-menu">
+                    <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>
+                        <i className="fas fa-chart-line"></i> Огляд
+                    </button>
+                    <button className={activeTab === 'schedule' ? 'active' : ''} onClick={() => setActiveTab('schedule')}>
+                        <i className="fas fa-calendar-alt"></i> Розклад
+                    </button>
+                    <button className={activeTab === 'clients' ? 'active' : ''} onClick={() => setActiveTab('clients')}>
+                        <i className="fas fa-users"></i> Клієнти
+                    </button>
+                    <button className={activeTab === 'trainers' ? 'active' : ''} onClick={() => setActiveTab('trainers')}>
+                        <i className="fas fa-dumbbell"></i> Тренери
+                    </button>
+                </nav>
+                <div className="admin-footer"><button onClick={logout}>Вихід</button></div>
             </aside>
 
-            <main className="dashboard-main" style={{marginLeft: '250px', padding: '20px'}}>
-                <h1>Управління персоналом</h1>
-                <button className="btn btn-primary" onClick={() => openModal(null)}>+ Додати Тренера</button>
-                
-                <table className="data-table" style={{width: '100%', marginTop: '20px', borderCollapse: 'collapse'}}>
-                    <thead>
-                        <tr style={{background: '#333', color: '#fff'}}>
-                            <th>Ім'я</th>
-                            <th>Спеціалізація</th>
-                            <th>Телефон</th>
-                            <th>Дії</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {trainers.map(t => (
-                            <tr key={t.id} style={{borderBottom: '1px solid #333'}}>
-                                <td>{t.full_name || t.name}</td>
-                                <td>{t.specialties || t.specialization}</td>
-                                <td>{t.contact || t.phone}</td>
-                                <td>
-                                    <button onClick={() => openModal(t)}>Edit</button>
-                                    <button onClick={() => handleDelete(t.id)} style={{color:'red', marginLeft:'10px'}}>Delete</button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </main>
+            <main className="admin-content">
+                <header className="admin-topbar">
+                    <button className="mobile-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+                    <h2>ПАНЕЛЬ КЕРУВАННЯ</h2>
+                    <div className="admin-user"><span>{user?.username}</span><div className="avatar">A</div></div>
+                </header>
 
-            {/* МОДАЛКА */}
-            {isModalOpen && (
-                <div className="modal-overlay" style={{
-                    position:'fixed', top:0, left:0, width:'100%', height:'100%', 
-                    background:'rgba(0,0,0,0.8)', display:'flex', justifyContent:'center', alignItems:'center'
-                }}>
-                    <div className="modal-content" style={{background:'#1e1e1e', padding:'20px', borderRadius:'10px', width:'400px'}}>
-                        <h2>{formData.id ? 'Редагувати' : 'Новий'} Тренер</h2>
-                        <form onSubmit={handleSubmit}>
-                            {/* Показуємо логін/пароль тільки якщо це Створення (немає ID) */}
-                            {!formData.id && (
-                                <>
-                                    <input 
-                                        placeholder="Логін" required 
-                                        value={formData.username}
-                                        onChange={e => setFormData({...formData, username: e.target.value})}
-                                        style={{display:'block', width:'100%', margin:'10px 0'}}
-                                    />
-                                    <input 
-                                        type="password" placeholder="Пароль" required 
-                                        value={formData.password}
-                                        onChange={e => setFormData({...formData, password: e.target.value})}
-                                        style={{display:'block', width:'100%', margin:'10px 0'}}
-                                    />
-                                    <hr />
-                                </>
-                            )}
-                            
-                            <input 
-                                placeholder="Повне ім'я" required 
-                                value={formData.name}
-                                onChange={e => setFormData({...formData, name: e.target.value})}
-                                style={{display:'block', width:'100%', margin:'10px 0'}}
-                            />
-                            <input 
-                                placeholder="Спеціалізація" required 
-                                value={formData.specialization}
-                                onChange={e => setFormData({...formData, specialization: e.target.value})}
-                                style={{display:'block', width:'100%', margin:'10px 0'}}
-                            />
-                            <input 
-                                placeholder="Телефон" 
-                                value={formData.phone}
-                                onChange={e => setFormData({...formData, phone: e.target.value})}
-                                style={{display:'block', width:'100%', margin:'10px 0'}}
-                            />
-
-                            <div style={{marginTop: '20px', display:'flex', justifyContent:'space-between'}}>
-                                <button type="button" onClick={() => setIsModalOpen(false)}>Скасувати</button>
-                                <button type="submit" className="btn btn-primary">Зберегти</button>
+                <div className="admin-page-content">
+                    {activeTab === 'dashboard' && (
+                        <div className="dashboard-layout">
+                            <div className="admin-grid">
+                                <div className="admin-card highlight-red">
+                                    <h3>Клієнти</h3>
+                                    <div className="val">{clients.length || 124}</div>
+                                    <span className="trend positive">↑ 12%</span>
+                                </div>
+                                <div className="admin-card">
+                                    <h3>Виручка</h3>
+                                    <div className="val">₴ 142,500</div>
+                                </div>
+                                <div className="admin-card">
+                                    <h3>Тренери</h3>
+                                    <div className="val">{trainers.length || 12}</div>
+                                </div>
                             </div>
-                        </form>
-                    </div>
+
+                            <div className="charts-row">
+                                <div className="chart-container">
+                                    <h3>Відвідуваність (тиждень)</h3>
+                                    <div className="recharts-wrapper">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <AreaChart data={dataAttendance}>
+                                                <defs>
+                                                    <linearGradient id="colorV" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#e60000" stopOpacity={0.3}/>
+                                                        <stop offset="95%" stopColor="#e60000" stopOpacity={0}/>
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
+                                                <XAxis dataKey="day" stroke="#888" />
+                                                <YAxis stroke="#888" />
+                                                <Tooltip contentStyle={{backgroundColor: '#111', border: '1px solid #333', color: '#fff'}} />
+                                                <Area type="monotone" dataKey="visits" stroke="#e60000" strokeWidth={3} fillOpacity={1} fill="url(#colorV)" />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+
+                                <div className="chart-container">
+                                    <h3>Популярні напрямки</h3>
+                                    <div className="recharts-wrapper">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie data={dataClasses} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                                                    {dataClasses.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip />
+                                                <Legend />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'schedule' && (
+                        <div className="admin-calendar-box">
+                            <FullCalendar plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]} initialView="timeGridWeek" locale={ukLocale} height="80vh" />
+                        </div>
+                    )}
+
+                    {(activeTab === 'trainers' || activeTab === 'clients') && (
+                        <div className="table-wrap">
+                            <table className="admin-table">
+                                <thead><tr><th>Ім'я</th><th>Контакт</th><th>Дії</th></tr></thead>
+                                <tbody>
+                                    {(activeTab === 'trainers' ? trainers : clients).map(item => (
+                                        <tr key={item.id}><td>{item.full_name || item.name}</td><td>{item.contact || item.email}</td><td><button>✏️</button></td></tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
-            )}
+            </main>
         </div>
     );
 }
