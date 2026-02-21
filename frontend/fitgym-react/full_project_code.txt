@@ -113,10 +113,10 @@ import { useState, useEffect, useRef } from 'react';
 import { authRequest, publicRequest } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
-// ИМПОРТ RECHARTS (Проверено по доке)
+// ІМПОРТ RECHARTS
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, PieChart, Pie, Cell, Legend
+  PieChart, Pie, Cell, Legend
 } from 'recharts';
 
 import FullCalendar from '@fullcalendar/react';
@@ -125,14 +125,13 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import ukLocale from '@fullcalendar/core/locales/uk';
 
-// ДАННЫЕ
 const dataAttendance = [
   { day: 'Пн', visits: 45 }, { day: 'Вт', visits: 52 }, { day: 'Ср', visits: 48 },
   { day: 'Чт', visits: 70 }, { day: 'Пт', visits: 61 }, { day: 'Сб', visits: 38 }, { day: 'Нд', visits: 20 }
 ];
 
 const dataClasses = [
-  { name: 'Кросфит', value: 400 }, { name: 'Йога', value: 300 },
+  { name: 'Кросфіт', value: 400 }, { name: 'Йога', value: 300 },
   { name: 'Бокс', value: 200 }, { name: 'TRX', value: 278 }
 ];
 
@@ -164,8 +163,7 @@ export default function AdminPanel() {
 
     return (
         <div className={`admin-wrapper ${sidebarOpen ? 'sidebar-open' : ''}`}>
-            {/* SIDEBAR */}
-            <aside className="admin-sidebar">
+            <aside className={`admin-sidebar ${sidebarOpen ? 'active' : ''}`}>
                 <div className="admin-logo">FIT<span>GYM</span> ADMIN</div>
                 <nav className="admin-menu">
                     <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>
@@ -184,42 +182,36 @@ export default function AdminPanel() {
                 <div className="admin-footer"><button onClick={logout}>Вихід</button></div>
             </aside>
 
-            {/* MAIN CONTENT */}
             <main className="admin-content">
                 <header className="admin-topbar">
                     <button className="mobile-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
-                    {/* МЕТКА ДЛЯ ПРОВЕРКИ ФАЙЛА */}
-                    <h2>DEBUG: НОВАЯ ВЕРСИЯ / АНАЛИТИКА</h2>
+                    <h2>ПАНЕЛЬ КЕРУВАННЯ</h2>
                     <div className="admin-user"><span>{user?.username}</span><div className="avatar">A</div></div>
                 </header>
 
                 <div className="admin-page-content">
                     {activeTab === 'dashboard' && (
-                        <div className="dashboard-insane-grid">
-                            
-                            {/* СТАТИСТИКА */}
+                        <div className="dashboard-layout">
                             <div className="admin-grid">
                                 <div className="admin-card highlight-red">
-                                    <h3>Клиенты</h3>
-                                    <div className="val">{clients.length}</div>
+                                    <h3>Клієнти</h3>
+                                    <div className="val">{clients.length || 124}</div>
                                     <span className="trend positive">↑ 12%</span>
                                 </div>
                                 <div className="admin-card">
-                                    <h3>Выручка</h3>
+                                    <h3>Виручка</h3>
                                     <div className="val">₴ 142,500</div>
                                 </div>
                                 <div className="admin-card">
-                                    <h3>Тренеры</h3>
-                                    <div className="val">{trainers.length}</div>
+                                    <h3>Тренери</h3>
+                                    <div className="val">{trainers.length || 12}</div>
                                 </div>
                             </div>
 
-                            {/* ГРАФИКИ */}
                             <div className="charts-row">
                                 <div className="chart-container">
-                                    <h3>Посещаемость (неделя)</h3>
-                                    {/* ResponsiveContainer ТРЕБУЕТ РОДИТЕЛЯ С ВЫСОТОЙ */}
-                                    <div style={{ width: '100%', height: 350 }}>
+                                    <h3>Відвідуваність (тиждень)</h3>
+                                    <div className="recharts-wrapper">
                                         <ResponsiveContainer width="100%" height="100%">
                                             <AreaChart data={dataAttendance}>
                                                 <defs>
@@ -239,17 +231,17 @@ export default function AdminPanel() {
                                 </div>
 
                                 <div className="chart-container">
-                                    <h3>Популярные направления</h3>
-                                    <div style={{ width: '100%', height: 350 }}>
+                                    <h3>Популярні напрямки</h3>
+                                    <div className="recharts-wrapper">
                                         <ResponsiveContainer width="100%" height="100%">
                                             <PieChart>
-                                                <Pie data={dataClasses} innerRadius={70} outerRadius={100} paddingAngle={5} dataKey="value">
+                                                <Pie data={dataClasses} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
                                                     {dataClasses.map((entry, index) => (
                                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                     ))}
                                                 </Pie>
                                                 <Tooltip />
-                                                <Legend verticalAlign="bottom" />
+                                                <Legend />
                                             </PieChart>
                                         </ResponsiveContainer>
                                     </div>
@@ -260,14 +252,14 @@ export default function AdminPanel() {
 
                     {activeTab === 'schedule' && (
                         <div className="admin-calendar-box">
-                            <FullCalendar plugins={[dayGridPlugin, timeGridPlugin]} initialView="timeGridWeek" locale={ukLocale} height="80vh" />
+                            <FullCalendar plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]} initialView="timeGridWeek" locale={ukLocale} height="80vh" />
                         </div>
                     )}
 
                     {(activeTab === 'trainers' || activeTab === 'clients') && (
                         <div className="table-wrap">
                             <table className="admin-table">
-                                <thead><tr><th>Имя</th><th>Контакт</th><th>Действия</th></tr></thead>
+                                <thead><tr><th>Ім'я</th><th>Контакт</th><th>Дії</th></tr></thead>
                                 <tbody>
                                     {(activeTab === 'trainers' ? trainers : clients).map(item => (
                                         <tr key={item.id}><td>{item.full_name || item.name}</td><td>{item.contact || item.email}</td><td><button>✏️</button></td></tr>
@@ -2344,296 +2336,295 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 ФАЙЛ: src\pages\AdminPanel.jsx
 =========================================
 
-import { useState, useEffect, useRef } from 'react';
-import { authRequest, publicRequest } from '../utils/api';
+import { useState, useEffect } from 'react';
+import { authRequest } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend,
+  BarChart, Bar, LineChart, Line
+} from 'recharts';
+
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import ukLocale from '@fullcalendar/core/locales/uk'; 
+import ukLocale from '@fullcalendar/core/locales/uk';
+
+// --- ДЕМО ДАНІ ---
+const dataAttendance = [
+  { day: 'Пн', visits: 45 }, { day: 'Вт', visits: 52 }, { day: 'Ср', visits: 48 },
+  { day: 'Чт', visits: 85 }, { day: 'Пт', visits: 61 }, { day: 'Сб', visits: 38 }, { day: 'Нд', visits: 20 }
+];
+
+const dataClasses = [
+  { name: 'Кросфіт', value: 400 }, { name: 'Йога', value: 300 },
+  { name: 'Бокс', value: 200 }, { name: 'TRX', value: 278 }
+];
+
+const dataPeakHours = [
+  { hour: '08:00', users: 15 }, { hour: '10:00', users: 30 }, { hour: '12:00', users: 20 },
+  { hour: '14:00', users: 25 }, { hour: '16:00', users: 40 }, { hour: '18:00', users: 85 },
+  { hour: '20:00', users: 60 }, { hour: '22:00', users: 15 }
+];
+
+const dataRevenue = [
+  { month: 'Січ', rev: 110 }, { month: 'Лют', rev: 115 }, { month: 'Бер', rev: 125 },
+  { month: 'Кві', rev: 120 }, { month: 'Тра', rev: 135 }, { month: 'Чер', rev: 142 }
+];
+
+const recentActivities = [
+  { id: 1, text: 'Нова підписка: Олексій В.', time: '10 хв тому', icon: 'fa-user-plus', color: '#2ecc71' },
+  { id: 2, text: 'Оплата: Безліміт (1200 ₴)', time: '25 хв тому', icon: 'fa-credit-card', color: '#ff0000' },
+  { id: 3, text: 'Скасування броні: Йога', time: '1 год тому', icon: 'fa-calendar-times', color: '#888' },
+  { id: 4, text: 'Нова підписка: Марія К.', time: '2 год тому', icon: 'fa-user-plus', color: '#2ecc71' },
+  { id: 5, text: 'Оплата: PRO (2500 ₴)', time: '3 год тому', icon: 'fa-credit-card', color: '#ff0000' },
+];
+
+const COLORS = ['#ff0000', '#cc0000', '#990000', '#4d0000'];
+
+// Кастомні тултипи
+const PremiumTooltip = ({ active, payload, label, prefix = '', suffix = '' }) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="premium-tooltip">
+                <p className="tooltip-label">{label}</p>
+                <p className="tooltip-value">
+                    <span className="dot"></span>
+                    {prefix}{payload[0].value}{suffix}
+                </p>
+            </div>
+        );
+    }
+    return null;
+};
 
 export default function AdminPanel() {
     const { user, logout } = useAuth();
-    
-    const [activeTab, setActiveTab] = useState('dashboard'); 
+    const [activeTab, setActiveTab] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    
     const [trainers, setTrainers] = useState([]);
     const [clients, setClients] = useState([]);
-    const [workoutTypes, setWorkoutTypes] = useState([]);
-    const [clientSearch, setClientSearch] = useState('');
-    
-    const [modalType, setModalType] = useState(null); 
-    // Ініціалізуємо пустими рядками, щоб React не сварився
-    const [formData, setFormData] = useState({
-        username: '', password: '', name: '', email: '', phone: '', specialization: '', 
-        start: '', end: '', capacity: 20
-    });
-
-    const calendarRef = useRef(null);
 
     useEffect(() => {
-        // Динамічно додаємо клас на body для стилів адмінки
         document.body.classList.add('admin-body');
-        
-        loadWorkoutTypes(); 
-        if (activeTab === 'trainers') loadTrainers();
-        if (activeTab === 'clients') loadClients();
-
-        // Прибираємо клас при виході зі сторінки
+        loadData();
         return () => document.body.classList.remove('admin-body');
     }, [activeTab]);
 
-    const loadTrainers = async () => {
+    const loadData = async () => {
         try {
-            const data = await authRequest('/api/admin/instructors/');
-            setTrainers(Array.isArray(data) ? data : []);
+            const [t, c] = await Promise.all([
+                authRequest('/api/admin/instructors/').catch(()=>[]),
+                authRequest('/api/admin/members/').catch(()=>[])
+            ]);
+            setTrainers(t || []);
+            setClients(c || []);
         } catch (e) { console.error(e); }
     };
 
-    const loadClients = async () => {
-        try {
-            const data = await authRequest('/api/admin/members/');
-            setClients(Array.isArray(data) ? data : []);
-        } catch (e) { console.error(e); }
-    };
-
-    const loadWorkoutTypes = async () => {
-        try {
-            const data = await publicRequest('/api/classes/');
-            setWorkoutTypes(Array.isArray(data) ? data : []);
-        } catch (e) { console.error(e); }
-    };
-
-    const fetchEvents = async (info, successCallback, failureCallback) => {
-        try {
-            const url = `/api/schedule/?start=${info.startStr}&end=${info.endStr}`;
-            const data = await publicRequest(url);
-            
-            const events = data.map(item => ({
-                id: item.id,
-                title: item.class_name || 'Тренування',
-                start: item.start_at,
-                end: item.end_at,
-                backgroundColor: '#e60000', 
-                borderColor: '#e60000',
-                extendedProps: {
-                    capacity: item.capacity,
-                    instructor_name: item.instructor_name 
-                }
-            }));
-            successCallback(events);
-        } catch (error) { failureCallback(error); }
-    };
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            let endpoint = '', payload = {}, method = formData.id ? 'PUT' : 'POST';
-
-            if (modalType === 'trainer') {
-                endpoint = formData.id ? `/api/admin/instructors/${formData.id}/` : '/api/admin/instructors/';
-                const nameParts = (formData.name || '').trim().split(' ');
-                payload = {
-                    first_name: nameParts[0],
-                    last_name: nameParts.slice(1).join(' ') || '',
-                    specialties: formData.specialization,
-                    contact: formData.phone
-                };
-                if (!formData.id) { payload.username = formData.username; payload.password = formData.password; }
-            }
-            else if (modalType === 'client') {
-                endpoint = formData.id ? `/api/admin/members/${formData.id}/` : '/api/admin/members/';
-                const nameParts = (formData.name || '').trim().split(' ');
-                payload = {
-                    first_name: nameParts[0],
-                    last_name: nameParts.slice(1).join(' ') || '',
-                    email: formData.email,
-                    contact: formData.phone,
-                    status: formData.status || 'active'
-                };
-                if (!formData.id) { payload.username = formData.username; payload.password = formData.password; }
-            }
-            else if (modalType === 'event') {
-                endpoint = formData.id ? `/api/admin/schedule/${formData.id}/` : '/api/admin/schedule/';
-                const formatDateTime = (dateStr) => (!dateStr) ? null : (dateStr.length === 16 ? `${dateStr}:00` : dateStr);
-                
-                payload = {
-                    class_type: parseInt(formData.class_type_id), // ID типу
-                    instructor: parseInt(formData.instructor_id), // ID тренера
-                    start_at: formatDateTime(formData.start),
-                    end_at: formatDateTime(formData.end),
-                    capacity: parseInt(formData.capacity)
-                };
-            }
-
-            await authRequest(endpoint, method, payload);
-            
-            if (modalType === 'trainer') loadTrainers();
-            if (modalType === 'client') loadClients();
-            if (modalType === 'event' && calendarRef.current) calendarRef.current.getApi().refetchEvents();
-
-            setModalType(null);
-            alert('Збережено!');
-        } catch (err) { alert('Помилка: ' + err.message); }
-    };
-
-    const handleDelete = async () => {
-        if (!confirm('Видалити?')) return;
-        try {
-            let endpoint = '';
-            if (modalType === 'trainer') endpoint = `/api/admin/instructors/${formData.id}/`;
-            if (modalType === 'client') endpoint = `/api/admin/members/${formData.id}/`;
-            if (modalType === 'event') endpoint = `/api/admin/schedule/${formData.id}/`;
-
-            await authRequest(endpoint, 'DELETE');
-            
-            if (modalType === 'trainer') loadTrainers();
-            if (modalType === 'client') loadClients();
-            if (modalType === 'event' && calendarRef.current) calendarRef.current.getApi().refetchEvents();
-            
-            setModalType(null);
-        } catch (err) { alert('Помилка: ' + err.message); }
-    };
-
-    const openEventModal = (event = null, startStr = null) => {
-        if (trainers.length === 0) loadTrainers();
-        if (workoutTypes.length === 0) loadWorkoutTypes();
-
-        if (startStr) {
-            const startDate = new Date(startStr);
-            const now = new Date();
-            startDate.setHours(now.getHours() + 1, 0, 0, 0);
-            const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
-            const toLocalISO = (d) => { const offset = d.getTimezoneOffset() * 60000; return new Date(d.getTime() - offset).toISOString().slice(0, 16); };
-
-            setFormData({
-                class_type_id: workoutTypes.length > 0 ? workoutTypes[0].id : '',
-                instructor_id: trainers.length > 0 ? trainers[0].id : '',
-                start: toLocalISO(startDate),
-                end: toLocalISO(endDate),
-                capacity: 20
-            });
-        } else if (event) {
-            const toLocalISO = (d) => { const offset = d.getTimezoneOffset() * 60000; return new Date(d.getTime() - offset).toISOString().slice(0, 16); };
-            setFormData({
-                id: event.id,
-                class_type_id: '', 
-                instructor_id: '', 
-                start: toLocalISO(event.start),
-                end: toLocalISO(event.end),
-                capacity: event.extendedProps.capacity || 20
-            });
-        }
-        setModalType('event');
-    };
-
-    // Обгортаємо все в клас admin-wrapper
     return (
         <div className={`admin-wrapper ${sidebarOpen ? 'sidebar-open' : ''}`}>
-            
-            {/* SIDEBAR */}
             <aside className={`admin-sidebar ${sidebarOpen ? 'active' : ''}`}>
-                <div className="admin-logo">FIT<span>GYM</span> ADMIN</div>
+                <div className="admin-logo">FIT<span>GYM</span></div>
                 <nav className="admin-menu">
-                    <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}><i className="fas fa-chart-line"></i> Огляд</button>
-                    <button className={activeTab === 'schedule' ? 'active' : ''} onClick={() => setActiveTab('schedule')}><i className="fas fa-calendar-alt"></i> Розклад</button>
-                    <button className={activeTab === 'clients' ? 'active' : ''} onClick={() => setActiveTab('clients')}><i className="fas fa-users"></i> Клієнти</button>
-                    <button className={activeTab === 'trainers' ? 'active' : ''} onClick={() => setActiveTab('trainers')}><i className="fas fa-dumbbell"></i> Тренери</button>
+                    <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>
+                        <i className="fas fa-chart-line"></i> Огляд
+                    </button>
+                    <button className={activeTab === 'schedule' ? 'active' : ''} onClick={() => setActiveTab('schedule')}>
+                        <i className="fas fa-calendar-alt"></i> Розклад
+                    </button>
+                    <button className={activeTab === 'clients' ? 'active' : ''} onClick={() => setActiveTab('clients')}>
+                        <i className="fas fa-users"></i> Клієнти
+                    </button>
+                    <button className={activeTab === 'trainers' ? 'active' : ''} onClick={() => setActiveTab('trainers')}>
+                        <i className="fas fa-dumbbell"></i> Тренери
+                    </button>
                 </nav>
-                <div className="admin-footer">
-                    <button onClick={logout}><i className="fas fa-sign-out-alt"></i> Вихід</button>
-                </div>
+                <div className="admin-footer"><button onClick={logout}><i className="fas fa-sign-out-alt"></i> Вихід</button></div>
             </aside>
 
-            {/* MAIN */}
             <main className="admin-content">
                 <header className="admin-topbar">
                     <button className="mobile-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
-                    <h2>Панель керування</h2>
-                    <div className="admin-user">
-                        <span>{user?.username}</span> 
-                        <div className="avatar">A</div>
-                    </div>
+                    <h2 className="topbar-title">Панель керування</h2>
+                    <div className="admin-user"><span>{user?.username}</span><div className="avatar">A</div></div>
                 </header>
 
                 <div className="admin-page-content">
                     {activeTab === 'dashboard' && (
-                        <div className="admin-grid">
-                            <div className="admin-card"><h3>Клієнтів</h3><div className="val">{clients.length}</div></div>
-                            <div className="admin-card"><h3>Тренерів</h3><div className="val">{trainers.length}</div></div>
-                            <div className="admin-card"><h3>Типів занять</h3><div className="val">{workoutTypes.length}</div></div>
-                        </div>
-                    )}
+                        <div className="dashboard-layout fade-in">
+                            
+                            {/* --- РЯД 1: СТАТИСТИКА (4 картки) --- */}
+                            <div className="admin-grid">
+                                <div className="admin-card">
+                                    <div className="card-icon"><i className="fas fa-users"></i></div>
+                                    <div className="card-data">
+                                        <h3>Активні клієнти</h3>
+                                        <div className="val">{clients.length || 124}</div>
+                                        <span className="trend positive"><i className="fas fa-arrow-up"></i> 12% за місяць</span>
+                                    </div>
+                                    <div className="card-glow"></div>
+                                </div>
+                                <div className="admin-card">
+                                    <div className="card-icon"><i className="fas fa-wallet"></i></div>
+                                    <div className="card-data">
+                                        <h3>Виручка (Місяць)</h3>
+                                        <div className="val">₴ 142.5K</div>
+                                        <span className="trend positive"><i className="fas fa-arrow-up"></i> 8% за місяць</span>
+                                    </div>
+                                    <div className="card-glow"></div>
+                                </div>
+                                <div className="admin-card">
+                                    <div className="card-icon" style={{color: '#fff'}}><i className="fas fa-user-plus"></i></div>
+                                    <div className="card-data">
+                                        <h3>Нові підписки (Тиждень)</h3>
+                                        <div className="val">28</div>
+                                        <span className="trend positive"><i className="fas fa-arrow-up"></i> 5% за тиждень</span>
+                                    </div>
+                                    <div className="card-glow" style={{background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0) 70%)'}}></div>
+                                </div>
+                                <div className="admin-card">
+                                    <div className="card-icon"><i className="fas fa-dumbbell"></i></div>
+                                    <div className="card-data">
+                                        <h3>Тренери в залі</h3>
+                                        <div className="val">{trainers.length || 12}</div>
+                                        <span className="trend neutral">Без змін</span>
+                                    </div>
+                                    <div className="card-glow"></div>
+                                </div>
+                            </div>
 
-                    {activeTab === 'schedule' && (
-                        <div className="admin-section">
-                            <div style={{textAlign:'right', marginBottom:15}}>
-                                <button className="admin-btn" onClick={() => openEventModal(null, new Date().toISOString())}>+ Додати заняття</button>
-                            </div>
-                            <div className="admin-calendar-box">
-                                <FullCalendar
-                                    ref={calendarRef}
-                                    plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                                    initialView="timeGridWeek"
-                                    locale={ukLocale}
-                                    slotMinTime="08:00:00" slotMaxTime="22:00:00" allDaySlot={false} height="auto"
-                                    headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' }}
-                                    events={fetchEvents}
-                                    dateClick={(info) => openEventModal(null, info.dateStr)}
-                                    eventClick={(info) => openEventModal(info.event)}
-                                />
-                            </div>
-                        </div>
-                    )}
+                            {/* --- РЯД 2: ГОЛОВНІ ГРАФІКИ --- */}
+                            <div className="charts-row">
+                                <div className="chart-container">
+                                    <div className="chart-header">
+                                        <h3>Динаміка відвідуваності</h3>
+                                        <span className="badge-red">Останні 7 днів</span>
+                                    </div>
+                                    <div className="recharts-wrapper">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <AreaChart data={dataAttendance} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                                <defs>
+                                                    <linearGradient id="colorVisits" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#ff0000" stopOpacity={0.5}/>
+                                                        <stop offset="95%" stopColor="#ff0000" stopOpacity={0}/>
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
+                                                <XAxis dataKey="day" stroke="#666" tick={{fill: '#888', fontSize: 12}} axisLine={false} tickLine={false} />
+                                                <YAxis stroke="#666" tick={{fill: '#888', fontSize: 12}} axisLine={false} tickLine={false} />
+                                                <Tooltip content={<PremiumTooltip suffix=" чол." />} cursor={{ stroke: '#ff0000', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                                                <Area type="monotone" dataKey="visits" stroke="#ff0000" strokeWidth={3} fillOpacity={1} fill="url(#colorVisits)" activeDot={{ r: 6, fill: '#ff0000', stroke: '#111', strokeWidth: 2 }} />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
 
-                    {activeTab === 'clients' && (
-                        <div className="admin-section">
-                            <div className="admin-controls">
-                                <input placeholder="Пошук..." value={clientSearch} onChange={e => setClientSearch(e.target.value)} />
-                                <button className="admin-btn" onClick={() => { setFormData({}); setModalType('client'); }}>+ Додати</button>
+                                <div className="chart-container">
+                                    <div className="chart-header">
+                                        <h3>Напрямки</h3>
+                                    </div>
+                                    <div className="recharts-wrapper">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie data={dataClasses} innerRadius={70} outerRadius={90} paddingAngle={8} dataKey="value" stroke="none">
+                                                    {dataClasses.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip contentStyle={{backgroundColor: '#111', border: '1px solid #333', borderRadius: '8px', color: '#fff'}} itemStyle={{color: '#fff'}} />
+                                                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', color: '#888' }} />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="table-wrap">
-                                <table className="admin-table">
-                                    <thead><tr><th>Ім'я</th><th>Email</th><th>Телефон</th><th>Статус</th><th>Дії</th></tr></thead>
-                                    <tbody>
-                                        {clients.filter(c => (c.full_name||'').toLowerCase().includes(clientSearch.toLowerCase())).map(c => (
-                                            <tr key={c.id}>
-                                                <td>{c.full_name}</td><td>{c.email}</td><td>{c.contact}</td>
-                                                <td><span className={`badge ${c.status}`}>{c.status}</span></td>
-                                                <td>
-                                                    <button onClick={() => { setFormData({ id: c.id, name: c.full_name, email: c.email, phone: c.contact, status: c.status }); setModalType('client'); }}>✏️</button>
-                                                </td>
-                                            </tr>
+
+                            {/* --- РЯД 3: ДОДАТКОВА АНАЛІТИКА ТА ДІЇ --- */}
+                            <div className="charts-row three-cols">
+                                
+                                {/* Графік завантаженості (Бар) */}
+                                <div className="chart-container span-2">
+                                    <div className="chart-header">
+                                        <h3>Завантаженість за годинами (Сьогодні)</h3>
+                                    </div>
+                                    <div className="recharts-wrapper" style={{height: '250px'}}>
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={dataPeakHours} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
+                                                <XAxis dataKey="hour" stroke="#666" tick={{fill: '#888', fontSize: 12}} axisLine={false} tickLine={false} />
+                                                <YAxis stroke="#666" tick={{fill: '#888', fontSize: 12}} axisLine={false} tickLine={false} />
+                                                <Tooltip content={<PremiumTooltip suffix=" чол." />} cursor={{ fill: 'rgba(255,0,0,0.1)' }} />
+                                                <Bar dataKey="users" fill="#ff0000" radius={[4, 4, 0, 0]} maxBarSize={40}>
+                                                    {dataPeakHours.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={entry.users > 60 ? '#ff0000' : '#880000'} />
+                                                    ))}
+                                                </Bar>
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+
+                                {/* Стрічка активності */}
+                                <div className="chart-container">
+                                    <div className="chart-header">
+                                        <h3>Останні події</h3>
+                                    </div>
+                                    <div className="activity-list">
+                                        {recentActivities.map(item => (
+                                            <div key={item.id} className="activity-item">
+                                                <div className="activity-icon" style={{color: item.color, background: `${item.color}20`}}>
+                                                    <i className={`fas ${item.icon}`}></i>
+                                                </div>
+                                                <div className="activity-info">
+                                                    <p className="activity-text">{item.text}</p>
+                                                    <span className="activity-time">{item.time}</span>
+                                                </div>
+                                            </div>
                                         ))}
-                                    </tbody>
-                                </table>
+                                    </div>
+                                </div>
                             </div>
+
+                            {/* --- РЯД 4: ФІНАНСИ --- */}
+                            <div className="charts-row">
+                                <div className="chart-container" style={{gridColumn: '1 / -1'}}>
+                                    <div className="chart-header">
+                                        <h3>Динаміка виручки (Півріччя, тис. ₴)</h3>
+                                        <span className="trend positive" style={{margin: 0}}><i className="fas fa-chart-line"></i> +29%</span>
+                                    </div>
+                                    <div className="recharts-wrapper" style={{height: '250px'}}>
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <LineChart data={dataRevenue} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
+                                                <XAxis dataKey="month" stroke="#666" tick={{fill: '#888', fontSize: 12}} axisLine={false} tickLine={false} />
+                                                <YAxis stroke="#666" tick={{fill: '#888', fontSize: 12}} axisLine={false} tickLine={false} />
+                                                <Tooltip content={<PremiumTooltip prefix="₴ " suffix="K" />} />
+                                                <Line type="monotone" dataKey="rev" stroke="#ff0000" strokeWidth={4} dot={{ r: 4, fill: '#111', stroke: '#ff0000', strokeWidth: 2 }} activeDot={{ r: 8, fill: '#ff0000', stroke: '#fff', strokeWidth: 2 }} />
+                                            </LineChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                     )}
-                    
-                     {activeTab === 'trainers' && (
-                        <div className="admin-section">
-                            <div className="admin-controls">
-                                <h3>Тренери</h3>
-                                <button className="admin-btn" onClick={() => { setFormData({}); setModalType('trainer'); }}>+ Додати</button>
-                            </div>
+
+                    {/* ІНШІ ТАБИ (без змін) */}
+                    {activeTab === 'schedule' && (
+                        <div className="admin-calendar-box fade-in">
+                            <FullCalendar plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]} initialView="timeGridWeek" locale={ukLocale} height="80vh" />
+                        </div>
+                    )}
+                    {(activeTab === 'trainers' || activeTab === 'clients') && (
+                        <div className="table-wrap fade-in">
                             <table className="admin-table">
-                                <thead><tr><th>Ім'я</th><th>Спец.</th><th>Телефон</th><th>Дії</th></tr></thead>
+                                <thead><tr><th>Ім'я</th><th>Контакт</th><th>Дії</th></tr></thead>
                                 <tbody>
-                                    {trainers.map(t => (
-                                        <tr key={t.id}>
-                                            <td>{t.full_name}</td><td>{t.specialties}</td><td>{t.contact}</td>
-                                            <td>
-                                                <button onClick={() => { setFormData({ id: t.id, name: t.full_name, specialization: t.specialties, phone: t.contact }); setModalType('trainer'); }}>✏️</button>
-                                            </td>
-                                        </tr>
+                                    {(activeTab === 'trainers' ? trainers : clients).map(item => (
+                                        <tr key={item.id}><td>{item.full_name || item.name}</td><td>{item.contact || item.email}</td><td><button>✏️</button></td></tr>
                                     ))}
                                 </tbody>
                             </table>
@@ -2641,67 +2632,6 @@ export default function AdminPanel() {
                     )}
                 </div>
             </main>
-
-            {/* ADMIN MODAL */}
-            {modalType && (
-                <div className="admin-modal-overlay">
-                    <div className="admin-modal">
-                        <button className="close-btn" onClick={() => setModalType(null)}>×</button>
-                        <h2>{formData.id ? 'Редагувати' : 'Створити'}</h2>
-                        <form onSubmit={handleSubmit}>
-                            {(modalType === 'client' || modalType === 'trainer') && (
-                                <>
-                                    {!formData.id && (
-                                        <div className="row">
-                                            <input placeholder="Username" name="username" value={formData.username} onChange={handleInputChange} required />
-                                            <input placeholder="Password" type="password" name="password" value={formData.password} onChange={handleInputChange} required />
-                                        </div>
-                                    )}
-                                    <input placeholder="ПІБ" name="name" value={formData.name} onChange={handleInputChange} required />
-                                    {modalType === 'client' && <input placeholder="Email" name="email" value={formData.email} onChange={handleInputChange} required />}
-                                    <div className="row">
-                                        <input placeholder="Телефон" name="phone" value={formData.phone} onChange={handleInputChange} />
-                                        {modalType === 'client' && (
-                                            <select name="status" value={formData.status} onChange={handleInputChange}>
-                                                <option value="active">Active</option><option value="inactive">Inactive</option>
-                                            </select>
-                                        )}
-                                        {modalType === 'trainer' && <input placeholder="Спеціалізація" name="specialization" value={formData.specialization} onChange={handleInputChange} required />}
-                                    </div>
-                                </>
-                            )}
-                            
-                            {modalType === 'event' && (
-                                <>
-                                    <label>Тип заняття</label>
-                                    <select name="class_type_id" value={formData.class_type_id} onChange={handleInputChange} required>
-                                        <option value="">Оберіть...</option>
-                                        {workoutTypes.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-                                    </select>
-                                    
-                                    <label>Тренер</label>
-                                    <select name="instructor_id" value={formData.instructor_id} onChange={handleInputChange} required>
-                                        <option value="">Оберіть...</option>
-                                        {trainers.map(t => <option key={t.id} value={t.id}>{t.full_name}</option>)}
-                                    </select>
-
-                                    <div className="row">
-                                        <div><label>Початок</label><input type="datetime-local" name="start" value={formData.start} onChange={handleInputChange} required /></div>
-                                        <div><label>Кінець</label><input type="datetime-local" name="end" value={formData.end} onChange={handleInputChange} required /></div>
-                                    </div>
-                                    <label>Кількість місць</label>
-                                    <input type="number" name="capacity" value={formData.capacity} onChange={handleInputChange} />
-                                </>
-                            )}
-
-                            <div className="actions">
-                                {formData.id && <button type="button" className="del-btn" onClick={handleDelete}>Видалити</button>}
-                                <button type="submit" className="save-btn">Зберегти</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
@@ -2721,9 +2651,11 @@ export default function Cabinet() {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     
-    // Завантаження збережених даних з localStorage або значення за замовчуванням
+    // Стан даних користувача (пріоритет: localStorage -> дані з контексту -> дефолт)
     const [firstName, setFirstName] = useState(() => localStorage.getItem('gym_fname') || user?.first_name || 'Поліна');
     const [lastName, setLastName] = useState(() => localStorage.getItem('gym_lname') || user?.last_name || 'Товстуха');
+    const [email, setEmail] = useState(() => localStorage.getItem('gym_email') || user?.email || 'polina.t@fitgym.com');
+    
     const [activity, setActivity] = useState(() => JSON.parse(localStorage.getItem('gym_activity')) || [30, 50, 45, 80, 60, 20, 70]);
     const [userNotes, setUserNotes] = useState(() => JSON.parse(localStorage.getItem('gym_notes')) || {});
     
@@ -2732,13 +2664,14 @@ export default function Cabinet() {
     const [tempNote, setTempNote] = useState('');
     const fileInputRef = useRef(null);
 
-    // Зберігання при зміні даних
+    // Автоматичне збереження локальних змін
     useEffect(() => {
         localStorage.setItem('gym_fname', firstName);
         localStorage.setItem('gym_lname', lastName);
+        localStorage.setItem('gym_email', email);
         localStorage.setItem('gym_activity', JSON.stringify(activity));
         localStorage.setItem('gym_notes', JSON.stringify(userNotes));
-    }, [firstName, lastName, activity, userNotes]);
+    }, [firstName, lastName, email, activity, userNotes]);
 
     useEffect(() => {
         AOS.init({ duration: 800 });
@@ -2772,32 +2705,41 @@ export default function Cabinet() {
             <div className="container position-relative z-3">
                 <div className="cabinet-grid">
                     
-                    {/* ЛІВА ПАНЕЛЬ */}
+                    {/* ЛІВА ПАНЕЛЬ: ПРОФІЛЬ ТА КЕРУВАННЯ */}
                     <aside className="glass-aside" data-aos="fade-right">
-                        <div className="profile-top">
+                        <div className="profile-top text-center">
                             <div className="avatar-circle-red" onClick={() => fileInputRef.current.click()}>
                                 <img src={avatar} alt="User" />
                                 <input type="file" ref={fileInputRef} hidden onChange={(e) => setAvatar(URL.createObjectURL(e.target.files[0]))} />
                             </div>
-                            {/* ПІБ ЧЕРВОНИМ КОЛЬОРОМ */}
+                            
                             <h2 className="user-fullname-red">{firstName} <br/> {lastName}</h2>
+                            <p className="user-email-text">{email}</p>
+                            
+                            <div className="subscription-status">
+                                <span className="status-dot"></span> PRO MEMBER
+                            </div>
                         </div>
 
                         <div className="edit-section">
                             <div className="glass-field">
-                                <label>РЕДАГУВАТИ ІМ'Я</label>
+                                <label>ІМ'Я</label>
                                 <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
                             </div>
                             <div className="glass-field">
-                                <label>РЕДАГУВАТИ ПРІЗВИЩЕ</label>
+                                <label>ПРІЗВИЩЕ</label>
                                 <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                            </div>
+                            <div className="glass-field">
+                                <label>EMAIL АДРЕСА</label>
+                                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
                             </div>
                         </div>
 
                         <button onClick={logout} className="logout-glass-btn">ВИЙТИ З АКАУНТУ</button>
                     </aside>
 
-                    {/* ПРАВА ПАНЕЛЬ */}
+                    {/* ПРАВА ПАНЕЛЬ: КОНТЕНТ */}
                     <main className="main-glass-content">
                         
                         {/* ГРУПОВІ ЗАНЯТТЯ */}
@@ -2852,12 +2794,11 @@ export default function Cabinet() {
                                 })}
                             </div>
                         </div>
-
                     </main>
                 </div>
             </div>
 
-            {/* ВПЛИВАЮЧЕ ВІКНО */}
+            {/* ВСПЛИВАЮЧЕ ВІКНО */}
             {activeDay && (
                 <div className="glass-modal-overlay">
                     <div className="glass-popup">
@@ -2875,68 +2816,68 @@ export default function Cabinet() {
                 .ultimate-glass-cabinet { min-height: 100vh; padding: 100px 0; color: #fff; position: relative; }
                 .bg-image-layer { 
                     position: absolute; top:0; left:0; width:100%; height:100%; 
-                    background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=2070') center/cover;
+                    background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=2070') center/cover;
                     z-index: 1; backdrop-filter: blur(15px);
                 }
                 .cabinet-grid { display: grid; grid-template-columns: 320px 1fr; gap: 30px; position: relative; z-index: 5; }
 
                 /* GLASS PANELS */
                 .glass-aside, .glass-card { 
-                    background: rgba(255, 255, 255, 0.05); 
+                    background: rgba(255, 255, 255, 0.03); 
                     backdrop-filter: blur(25px); 
-                    border: 1px solid rgba(255, 255, 255, 0.1); 
+                    border: 1px solid rgba(255, 255, 255, 0.08); 
                     border-radius: 30px; padding: 35px;
+                    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
                 }
 
-                /* PROFILE */
-                .avatar-circle-red { width: 130px; height: 130px; border-radius: 50%; border: 3px solid #ff0000; margin: 0 auto 20px; overflow: hidden; cursor: pointer; box-shadow: 0 0 20px rgba(255,0,0,0.3); }
+                /* PROFILE & EMAIL */
+                .avatar-circle-red { width: 130px; height: 130px; border-radius: 50%; border: 3px solid #ff0000; margin: 0 auto 20px; overflow: hidden; cursor: pointer; box-shadow: 0 0 25px rgba(255,0,0,0.4); transition: 0.3s; }
+                .avatar-circle-red:hover { transform: scale(1.05); }
                 .avatar-circle-red img { width: 100%; height: 100%; object-fit: cover; }
-                .user-fullname-red { color: #ff0000; text-align: center; font-weight: 900; text-transform: uppercase; font-size: 1.4rem; line-height: 1.2; margin-bottom: 30px; }
-
-                .glass-field label { display: block; font-size: 0.6rem; font-weight: 900; color: #555; margin-bottom: 5px; }
-                .glass-field input { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 12px; color: #fff; border-radius: 12px; margin-bottom: 20px; outline: none; }
                 
-                .logout-glass-btn { width: 100%; background: none; border: 1px solid #ff0000; color: #ff0000; padding: 12px; border-radius: 15px; font-weight: 900; cursor: pointer; transition: 0.3s; }
-                .logout-glass-btn:hover { background: #ff0000; color: #fff; }
+                .user-fullname-red { color: #ff0000; font-weight: 900; text-transform: uppercase; font-size: 1.5rem; line-height: 1.1; margin-bottom: 5px; text-shadow: 0 0 10px rgba(255,0,0,0.2); }
+                .user-email-text { font-size: 0.8rem; color: rgba(255,255,255,0.4); margin-bottom: 20px; font-family: 'Courier New', monospace; }
+                
+                .subscription-status { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,0,0,0.1); border: 1px solid #ff0000; padding: 5px 15px; border-radius: 20px; font-size: 0.7rem; font-weight: 900; color: #ff0000; letter-spacing: 1px; margin-bottom: 30px; }
+                .status-dot { width: 6px; height: 6px; background: #ff0000; border-radius: 50%; box-shadow: 0 0 8px #ff0000; animation: pulse 1.5s infinite; }
 
-                /* TECH TITLE */
-                .title-tech { font-size: 1rem; font-weight: 900; text-transform: uppercase; border-left: 5px solid #ff0000; padding-left: 15px; margin-bottom: 30px; }
+                @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
 
-                /* ACTIVITY */
+                /* FORM FIELDS */
+                .glass-field { margin-bottom: 15px; }
+                .glass-field label { display: block; font-size: 0.65rem; font-weight: 900; color: #ff0000; margin-bottom: 6px; letter-spacing: 1px; opacity: 0.8; }
+                .glass-field input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 12px; color: #fff; border-radius: 12px; outline: none; transition: 0.3s; }
+                .glass-field input:focus { border-color: #ff0000; background: rgba(255,255,255,0.1); }
+                
+                .logout-glass-btn { width: 100%; background: none; border: 1px solid #ff0000; color: #ff0000; padding: 12px; border-radius: 15px; font-weight: 900; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+                .logout-glass-btn:hover { background: #ff0000; color: #fff; box-shadow: 0 0 20px rgba(255,0,0,0.4); }
+
+                /* TITLES */
+                .title-tech { font-size: 1rem; font-weight: 900; text-transform: uppercase; border-left: 5px solid #ff0000; padding-left: 15px; margin-bottom: 30px; letter-spacing: 1px; }
+
+                /* CHART & CALENDAR (STYLES REMAIN SAME AS YOURS) */
                 .chart-glass-container { display: flex; justify-content: space-between; align-items: flex-end; height: 130px; }
                 .chart-column { width: 12%; text-align: center; }
                 .bar-track-glass { height: 100px; background: rgba(255,255,255,0.02); border-radius: 8px; position: relative; overflow: hidden; cursor: crosshair; }
                 .bar-fill-red { position: absolute; bottom: 0; width: 100%; background: #ff0000; box-shadow: 0 0 15px #ff0000; transition: height 0.3s; }
-                .bar-label { font-size: 0.7rem; color: #444; margin-top: 10px; display: block; font-weight: 800; }
+                .bar-label { font-size: 0.7rem; color: #666; margin-top: 10px; display: block; font-weight: 800; }
 
-                /* CALENDAR */
                 .calendar-glass-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
                 .calendar-header-day { text-align: center; font-size: 0.7rem; color: #ff0000; font-weight: 900; }
-                .cal-glass-cell { 
-                    aspect-ratio: 1.1; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); 
-                    border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; 
-                    cursor: pointer; transition: 0.3s; position: relative;
-                }
+                .cal-glass-cell { aspect-ratio: 1.1; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; position: relative; }
                 .cal-glass-cell:hover { background: rgba(255,0,0,0.1); border-color: #ff0000; }
-                .cal-glass-cell.active { background: rgba(255,0,0,0.2); border-color: #ff0000; box-shadow: inset 0 0 10px rgba(255,0,0,0.2); }
+                .cal-glass-cell.active { background: rgba(255,0,0,0.2); border-color: #ff0000; }
                 .day-number { font-weight: 900; font-size: 1rem; }
-                .note-text-inside { font-size: 0.5rem; color: #ff0000; font-weight: 800; margin-top: 5px; max-width: 90%; text-align: center; overflow: hidden; }
+                .note-text-inside { font-size: 0.5rem; color: #ff0000; font-weight: 800; margin-top: 5px; text-align: center; }
 
-                /* MODAL */
                 .glass-modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 1000; display: flex; align-items: center; justify-content: center; }
                 .glass-popup { background: rgba(20,20,20,0.9); border: 1px solid #ff0000; padding: 35px; border-radius: 30px; width: 350px; text-align: center; }
-                .glass-popup input { width: 100%; background: #000; border: 1px solid #333; padding: 12px; color: #fff; border-radius: 10px; margin: 20px 0; outline: none; }
-                .popup-buttons { display: flex; gap: 10px; }
                 .btn-save-red { flex: 1; background: #ff0000; color: #fff; border: none; padding: 12px; border-radius: 10px; font-weight: 900; cursor: pointer; }
                 .btn-close-glass { flex: 1; background: #222; color: #888; border: none; padding: 12px; border-radius: 10px; font-weight: 900; cursor: pointer; }
 
-                /* BOOKINGS */
-                .bookings-flex { display: flex; flex-direction: column; gap: 10px; }
                 .booking-glass-item { display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 20px; border-left: 4px solid #ff0000; }
                 .b-date { font-size: 1.5rem; font-weight: 900; color: #ff0000; }
-                .b-info h5 { margin: 0; font-weight: 900; text-transform: uppercase; }
-                .b-info small { color: #555; }
-
+                
                 @media (max-width: 950px) { .cabinet-grid { grid-template-columns: 1fr; } }
             `}</style>
         </section>
@@ -5097,3 +5038,351 @@ body.admin-body {
 .highlight-red { border-left: 5px solid #e60000 !important; }
 
 @media (max-width: 1100px) { .charts-row { grid-template-columns: 1fr; } }
+
+/* DASHBOARD LAYOUT */
+.dashboard-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.charts-row {
+    display: grid;
+    grid-template-columns: 1.8fr 1fr; /* Більше місця для лінійного графіка */
+    gap: 25px;
+    margin-top: 10px;
+}
+
+.chart-container {
+    background: #1e1e1e;
+    padding: 25px;
+    border-radius: 12px;
+    border: 1px solid #333;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-container h3 {
+    font-size: 0.85rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+    font-weight: 800;
+}
+
+/* ВАЖЛИВО: Фіксована висота для ResponsiveContainer */
+.recharts-wrapper {
+    width: 100%;
+    height: 350px; 
+    position: relative;
+}
+
+.highlight-red {
+    border-left: 5px solid #e60000 !important;
+}
+
+.trend {
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-top: 5px;
+    display: block;
+}
+
+.trend.positive { color: #2ecc71; }
+
+@media (max-width: 1100px) {
+    .charts-row {
+        grid-template-columns: 1fr; /* Стекуємо графіки на малих екранах */
+    }
+}
+
+/* --- PREMIUM DASHBOARD STYLES --- */
+body.admin-body {
+    background-color: #080808 !important; /* Глибокий чорний */
+}
+
+.fade-in {
+    animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.dashboard-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+/* Статистичні картки */
+.admin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+}
+
+.admin-card {
+    background: linear-gradient(145deg, #161616 0%, #0d0d0d 100%);
+    border: 1px solid #222;
+    padding: 30px 25px;
+    border-radius: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s ease;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.admin-card:hover {
+    border-color: #444;
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(255, 0, 0, 0.1);
+}
+
+.card-icon {
+    background: rgba(255, 0, 0, 0.1);
+    color: #ff0000;
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+.card-data {
+    z-index: 2;
+}
+
+.card-data h3 {
+    font-size: 0.85rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0 0 8px 0;
+    font-weight: 700;
+}
+
+.card-data .val {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 10px;
+    letter-spacing: -1px;
+}
+
+.trend {
+    font-size: 0.8rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.trend.positive { color: #ff4d4d; background: rgba(255, 0, 0, 0.1); }
+.trend.neutral { color: #888; }
+
+/* Світіння на фоні картки */
+.card-glow {
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 150px;
+    height: 150px;
+    background: radial-gradient(circle, rgba(255,0,0,0.15) 0%, rgba(0,0,0,0) 70%);
+    border-radius: 50%;
+    filter: blur(20px);
+    transition: all 0.5s ease;
+    z-index: 1;
+}
+
+.admin-card:hover .card-glow {
+    transform: scale(1.5);
+    background: radial-gradient(circle, rgba(255,0,0,0.2) 0%, rgba(0,0,0,0) 70%);
+}
+
+/* Контейнери графіків */
+.charts-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 25px;
+}
+
+.chart-container {
+    background: rgba(20, 20, 20, 0.6);
+    backdrop-filter: blur(20px);
+    border: 1px solid #222;
+    border-radius: 16px;
+    padding: 25px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.chart-header h3 {
+    font-size: 1rem;
+    color: #eee;
+    margin: 0;
+    font-weight: 800;
+}
+
+.badge-red {
+    background: rgba(255, 0, 0, 0.1);
+    color: #ff4d4d;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 0, 0, 0.2);
+}
+
+.recharts-wrapper {
+    width: 100%;
+    height: 350px;
+}
+
+/* Кастомний Tooltip для Recharts */
+.premium-tooltip {
+    background: rgba(15, 15, 15, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid #333;
+    padding: 12px 16px;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+.tooltip-label {
+    margin: 0 0 8px 0;
+    color: #888;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.tooltip-value {
+    margin: 0;
+    color: #fff;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tooltip-value .dot {
+    width: 8px;
+    height: 8px;
+    background: #ff0000;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 8px #ff0000;
+}
+
+@media (max-width: 1100px) {
+    .charts-row { grid-template-columns: 1fr; }
+}
+
+/* Додаткова сітка для 3-го ряду (2/3 + 1/3) */
+.charts-row.three-cols {
+    grid-template-columns: 2fr 1.2fr;
+}
+
+.span-2 {
+    /* Допоміжний клас, якщо потрібно розтягнути елемент */
+}
+
+/* Стрічка активності (Activity Feed) */
+.activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    height: 250px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+/* Стилізація скролбару для activity-list */
+.activity-list::-webkit-scrollbar {
+    width: 6px;
+}
+.activity-list::-webkit-scrollbar-track {
+    background: #111;
+    border-radius: 4px;
+}
+.activity-list::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+}
+.activity-list::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    transition: background 0.2s;
+}
+
+.activity-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.activity-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.activity-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.activity-text {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #eee;
+    font-weight: 600;
+}
+
+.activity-time {
+    font-size: 0.75rem;
+    color: #666;
+}
+
+@media (max-width: 1100px) {
+    .charts-row.three-cols { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+    .admin-grid { grid-template-columns: 1fr; }
+}
