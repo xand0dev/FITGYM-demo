@@ -1,631 +1,171 @@
-/* admin_styles.css - SCOPED & ISOLATED */
-
-/* Змінюємо фон тільки коли ми в адмінці */
-body.admin-body {
-    background-color: #121212 !important;
-    overflow-x: hidden;
-}
-
-.admin-wrapper {
-    display: flex;
-    min-height: 100vh;
-    font-family: 'Inter', sans-serif;
-    color: #eee;
-}
-
-/* SIDEBAR */
-.admin-sidebar {
-    width: 250px;
-    background: #050505;
-    border-right: 1px solid #222;
-    position: fixed;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    z-index: 1000;
-}
-.admin-logo {
-    height: 70px;
-    display: flex; align-items: center; padding-left: 20px;
-    font-size: 1.4rem; font-weight: 900; color: #fff;
-    border-bottom: 1px solid #222;
-}
-.admin-logo span { color: #e60000; }
-
-.admin-menu { flex: 1; padding: 20px 0; }
-.admin-menu button {
-    display: flex; align-items: center; gap: 10px;
-    width: 100%; padding: 15px 25px;
-    background: none; border: none;
-    color: #888; font-size: 1rem; font-weight: 600;
-    cursor: pointer; text-align: left;
-    border-left: 4px solid transparent;
-    transition: 0.2s;
-}
-.admin-menu button:hover { color: #fff; background: #111; }
-.admin-menu button.active { color: #fff; background: #1a1a1a; border-left-color: #e60000; }
-
-.admin-footer { padding: 20px; border-top: 1px solid #222; }
-.admin-footer button { background: none; border: none; color: #d32f2f; cursor: pointer; font-size: 1rem; }
-
-/* CONTENT */
-.admin-content {
-    margin-left: 250px;
-    flex: 1;
-    display: flex; flex-direction: column;
-}
-
-.admin-topbar {
-    height: 70px; background: #181818; border-bottom: 1px solid #222;
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 0 30px; position: sticky; top: 0; z-index: 50;
-}
-.admin-user { display: flex; align-items: center; gap: 10px; }
-.admin-user .avatar { width: 35px; height: 35px; background: #e60000; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; }
-
-.admin-page-content { padding: 30px; }
-
-/* GRIDS & CARDS */
-.admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
-.admin-card {
-    background: #1e1e1e; padding: 25px; border-radius: 10px; border: 1px solid #333;
-}
-.admin-card h3 { margin: 0 0 10px; font-size: 0.9rem; color: #888; text-transform: uppercase; }
-.admin-card .val { font-size: 2rem; font-weight: 700; color: #fff; }
-
-/* TABLES & CONTROLS */
-.admin-controls { display: flex; justify-content: space-between; margin-bottom: 20px; gap: 10px; }
-.admin-controls input { background: #222; border: 1px solid #444; color: #fff; padding: 8px 15px; border-radius: 5px; }
-
-.table-wrap { overflow-x: auto; }
-.admin-table { width: 100%; border-collapse: collapse; color: #ccc; }
-.admin-table th { text-align: left; padding: 15px; background: #222; color: #fff; }
-.admin-table td { padding: 15px; border-bottom: 1px solid #2a2a2a; }
-.admin-table tr:hover { background: #252525; }
-
-.badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 700; }
-.badge.active { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
-.badge.inactive { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
-
-/* BUTTONS */
-.admin-btn { background: #e60000; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: 600; }
-.admin-btn:hover { background: #c00000; }
-
-/* CALENDAR OVERRIDES (Specific to admin) */
-.admin-calendar-box { background: #1e1e1e; padding: 20px; border-radius: 10px; }
-.admin-calendar-box .fc-toolbar-title { color: #fff; }
-.admin-calendar-box .fc-button-primary { background: #e60000 !important; border: none !important; }
-
-/* MODAL */
-.admin-modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.8); z-index: 2000;
-    display: flex; justify-content: center; align-items: center;
-}
-.admin-modal {
-    background: #181818; padding: 30px; border-radius: 10px; width: 90%; max-width: 450px;
-    position: relative; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-}
-.admin-modal h2 { margin-top: 0; color: #e60000; text-align: center; }
-.close-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; color: #666; font-size: 1.5rem; cursor: pointer; }
-
-.admin-modal input, .admin-modal select {
-    width: 100%; padding: 10px; margin-bottom: 15px;
-    background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 5px;
-}
-.admin-modal label { display: block; margin-bottom: 5px; font-size: 0.9rem; color: #aaa; }
-.admin-modal .row { display: flex; gap: 10px; }
-.admin-modal .row > * { flex: 1; }
-
-.actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
-.save-btn { background: #e60000; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
-.del-btn { background: #d32f2f; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
-
-/* MOBILE */
-.mobile-toggle { display: none; background: none; border: none; color: #fff; font-size: 1.5rem; }
-@media (max-width: 900px) {
-    .admin-sidebar { transform: translateX(-100%); transition: 0.3s; }
-    .admin-content { margin-left: 0; }
-    .sidebar-open .admin-sidebar { transform: translateX(0); }
-    .mobile-toggle { display: block; }
-}
-
-.admin-table button {
-    background: #2a2a2a;       /* Темно-сірий фон */
-    border: 1px solid #444;    /* Тонка рамка */
-    color: #fff;               /* Колір тексту/іконки */
-    width: 36px;               /* Фіксований розмір */
-    height: 36px;
-    border-radius: 6px;        /* Скруглення */
-    cursor: pointer;
-    font-size: 1.1rem;         /* Розмір емодзі */
-    transition: all 0.2s ease;
-    
-    /* Центрування вмісту */
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.admin-table button:hover {
-    background: #e60000;       /* Червоний акцент при наведенні */
-    border-color: #e60000;
-    transform: translateY(-2px); /* Легкий підйом */
-    box-shadow: 0 4px 10px rgba(230, 0, 0, 0.4);
-}
-
-/* Додаткові стилі для Dashboard */
-.dashboard-crazy-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
-}
-
-.charts-container {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 25px;
-}
-
-.chart-box {
-    background: #1e1e1e;
-    padding: 25px;
-    border-radius: 12px;
-    border: 1px solid #333;
-}
-
-.chart-box h3 {
-    font-size: 1rem;
-    color: #888;
-    margin-bottom: 20px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.admin-card.highlight {
-    border-left: 4px solid #e60000;
-}
-
-.trend {
-    font-size: 0.8rem;
-    font-weight: 700;
-}
-
-.trend.positive { color: #2ecc71; }
-.trend.neutral { color: #888; }
-
-.recent-activity {
-    background: #1e1e1e;
-    padding: 25px;
-    border-radius: 12px;
-    border: 1px solid #333;
-}
-
-/* Анімація для карток */
-.admin-card {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.admin-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(230, 0, 0, 0.1);
-}
-
-@media (max-width: 1200px) {
-    .charts-container {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* --- CRAZY ANALYTICS STYLES --- */
-.dashboard-insane-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 25px;
-}
-
-.charts-row {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 25px;
-}
-
-.chart-container {
-    background: #1e1e1e; /* [cite: 2233] */
-    padding: 25px;
-    border-radius: 12px;
-    border: 1px solid #333; /* [cite: 2233] */
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-}
-
-.chart-container h3 {
-    font-size: 0.9rem;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 20px;
-    font-weight: 800;
-}
-
-.highlight-red {
-    border-left: 5px solid #e60000 !important;
-}
-
-.trend {
-    font-size: 0.8rem;
-    margin-top: 10px;
-    font-weight: 700;
-}
-
-.trend.positive { color: #2ecc71; }
-.trend.neutral { color: #888; }
-
-.full-width {
-    width: 100%;
-}
-
-@media (max-width: 1100px) {
-    .charts-row { grid-template-columns: 1fr; }
-}
-
-.dashboard-insane-grid { display: flex; flex-direction: column; gap: 30px; }
-.charts-row { display: grid; grid-template-columns: 1.8fr 1fr; gap: 25px; }
-.chart-container {
-    background: #181818;
-    border: 1px solid #2a2a2a;
-    border-radius: 12px;
-    padding: 25px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-}
-.chart-container h3 { font-size: 0.8rem; color: #888; text-transform: uppercase; margin-bottom: 20px; font-weight: 800; letter-spacing: 1px; }
-.highlight-red { border-left: 5px solid #e60000 !important; }
-
-@media (max-width: 1100px) { .charts-row { grid-template-columns: 1fr; } }
-
-/* DASHBOARD LAYOUT */
-.dashboard-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
-}
-
-.charts-row {
-    display: grid;
-    grid-template-columns: 1.8fr 1fr; /* Більше місця для лінійного графіка */
-    gap: 25px;
-    margin-top: 10px;
-}
-
-.chart-container {
-    background: #1e1e1e;
-    padding: 25px;
-    border-radius: 12px;
-    border: 1px solid #333;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    display: flex;
-    flex-direction: column;
-}
-
-.chart-container h3 {
-    font-size: 0.85rem;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 20px;
-    font-weight: 800;
-}
-
-/* ВАЖЛИВО: Фіксована висота для ResponsiveContainer */
-.recharts-wrapper {
-    width: 100%;
-    height: 350px; 
-    position: relative;
-}
-
-.highlight-red {
-    border-left: 5px solid #e60000 !important;
-}
-
-.trend {
-    font-size: 0.8rem;
-    font-weight: 700;
-    margin-top: 5px;
-    display: block;
-}
-
-.trend.positive { color: #2ecc71; }
-
-@media (max-width: 1100px) {
-    .charts-row {
-        grid-template-columns: 1fr; /* Стекуємо графіки на малих екранах */
-    }
-}
-
-/* --- PREMIUM DASHBOARD STYLES --- */
-body.admin-body {
-    background-color: #080808 !important; /* Глибокий чорний */
-}
-
-.fade-in {
-    animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(15px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.dashboard-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
-}
-
-/* Статистичні картки */
-.admin-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 25px;
-}
-
-.admin-card {
-    background: linear-gradient(145deg, #161616 0%, #0d0d0d 100%);
-    border: 1px solid #222;
-    padding: 30px 25px;
-    border-radius: 16px;
-    display: flex;
-    align-items: flex-start;
-    gap: 20px;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.4s ease;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
-
-.admin-card:hover {
-    border-color: #444;
-    transform: translateY(-5px);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(255, 0, 0, 0.1);
-}
-
-.card-icon {
-    background: rgba(255, 0, 0, 0.1);
-    color: #ff0000;
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.4rem;
-    flex-shrink: 0;
-}
-
-.card-data {
-    z-index: 2;
-}
-
-.card-data h3 {
-    font-size: 0.85rem;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin: 0 0 8px 0;
-    font-weight: 700;
-}
-
-.card-data .val {
-    font-size: 2.2rem;
-    font-weight: 900;
-    color: #fff;
-    line-height: 1;
-    margin-bottom: 10px;
-    letter-spacing: -1px;
-}
-
-.trend {
-    font-size: 0.8rem;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 8px;
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.03);
-}
-
-.trend.positive { color: #ff4d4d; background: rgba(255, 0, 0, 0.1); }
-.trend.neutral { color: #888; }
-
-/* Світіння на фоні картки */
-.card-glow {
-    position: absolute;
-    top: -50%;
-    right: -50%;
-    width: 150px;
-    height: 150px;
-    background: radial-gradient(circle, rgba(255,0,0,0.15) 0%, rgba(0,0,0,0) 70%);
-    border-radius: 50%;
-    filter: blur(20px);
-    transition: all 0.5s ease;
-    z-index: 1;
-}
-
-.admin-card:hover .card-glow {
-    transform: scale(1.5);
-    background: radial-gradient(circle, rgba(255,0,0,0.2) 0%, rgba(0,0,0,0) 70%);
-}
-
-/* Контейнери графіків */
-.charts-row {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 25px;
-}
-
-.chart-container {
-    background: rgba(20, 20, 20, 0.6);
-    backdrop-filter: blur(20px);
-    border: 1px solid #222;
-    border-radius: 16px;
-    padding: 25px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-    display: flex;
-    flex-direction: column;
-}
-
-.chart-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
-}
-
-.chart-header h3 {
-    font-size: 1rem;
-    color: #eee;
-    margin: 0;
-    font-weight: 800;
-}
-
-.badge-red {
-    background: rgba(255, 0, 0, 0.1);
-    color: #ff4d4d;
-    font-size: 0.75rem;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 6px;
-    border: 1px solid rgba(255, 0, 0, 0.2);
-}
-
-.recharts-wrapper {
-    width: 100%;
-    height: 350px;
-}
-
-/* Кастомний Tooltip для Recharts */
-.premium-tooltip {
-    background: rgba(15, 15, 15, 0.95);
-    backdrop-filter: blur(10px);
-    border: 1px solid #333;
-    padding: 12px 16px;
-    border-radius: 8px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-}
-
-.tooltip-label {
-    margin: 0 0 8px 0;
-    color: #888;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    font-weight: 700;
-}
-
-.tooltip-value {
-    margin: 0;
-    color: #fff;
-    font-size: 1.1rem;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.tooltip-value .dot {
-    width: 8px;
-    height: 8px;
-    background: #ff0000;
-    border-radius: 50%;
-    display: inline-block;
-    box-shadow: 0 0 8px #ff0000;
-}
-
-@media (max-width: 1100px) {
-    .charts-row { grid-template-columns: 1fr; }
-}
-
-/* Додаткова сітка для 3-го ряду (2/3 + 1/3) */
-.charts-row.three-cols {
-    grid-template-columns: 2fr 1.2fr;
-}
-
-.span-2 {
-    /* Допоміжний клас, якщо потрібно розтягнути елемент */
-}
-
-/* Стрічка активності (Activity Feed) */
-.activity-list {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    height: 250px;
-    overflow-y: auto;
-    padding-right: 5px;
-}
-
-/* Стилізація скролбару для activity-list */
-.activity-list::-webkit-scrollbar {
-    width: 6px;
-}
-.activity-list::-webkit-scrollbar-track {
-    background: #111;
-    border-radius: 4px;
-}
-.activity-list::-webkit-scrollbar-thumb {
-    background: #333;
-    border-radius: 4px;
-}
-.activity-list::-webkit-scrollbar-thumb:hover {
-    background: #555;
-}
-
-.activity-item {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 12px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-    transition: background 0.2s;
-}
-
-.activity-item:hover {
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.activity-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-    flex-shrink: 0;
-}
-
-.activity-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.activity-text {
-    margin: 0;
-    font-size: 0.85rem;
-    color: #eee;
-    font-weight: 600;
-}
-
-.activity-time {
-    font-size: 0.75rem;
-    color: #666;
-}
-
-@media (max-width: 1100px) {
-    .charts-row.three-cols { grid-template-columns: 1fr; }
-}
-
-@media (max-width: 768px) {
-    .admin-grid { grid-template-columns: 1fr; }
+import { useState, useEffect } from 'react';
+import { authRequest } from '../utils/api';
+import { useAuth } from '../context/AuthContext';
+
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend 
+} from 'recharts';
+
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import ukLocale from '@fullcalendar/core/locales/uk';
+
+const dataAttendance = [
+  { day: 'Пн', visits: 45 }, { day: 'Вт', visits: 52 }, { day: 'Ср', visits: 48 },
+  { day: 'Чт', visits: 70 }, { day: 'Пт', visits: 61 }, { day: 'Сб', visits: 38 }, { day: 'Нд', visits: 20 }
+];
+
+const dataClasses = [
+  { name: 'Кросфіт', value: 400 }, { name: 'Йога', value: 300 },
+  { name: 'Бокс', value: 200 }, { name: 'TRX', value: 278 }
+];
+
+const COLORS = ['#007AFF', '#34C759', '#FF9500', '#FF3B30'];
+
+export default function AdminPanel() {
+    const { user, logout } = useAuth();
+    const [activeTab, setActiveTab] = useState('dashboard');
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [trainers, setTrainers] = useState([]);
+    const [clients, setClients] = useState([]);
+
+    // Об'єкт стилів для "скла", який ми прокинемо всюди
+    const glassStyle = {
+        background: 'rgba(255, 255, 255, 0.08)',
+        backdropFilter: 'blur(30px)',
+        WebkitBackdropFilter: 'blur(30px)',
+        border: '1px solid rgba(255, 255, 255, 0.15)',
+        borderRadius: '30px',
+        padding: '25px',
+        color: '#fff',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+    };
+
+    useEffect(() => {
+        document.body.classList.add('admin-body');
+        loadData();
+        return () => document.body.classList.remove('admin-body');
+    }, [activeTab]);
+
+    const loadData = async () => {
+        try {
+            const [t, c] = await Promise.all([
+                authRequest('/api/admin/instructors/').catch(() => []),
+                authRequest('/api/admin/members/').catch(() => [])
+            ]);
+            setTrainers(t || []);
+            setClients(c || []);
+        } catch (e) { console.error(e); }
+    };
+
+    return (
+        <div className={`admin-wrapper ${sidebarOpen ? 'sidebar-open' : ''}`}>
+            {/* SIDEBAR */}
+            <aside className="admin-sidebar" style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(40px)', borderRight: '1px solid rgba(255,255,255,0.1)' }}>
+                <div className="admin-logo" style={{ color: '#fff', textAlign: 'center', padding: '30px', fontWeight: '900' }}>FIT<span style={{color: '#007AFF'}}>GYM</span></div>
+                <nav className="admin-menu">
+                    <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}> Огляд </button>
+                    <button className={activeTab === 'schedule' ? 'active' : ''} onClick={() => setActiveTab('schedule')}> Розклад </button>
+                    <button className={activeTab === 'clients' ? 'active' : ''} onClick={() => setActiveTab('clients')}> Клієнти </button>
+                    <button className={activeTab === 'trainers' ? 'active' : ''} onClick={() => setActiveTab('trainers')}> Тренери </button>
+                </nav>
+                <div className="admin-footer" style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                    <button onClick={logout} style={{ color: '#FF3B30', background: 'none', border: 'none', cursor: 'pointer' }}>Вихід</button>
+                </div>
+            </aside>
+
+            {/* CONTENT */}
+            <main className="admin-content" style={{ marginLeft: '250px', padding: '30px' }}>
+                <header className="admin-topbar" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px', color: '#fff' }}>
+                    <button className="mobile-toggle" onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '24px' }}>☰</button>
+                    <h2>{activeTab.toUpperCase()}</h2>
+                    <div className="admin-user" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span>{user?.username}</span>
+                        <div className="avatar" style={{ background: '#007AFF', width: '35px', height: '35px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>A</div>
+                    </div>
+                </header>
+
+                <div className="admin-page-content">
+                    {activeTab === 'dashboard' && (
+                        <div className="dashboard-layout fade-in">
+                            <div className="admin-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '30px' }}>
+                                <div className="admin-card" style={glassStyle}>
+                                    <h3 style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem' }}>Клієнти</h3>
+                                    <div className="val" style={{ fontSize: '2.5rem', fontWeight: '800' }}>{clients.length}</div>
+                                </div>
+                                <div className="admin-card" style={glassStyle}>
+                                    <h3 style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem' }}>Виручка</h3>
+                                    <div className="val" style={{ fontSize: '2.5rem', fontWeight: '800' }}>₴ 142K</div>
+                                </div>
+                                <div className="admin-card" style={glassStyle}>
+                                    <h3 style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem' }}>Тренери</h3>
+                                    <div className="val" style={{ fontSize: '2.5rem', fontWeight: '800' }}>{trainers.length}</div>
+                                </div>
+                            </div>
+
+                            <div className="charts-row" style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '20px' }}>
+                                <div style={glassStyle}>
+                                    <h3 style={{ marginBottom: '20px' }}>Відвідуваність</h3>
+                                    <div style={{ width: '100%', height: 300 }}>
+                                        <ResponsiveContainer>
+                                            <AreaChart data={dataAttendance}>
+                                                <XAxis dataKey="day" stroke="rgba(255,255,255,0.5)" />
+                                                <Tooltip contentStyle={{ backgroundColor: '#1c1c1e', border: 'none', borderRadius: '10px' }} />
+                                                <Area type="monotone" dataKey="visits" stroke="#007AFF" fill="rgba(0, 122, 255, 0.2)" />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                                <div style={glassStyle}>
+                                    <h3 style={{ marginBottom: '20px' }}>Напрямки</h3>
+                                    <div style={{ width: '100%', height: 300 }}>
+                                        <ResponsiveContainer>
+                                            <PieChart>
+                                                <Pie data={dataClasses} innerRadius={60} outerRadius={80} dataKey="value">
+                                                    {dataClasses.map((entry, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
+                                                </Pie>
+                                                <Legend />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'schedule' && (
+                        <div style={glassStyle}>
+                            <FullCalendar plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]} initialView="timeGridWeek" locale={ukLocale} height="70vh" />
+                        </div>
+                    )}
+
+                    {(activeTab === 'trainers' || activeTab === 'clients') && (
+                        <div style={glassStyle}>
+                            <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'left' }}>
+                                        <th style={{ padding: '15px' }}>Ім'я</th>
+                                        <th style={{ padding: '15px' }}>Контакт</th>
+                                        <th style={{ padding: '15px' }}>Дії</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {(activeTab === 'trainers' ? trainers : clients).map(item => (
+                                        <tr key={item.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <td style={{ padding: '15px' }}>{item.full_name || item.name}</td>
+                                            <td style={{ padding: '15px' }}>{item.contact || item.email}</td>
+                                            <td style={{ padding: '15px' }}><button style={{ background: '#007AFF', color: '#fff', border: 'none', padding: '8px 15px', borderRadius: '10px' }}>✏️</button></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            </main>
+        </div>
+    );
 }
