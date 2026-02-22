@@ -200,7 +200,7 @@ body.admin-body { background-color: #080808 !important; margin: 0; padding: 0; f
 .action-right { display: flex; gap: 15px; margin-left: auto; }
 
 .btn-cancel, .btn-save, .btn-delete {
-    padding: 12px 24px;
+    padding: 12px 48px;
     border-radius: 10px;
     font-weight: 700;
     cursor: pointer;
