@@ -106,28 +106,98 @@ function App() {
 export default App;
 
 =========================================
-ФАЙЛ: src\components\AdminPanel.jsx
+ФАЙЛ: src\components\admin\AdminModal.jsx
 =========================================
 
-import { useState, useEffect, useRef } from 'react';
-import { authRequest, publicRequest } from '../utils/api';
-import { useAuth } from '../context/AuthContext';
+import { useEffect } from 'react';
 
-// ІМПОРТ RECHARTS
+export default function AdminModal({ isOpen, onClose, title, children }) {
+    // Закриття по клавіші Esc
+    useEffect(() => {
+        const handleEsc = (e) => { if (e.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [onClose]);
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="admin-modal-overlay fade-in" onClick={onClose}>
+            <div className="admin-modal-content" onClick={e => e.stopPropagation()}>
+                <div className="admin-modal-header">
+                    <h3>{title}</h3>
+                    <button className="close-btn" onClick={onClose}><i className="fas fa-times"></i></button>
+                </div>
+                <div className="admin-modal-body">
+                    {children}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+=========================================
+ФАЙЛ: src\components\admin\AdminSidebar.jsx
+=========================================
+
+export default function AdminSidebar({ activeTab, setActiveTab, sidebarOpen, logout }) {
+    return (
+        <aside className={`admin-sidebar ${sidebarOpen ? 'active' : ''}`}>
+            <div className="admin-logo">FIT<span>GYM</span></div>
+            <nav className="admin-menu">
+                <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>
+                    <i className="fas fa-chart-line"></i> Огляд
+                </button>
+                <button className={activeTab === 'schedule' ? 'active' : ''} onClick={() => setActiveTab('schedule')}>
+                    <i className="fas fa-calendar-alt"></i> Розклад
+                </button>
+                <button className={activeTab === 'clients' ? 'active' : ''} onClick={() => setActiveTab('clients')}>
+                    <i className="fas fa-users"></i> Клієнти
+                </button>
+                <button className={activeTab === 'trainers' ? 'active' : ''} onClick={() => setActiveTab('trainers')}>
+                    <i className="fas fa-dumbbell"></i> Тренери
+                </button>
+            </nav>
+            <div className="admin-footer">
+                <button onClick={logout}><i className="fas fa-sign-out-alt"></i> Вихід</button>
+            </div>
+        </aside>
+    );
+}
+
+=========================================
+ФАЙЛ: src\components\admin\AdminTopbar.jsx
+=========================================
+
+export default function AdminTopbar({ user, sidebarOpen, setSidebarOpen }) {
+    return (
+        <header className="admin-topbar">
+            <button className="mobile-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+            <h2 className="topbar-title">Панель керування</h2>
+            <div className="admin-user">
+                <span>{user?.username || 'Адмін'}</span>
+                <div className="avatar">
+                    {user?.username ? user.username.charAt(0).toUpperCase() : 'A'}
+                </div>
+            </div>
+        </header>
+    );
+}
+
+=========================================
+ФАЙЛ: src\components\admin\DashboardTab.jsx
+=========================================
+
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend
+  PieChart, Pie, Cell, Legend,
+  BarChart, Bar, LineChart, Line
 } from 'recharts';
 
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import timeGridPlugin from '@fullcalendar/timegrid';
-import interactionPlugin from '@fullcalendar/interaction';
-import ukLocale from '@fullcalendar/core/locales/uk';
-
+// ДЕМО ДАНІ (Винесені з AdminPanel)
 const dataAttendance = [
   { day: 'Пн', visits: 45 }, { day: 'Вт', visits: 52 }, { day: 'Ср', visits: 48 },
-  { day: 'Чт', visits: 70 }, { day: 'Пт', visits: 61 }, { day: 'Сб', visits: 38 }, { day: 'Нд', visits: 20 }
+  { day: 'Чт', visits: 85 }, { day: 'Пт', visits: 61 }, { day: 'Сб', visits: 38 }, { day: 'Нд', visits: 20 }
 ];
 
 const dataClasses = [
@@ -135,141 +205,502 @@ const dataClasses = [
   { name: 'Бокс', value: 200 }, { name: 'TRX', value: 278 }
 ];
 
-const COLORS = ['#e60000', '#ff4d4d', '#990000', '#4d0000'];
+const dataPeakHours = [
+  { hour: '08:00', users: 15 }, { hour: '10:00', users: 30 }, { hour: '12:00', users: 20 },
+  { hour: '14:00', users: 25 }, { hour: '16:00', users: 40 }, { hour: '18:00', users: 85 },
+  { hour: '20:00', users: 60 }, { hour: '22:00', users: 15 }
+];
 
-export default function AdminPanel() {
-    const { user, logout } = useAuth();
-    const [activeTab, setActiveTab] = useState('dashboard');
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [trainers, setTrainers] = useState([]);
-    const [clients, setClients] = useState([]);
+const dataRevenue = [
+  { month: 'Січ', rev: 110 }, { month: 'Лют', rev: 115 }, { month: 'Бер', rev: 125 },
+  { month: 'Кві', rev: 120 }, { month: 'Тра', rev: 135 }, { month: 'Чер', rev: 142 }
+];
+
+const recentActivities = [
+  { id: 1, text: 'Нова підписка: Олексій В.', time: '10 хв тому', icon: 'fa-user-plus', color: '#2ecc71' },
+  { id: 2, text: 'Оплата: Безліміт (1200 ₴)', time: '25 хв тому', icon: 'fa-credit-card', color: '#ff0000' },
+  { id: 3, text: 'Скасування броні: Йога', time: '1 год тому', icon: 'fa-calendar-times', color: '#888' },
+  { id: 4, text: 'Нова підписка: Марія К.', time: '2 год тому', icon: 'fa-user-plus', color: '#2ecc71' },
+  { id: 5, text: 'Оплата: PRO (2500 ₴)', time: '3 год тому', icon: 'fa-credit-card', color: '#ff0000' },
+];
+
+const COLORS = ['#ff0000', '#cc0000', '#990000', '#4d0000'];
+
+const PremiumTooltip = ({ active, payload, label, prefix = '', suffix = '' }) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="premium-tooltip">
+                <p className="tooltip-label">{label}</p>
+                <p className="tooltip-value">
+                    <span className="dot"></span>
+                    {prefix}{payload[0].value}{suffix}
+                </p>
+            </div>
+        );
+    }
+    return null;
+};
+
+export default function DashboardTab({ clientsCount, trainersCount }) {
+    return (
+        <div className="dashboard-layout fade-in">
+            {/* РЯД 1: СТАТИСТИКА */}
+            <div className="admin-grid">
+                <div className="admin-card">
+                    <div className="card-icon"><i className="fas fa-users"></i></div>
+                    <div className="card-data">
+                        <h3>Активні клієнти</h3>
+                        <div className="val">{clientsCount || 124}</div>
+                        <span className="trend positive"><i className="fas fa-arrow-up"></i> 12% за місяць</span>
+                    </div>
+                    <div className="card-glow"></div>
+                </div>
+                <div className="admin-card">
+                    <div className="card-icon"><i className="fas fa-wallet"></i></div>
+                    <div className="card-data">
+                        <h3>Виручка (Місяць)</h3>
+                        <div className="val">₴ 142.5K</div>
+                        <span className="trend positive"><i className="fas fa-arrow-up"></i> 8% за місяць</span>
+                    </div>
+                    <div className="card-glow"></div>
+                </div>
+                <div className="admin-card">
+                    <div className="card-icon" style={{color: '#fff'}}><i className="fas fa-user-plus"></i></div>
+                    <div className="card-data">
+                        <h3>Нові підписки (Тиждень)</h3>
+                        <div className="val">28</div>
+                        <span className="trend positive"><i className="fas fa-arrow-up"></i> 5% за тиждень</span>
+                    </div>
+                    <div className="card-glow" style={{background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0) 70%)'}}></div>
+                </div>
+                <div className="admin-card">
+                    <div className="card-icon"><i className="fas fa-dumbbell"></i></div>
+                    <div className="card-data">
+                        <h3>Тренери в залі</h3>
+                        <div className="val">{trainersCount || 12}</div>
+                        <span className="trend neutral">Без змін</span>
+                    </div>
+                    <div className="card-glow"></div>
+                </div>
+            </div>
+
+            {/* РЯД 2: ГОЛОВНІ ГРАФІКИ */}
+            <div className="charts-row">
+                <div className="chart-container">
+                    <div className="chart-header">
+                        <h3>Динаміка відвідуваності</h3>
+                        <span className="badge-red">Останні 7 днів</span>
+                    </div>
+                    <div className="recharts-wrapper">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={dataAttendance} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorVisits" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#ff0000" stopOpacity={0.5}/>
+                                        <stop offset="95%" stopColor="#ff0000" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
+                                <XAxis dataKey="day" stroke="#666" tick={{fill: '#888', fontSize: 12}} axisLine={false} tickLine={false} />
+                                <YAxis stroke="#666" tick={{fill: '#888', fontSize: 12}} axisLine={false} tickLine={false} />
+                                <Tooltip content={<PremiumTooltip suffix=" чол." />} cursor={{ stroke: '#ff0000', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                                <Area type="monotone" dataKey="visits" stroke="#ff0000" strokeWidth={3} fillOpacity={1} fill="url(#colorVisits)" activeDot={{ r: 6, fill: '#ff0000', stroke: '#111', strokeWidth: 2 }} />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                <div className="chart-container">
+                    <div className="chart-header">
+                        <h3>Напрямки</h3>
+                    </div>
+                    <div className="recharts-wrapper">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie data={dataClasses} innerRadius={70} outerRadius={90} paddingAngle={8} dataKey="value" stroke="none">
+                                    {dataClasses.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip contentStyle={{backgroundColor: '#111', border: '1px solid #333', borderRadius: '8px', color: '#fff'}} itemStyle={{color: '#fff'}} />
+                                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', color: '#888' }} />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            </div>
+
+            {/* РЯД 3: ДОДАТКОВА АНАЛІТИКА ТА ДІЇ */}
+            <div className="charts-row three-cols">
+                <div className="chart-container span-2">
+                    <div className="chart-header">
+                        <h3>Завантаженість за годинами (Сьогодні)</h3>
+                    </div>
+                    <div className="recharts-wrapper" style={{height: '250px'}}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={dataPeakHours} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
+                                <XAxis dataKey="hour" stroke="#666" tick={{fill: '#888', fontSize: 12}} axisLine={false} tickLine={false} />
+                                <YAxis stroke="#666" tick={{fill: '#888', fontSize: 12}} axisLine={false} tickLine={false} />
+                                <Tooltip content={<PremiumTooltip suffix=" чол." />} cursor={{ fill: 'rgba(255,0,0,0.1)' }} />
+                                <Bar dataKey="users" fill="#ff0000" radius={[4, 4, 0, 0]} maxBarSize={40}>
+                                    {dataPeakHours.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.users > 60 ? '#ff0000' : '#880000'} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                <div className="chart-container">
+                    <div className="chart-header">
+                        <h3>Останні події</h3>
+                    </div>
+                    <div className="activity-list">
+                        {recentActivities.map(item => (
+                            <div key={item.id} className="activity-item">
+                                <div className="activity-icon" style={{color: item.color, background: `${item.color}20`}}>
+                                    <i className={`fas ${item.icon}`}></i>
+                                </div>
+                                <div className="activity-info">
+                                    <p className="activity-text">{item.text}</p>
+                                    <span className="activity-time">{item.time}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* РЯД 4: ФІНАНСИ */}
+            <div className="charts-row">
+                <div className="chart-container" style={{gridColumn: '1 / -1'}}>
+                    <div className="chart-header">
+                        <h3>Динаміка виручки (Півріччя, тис. ₴)</h3>
+                        <span className="trend positive" style={{margin: 0}}><i className="fas fa-chart-line"></i> +29%</span>
+                    </div>
+                    <div className="recharts-wrapper" style={{height: '250px'}}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={dataRevenue} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
+                                <XAxis dataKey="month" stroke="#666" tick={{fill: '#888', fontSize: 12}} axisLine={false} tickLine={false} />
+                                <YAxis stroke="#666" tick={{fill: '#888', fontSize: 12}} axisLine={false} tickLine={false} />
+                                <Tooltip content={<PremiumTooltip prefix="₴ " suffix="K" />} />
+                                <Line type="monotone" dataKey="rev" stroke="#ff0000" strokeWidth={4} dot={{ r: 4, fill: '#111', stroke: '#ff0000', strokeWidth: 2 }} activeDot={{ r: 8, fill: '#ff0000', stroke: '#fff', strokeWidth: 2 }} />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+=========================================
+ФАЙЛ: src\components\admin\DataTableTab.jsx
+=========================================
+
+import { authRequest } from '../../utils/api';
+
+export default function DataTableTab({ data, tabType, onRefresh }) {
+    
+    // Функція для видалення запису через API
+    const handleDelete = async (id) => {
+        if (!window.confirm('Ви впевнені, що хочете видалити цей запис?')) return;
+        
+        try {
+            // Формуємо правильний ендпоінт залежно від того, де ми знаходимось
+            const endpoint = tabType === 'trainers' 
+                ? `/api/admin/instructors/${id}/` 
+                : `/api/admin/members/${id}/`;
+            
+            await authRequest(endpoint, 'DELETE');
+            
+            // Якщо видалення успішне — смикаємо оновлення даних у батьківському компоненті
+            if (onRefresh) onRefresh(); 
+        } catch (e) {
+            console.error('Помилка видалення:', e);
+            alert('Не вдалося видалити: ' + e.message);
+        }
+    };
+
+    if (!data || data.length === 0) {
+        return <div className="table-wrap fade-in"><p style={{color: '#888', padding: '20px'}}>Немає даних.</p></div>;
+    }
+
+    return (
+        <div className="table-wrap fade-in">
+            <table className="admin-table">
+                <thead>
+                    <tr>
+                        <th>Ім'я</th>
+                        <th>Контакт</th>
+                        <th>Статус</th>
+                        <th>Дії</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {data.map(item => (
+                        <tr key={item.id}>
+                            <td><strong>{item.full_name || item.name || item.username}</strong></td>
+                            <td>{item.contact || item.email || '—'}</td>
+                            <td>
+                                <span className="badge active">
+                                    {tabType === 'trainers' ? 'Тренер' : 'Клієнт'}
+                                </span>
+                            </td>
+                            <td>
+                                <div style={{display: 'flex', gap: '8px'}}>
+                                    <button title="Редагувати"><i className="fas fa-pen"></i></button>
+                                    <button 
+                                        title="Видалити" 
+                                        onClick={() => handleDelete(item.id)} 
+                                        style={{color: '#ff4d4d', borderColor: 'rgba(255,0,0,0.3)'}}
+                                    >
+                                        <i className="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
+=========================================
+ФАЙЛ: src\components\admin\ScheduleTab.jsx
+=========================================
+
+import { useState, useEffect } from 'react';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import ukLocale from '@fullcalendar/core/locales/uk';
+import { authRequest, publicRequest } from '../../utils/api';
+import AdminModal from './AdminModal';
+
+export default function ScheduleTab() {
+    const [events, setEvents] = useState([]);
+    const [classes, setClasses] = useState([]);
+    const [instructors, setInstructors] = useState([]);
+    
+    // Стейт модалки
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalMode, setModalMode] = useState('create'); // 'create' або 'edit'
+    
+    // Стейт форми
+    const [formData, setFormData] = useState({
+        id: null,
+        class_type: '',
+        instructor: '',
+        start_at: '',
+        end_at: '',
+        capacity: 15
+    });
 
     useEffect(() => {
-        document.body.classList.add('admin-body');
-        loadData();
-        return () => document.body.classList.remove('admin-body');
-    }, [activeTab]);
+        fetchInitialData();
+    }, []);
 
-    const loadData = async () => {
+    const fetchInitialData = async () => {
         try {
-            const [t, c] = await Promise.all([
-                authRequest('/api/admin/instructors/'),
-                authRequest('/api/admin/members/')
+            // Отримуємо довідники для селектів та самі події
+            const [classesData, instructorsData, scheduleData] = await Promise.all([
+                publicRequest('/api/classes/').catch(() => []),
+                authRequest('/api/admin/instructors/').catch(() => []),
+                publicRequest('/api/schedule/').catch(() => [])
             ]);
-            setTrainers(t || []);
-            setClients(c || []);
-        } catch (e) { console.error(e); }
+            
+            setClasses(classesData || []);
+            setInstructors(instructorsData || []);
+            
+            // Форматуємо дані для FullCalendar
+            if (scheduleData) {
+                const formattedEvents = scheduleData.map(session => ({
+                    id: session.id,
+                    title: session.class_name || 'Заняття',
+                    start: session.start_at,
+                    end: session.end_at,
+                    extendedProps: {
+                        instructor: session.instructor, // ID тренера, якщо є
+                        class_type: session.class_type, // ID класу
+                        capacity: session.capacity
+                    }
+                }));
+                setEvents(formattedEvents);
+            }
+        } catch (error) {
+            console.error("Помилка завантаження розкладу:", error);
+        }
+    };
+
+    // Клік по пустому місцю (Створення)
+    const handleDateSelect = (selectInfo) => {
+        setModalMode('create');
+        setFormData({
+            id: null,
+            class_type: classes.length > 0 ? classes[0].id : '',
+            instructor: instructors.length > 0 ? instructors[0].id : '',
+            // Форматуємо дату для datetime-local інпута (YYYY-MM-DDTHH:mm)
+            start_at: selectInfo.startStr.slice(0, 16),
+            end_at: selectInfo.endStr.slice(0, 16),
+            capacity: 15
+        });
+        setIsModalOpen(true);
+    };
+
+    // Клік по існуючій події (Редагування/Видалення)
+    const handleEventClick = (clickInfo) => {
+        const event = clickInfo.event;
+        setModalMode('edit');
+        setFormData({
+            id: event.id,
+            class_type: event.extendedProps.class_type || (classes[0]?.id || ''),
+            instructor: event.extendedProps.instructor || (instructors[0]?.id || ''),
+            start_at: event.startStr.slice(0, 16),
+            end_at: event.endStr ? event.endStr.slice(0, 16) : event.startStr.slice(0, 16),
+            capacity: event.extendedProps.capacity || 15
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleSave = async (e) => {
+        e.preventDefault();
+        try {
+            const payload = {
+                class_type: parseInt(formData.class_type),
+                instructor: parseInt(formData.instructor),
+                start_at: new Date(formData.start_at).toISOString(),
+                end_at: new Date(formData.end_at).toISOString(),
+                capacity: parseInt(formData.capacity)
+            };
+
+            if (modalMode === 'create') {
+                await authRequest('/api/admin/schedule/', 'POST', payload);
+            } else {
+                await authRequest(`/api/admin/schedule/${formData.id}/`, 'PUT', payload);
+            }
+            
+            setIsModalOpen(false);
+            fetchInitialData(); // Оновлюємо календар
+        } catch (error) {
+            alert('Помилка збереження: ' + error.message);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!window.confirm('Видалити це тренування?')) return;
+        try {
+            await authRequest(`/api/admin/schedule/${formData.id}/`, 'DELETE');
+            setIsModalOpen(false);
+            fetchInitialData();
+        } catch (error) {
+            alert('Помилка видалення: ' + error.message);
+        }
     };
 
     return (
-        <div className={`admin-wrapper ${sidebarOpen ? 'sidebar-open' : ''}`}>
-            <aside className={`admin-sidebar ${sidebarOpen ? 'active' : ''}`}>
-                <div className="admin-logo">FIT<span>GYM</span> ADMIN</div>
-                <nav className="admin-menu">
-                    <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>
-                        <i className="fas fa-chart-line"></i> Огляд
-                    </button>
-                    <button className={activeTab === 'schedule' ? 'active' : ''} onClick={() => setActiveTab('schedule')}>
-                        <i className="fas fa-calendar-alt"></i> Розклад
-                    </button>
-                    <button className={activeTab === 'clients' ? 'active' : ''} onClick={() => setActiveTab('clients')}>
-                        <i className="fas fa-users"></i> Клієнти
-                    </button>
-                    <button className={activeTab === 'trainers' ? 'active' : ''} onClick={() => setActiveTab('trainers')}>
-                        <i className="fas fa-dumbbell"></i> Тренери
-                    </button>
-                </nav>
-                <div className="admin-footer"><button onClick={logout}>Вихід</button></div>
-            </aside>
+        <div className="admin-calendar-box fade-in">
+            <FullCalendar 
+                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]} 
+                initialView="timeGridWeek" 
+                locale={ukLocale} 
+                height="80vh"
+                events={events}
+                selectable={true}
+                selectMirror={true}
+                select={handleDateSelect}
+                eventClick={handleEventClick}
+                headerToolbar={{
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                }}
+            />
 
-            <main className="admin-content">
-                <header className="admin-topbar">
-                    <button className="mobile-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
-                    <h2>ПАНЕЛЬ КЕРУВАННЯ</h2>
-                    <div className="admin-user"><span>{user?.username}</span><div className="avatar">A</div></div>
-                </header>
+            <AdminModal 
+                isOpen={isModalOpen} 
+                onClose={() => setIsModalOpen(false)} 
+                title={modalMode === 'create' ? 'Створити тренування' : 'Редагувати тренування'}
+            >
+                <form className="admin-form" onSubmit={handleSave}>
+                    <div className="form-group">
+                        <label>Тип заняття (Class)</label>
+                        <select 
+                            value={formData.class_type} 
+                            onChange={e => setFormData({...formData, class_type: e.target.value})}
+                            required
+                        >
+                            <option value="" disabled>Оберіть заняття...</option>
+                            {classes.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                    </div>
 
-                <div className="admin-page-content">
-                    {activeTab === 'dashboard' && (
-                        <div className="dashboard-layout">
-                            <div className="admin-grid">
-                                <div className="admin-card highlight-red">
-                                    <h3>Клієнти</h3>
-                                    <div className="val">{clients.length || 124}</div>
-                                    <span className="trend positive">↑ 12%</span>
-                                </div>
-                                <div className="admin-card">
-                                    <h3>Виручка</h3>
-                                    <div className="val">₴ 142,500</div>
-                                </div>
-                                <div className="admin-card">
-                                    <h3>Тренери</h3>
-                                    <div className="val">{trainers.length || 12}</div>
-                                </div>
-                            </div>
+                    <div className="form-group">
+                        <label>Тренер</label>
+                        <select 
+                            value={formData.instructor} 
+                            onChange={e => setFormData({...formData, instructor: e.target.value})}
+                            required
+                        >
+                            <option value="" disabled>Оберіть тренера...</option>
+                            {instructors.map(i => (
+                                <option key={i.id} value={i.id}>{i.full_name || i.username}</option>
+                            ))}
+                        </select>
+                    </div>
 
-                            <div className="charts-row">
-                                <div className="chart-container">
-                                    <h3>Відвідуваність (тиждень)</h3>
-                                    <div className="recharts-wrapper">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <AreaChart data={dataAttendance}>
-                                                <defs>
-                                                    <linearGradient id="colorV" x1="0" y1="0" x2="0" y2="1">
-                                                        <stop offset="5%" stopColor="#e60000" stopOpacity={0.3}/>
-                                                        <stop offset="95%" stopColor="#e60000" stopOpacity={0}/>
-                                                    </linearGradient>
-                                                </defs>
-                                                <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                                                <XAxis dataKey="day" stroke="#888" />
-                                                <YAxis stroke="#888" />
-                                                <Tooltip contentStyle={{backgroundColor: '#111', border: '1px solid #333', color: '#fff'}} />
-                                                <Area type="monotone" dataKey="visits" stroke="#e60000" strokeWidth={3} fillOpacity={1} fill="url(#colorV)" />
-                                            </AreaChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </div>
-
-                                <div className="chart-container">
-                                    <h3>Популярні напрямки</h3>
-                                    <div className="recharts-wrapper">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <PieChart>
-                                                <Pie data={dataClasses} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                                                    {dataClasses.map((entry, index) => (
-                                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                                    ))}
-                                                </Pie>
-                                                <Tooltip />
-                                                <Legend />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </div>
-                            </div>
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Початок</label>
+                            <input 
+                                type="datetime-local" 
+                                value={formData.start_at} 
+                                onChange={e => setFormData({...formData, start_at: e.target.value})} 
+                                required
+                            />
                         </div>
-                    )}
-
-                    {activeTab === 'schedule' && (
-                        <div className="admin-calendar-box">
-                            <FullCalendar plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]} initialView="timeGridWeek" locale={ukLocale} height="80vh" />
+                        <div className="form-group">
+                            <label>Кінець</label>
+                            <input 
+                                type="datetime-local" 
+                                value={formData.end_at} 
+                                onChange={e => setFormData({...formData, end_at: e.target.value})} 
+                                required
+                            />
                         </div>
-                    )}
+                    </div>
 
-                    {(activeTab === 'trainers' || activeTab === 'clients') && (
-                        <div className="table-wrap">
-                            <table className="admin-table">
-                                <thead><tr><th>Ім'я</th><th>Контакт</th><th>Дії</th></tr></thead>
-                                <tbody>
-                                    {(activeTab === 'trainers' ? trainers : clients).map(item => (
-                                        <tr key={item.id}><td>{item.full_name || item.name}</td><td>{item.contact || item.email}</td><td><button>✏️</button></td></tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                    <div className="form-group">
+                        <label>Макс. кількість місць</label>
+                        <input 
+                            type="number" 
+                            min="1" 
+                            value={formData.capacity} 
+                            onChange={e => setFormData({...formData, capacity: e.target.value})} 
+                            required
+                        />
+                    </div>
+
+                    <div className="modal-actions">
+                        {modalMode === 'edit' && (
+                            <button type="button" className="btn-delete" onClick={handleDelete}>
+                                <i className="fas fa-trash"></i> Видалити
+                            </button>
+                        )}
+                        <div className="action-right">
+                            <button type="button" className="btn-cancel" onClick={() => setIsModalOpen(false)}>Скасувати</button>
+                            <button type="submit" className="btn-save">Зберегти</button>
                         </div>
-                    )}
-                </div>
-            </main>
+                    </div>
+                </form>
+            </AdminModal>
         </div>
     );
 }
@@ -2340,65 +2771,16 @@ import { useState, useEffect } from 'react';
 import { authRequest } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
-import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
-  BarChart, Bar, LineChart, Line
-} from 'recharts';
+import AdminSidebar from '../components/admin/AdminSidebar';
+import AdminTopbar from '../components/admin/AdminTopbar';
+import DashboardTab from '../components/admin/DashboardTab';
+import DataTableTab from '../components/admin/DataTableTab';
 
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import ukLocale from '@fullcalendar/core/locales/uk';
-
-// --- ДЕМО ДАНІ ---
-const dataAttendance = [
-  { day: 'Пн', visits: 45 }, { day: 'Вт', visits: 52 }, { day: 'Ср', visits: 48 },
-  { day: 'Чт', visits: 85 }, { day: 'Пт', visits: 61 }, { day: 'Сб', visits: 38 }, { day: 'Нд', visits: 20 }
-];
-
-const dataClasses = [
-  { name: 'Кросфіт', value: 400 }, { name: 'Йога', value: 300 },
-  { name: 'Бокс', value: 200 }, { name: 'TRX', value: 278 }
-];
-
-const dataPeakHours = [
-  { hour: '08:00', users: 15 }, { hour: '10:00', users: 30 }, { hour: '12:00', users: 20 },
-  { hour: '14:00', users: 25 }, { hour: '16:00', users: 40 }, { hour: '18:00', users: 85 },
-  { hour: '20:00', users: 60 }, { hour: '22:00', users: 15 }
-];
-
-const dataRevenue = [
-  { month: 'Січ', rev: 110 }, { month: 'Лют', rev: 115 }, { month: 'Бер', rev: 125 },
-  { month: 'Кві', rev: 120 }, { month: 'Тра', rev: 135 }, { month: 'Чер', rev: 142 }
-];
-
-const recentActivities = [
-  { id: 1, text: 'Нова підписка: Олексій В.', time: '10 хв тому', icon: 'fa-user-plus', color: '#2ecc71' },
-  { id: 2, text: 'Оплата: Безліміт (1200 ₴)', time: '25 хв тому', icon: 'fa-credit-card', color: '#ff0000' },
-  { id: 3, text: 'Скасування броні: Йога', time: '1 год тому', icon: 'fa-calendar-times', color: '#888' },
-  { id: 4, text: 'Нова підписка: Марія К.', time: '2 год тому', icon: 'fa-user-plus', color: '#2ecc71' },
-  { id: 5, text: 'Оплата: PRO (2500 ₴)', time: '3 год тому', icon: 'fa-credit-card', color: '#ff0000' },
-];
-
-const COLORS = ['#ff0000', '#cc0000', '#990000', '#4d0000'];
-
-// Кастомні тултипи
-const PremiumTooltip = ({ active, payload, label, prefix = '', suffix = '' }) => {
-    if (active && payload && payload.length) {
-        return (
-            <div className="premium-tooltip">
-                <p className="tooltip-label">{label}</p>
-                <p className="tooltip-value">
-                    <span className="dot"></span>
-                    {prefix}{payload[0].value}{suffix}
-                </p>
-            </div>
-        );
-    }
-    return null;
-};
 
 export default function AdminPanel() {
     const { user, logout } = useAuth();
@@ -2411,7 +2793,7 @@ export default function AdminPanel() {
         document.body.classList.add('admin-body');
         loadData();
         return () => document.body.classList.remove('admin-body');
-    }, [activeTab]);
+    }, []);
 
     const loadData = async () => {
         try {
@@ -2426,209 +2808,34 @@ export default function AdminPanel() {
 
     return (
         <div className={`admin-wrapper ${sidebarOpen ? 'sidebar-open' : ''}`}>
-            <aside className={`admin-sidebar ${sidebarOpen ? 'active' : ''}`}>
-                <div className="admin-logo">FIT<span>GYM</span></div>
-                <nav className="admin-menu">
-                    <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>
-                        <i className="fas fa-chart-line"></i> Огляд
-                    </button>
-                    <button className={activeTab === 'schedule' ? 'active' : ''} onClick={() => setActiveTab('schedule')}>
-                        <i className="fas fa-calendar-alt"></i> Розклад
-                    </button>
-                    <button className={activeTab === 'clients' ? 'active' : ''} onClick={() => setActiveTab('clients')}>
-                        <i className="fas fa-users"></i> Клієнти
-                    </button>
-                    <button className={activeTab === 'trainers' ? 'active' : ''} onClick={() => setActiveTab('trainers')}>
-                        <i className="fas fa-dumbbell"></i> Тренери
-                    </button>
-                </nav>
-                <div className="admin-footer"><button onClick={logout}><i className="fas fa-sign-out-alt"></i> Вихід</button></div>
-            </aside>
+            
+            <AdminSidebar 
+                activeTab={activeTab} 
+                setActiveTab={setActiveTab} 
+                sidebarOpen={sidebarOpen} 
+                logout={logout} 
+            />
 
             <main className="admin-content">
-                <header className="admin-topbar">
-                    <button className="mobile-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
-                    <h2 className="topbar-title">Панель керування</h2>
-                    <div className="admin-user"><span>{user?.username}</span><div className="avatar">A</div></div>
-                </header>
+                <AdminTopbar 
+                    user={user} 
+                    sidebarOpen={sidebarOpen} 
+                    setSidebarOpen={setSidebarOpen} 
+                />
 
                 <div className="admin-page-content">
                     {activeTab === 'dashboard' && (
-                        <div className="dashboard-layout fade-in">
-                            
-                            {/* --- РЯД 1: СТАТИСТИКА (4 картки) --- */}
-                            <div className="admin-grid">
-                                <div className="admin-card">
-                                    <div className="card-icon"><i className="fas fa-users"></i></div>
-                                    <div className="card-data">
-                                        <h3>Активні клієнти</h3>
-                                        <div className="val">{clients.length || 124}</div>
-                                        <span className="trend positive"><i className="fas fa-arrow-up"></i> 12% за місяць</span>
-                                    </div>
-                                    <div className="card-glow"></div>
-                                </div>
-                                <div className="admin-card">
-                                    <div className="card-icon"><i className="fas fa-wallet"></i></div>
-                                    <div className="card-data">
-                                        <h3>Виручка (Місяць)</h3>
-                                        <div className="val">₴ 142.5K</div>
-                                        <span className="trend positive"><i className="fas fa-arrow-up"></i> 8% за місяць</span>
-                                    </div>
-                                    <div className="card-glow"></div>
-                                </div>
-                                <div className="admin-card">
-                                    <div className="card-icon" style={{color: '#fff'}}><i className="fas fa-user-plus"></i></div>
-                                    <div className="card-data">
-                                        <h3>Нові підписки (Тиждень)</h3>
-                                        <div className="val">28</div>
-                                        <span className="trend positive"><i className="fas fa-arrow-up"></i> 5% за тиждень</span>
-                                    </div>
-                                    <div className="card-glow" style={{background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0) 70%)'}}></div>
-                                </div>
-                                <div className="admin-card">
-                                    <div className="card-icon"><i className="fas fa-dumbbell"></i></div>
-                                    <div className="card-data">
-                                        <h3>Тренери в залі</h3>
-                                        <div className="val">{trainers.length || 12}</div>
-                                        <span className="trend neutral">Без змін</span>
-                                    </div>
-                                    <div className="card-glow"></div>
-                                </div>
-                            </div>
-
-                            {/* --- РЯД 2: ГОЛОВНІ ГРАФІКИ --- */}
-                            <div className="charts-row">
-                                <div className="chart-container">
-                                    <div className="chart-header">
-                                        <h3>Динаміка відвідуваності</h3>
-                                        <span className="badge-red">Останні 7 днів</span>
-                                    </div>
-                                    <div className="recharts-wrapper">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <AreaChart data={dataAttendance} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                                <defs>
-                                                    <linearGradient id="colorVisits" x1="0" y1="0" x2="0" y2="1">
-                                                        <stop offset="5%" stopColor="#ff0000" stopOpacity={0.5}/>
-                                                        <stop offset="95%" stopColor="#ff0000" stopOpacity={0}/>
-                                                    </linearGradient>
-                                                </defs>
-                                                <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                                                <XAxis dataKey="day" stroke="#666" tick={{fill: '#888', fontSize: 12}} axisLine={false} tickLine={false} />
-                                                <YAxis stroke="#666" tick={{fill: '#888', fontSize: 12}} axisLine={false} tickLine={false} />
-                                                <Tooltip content={<PremiumTooltip suffix=" чол." />} cursor={{ stroke: '#ff0000', strokeWidth: 1, strokeDasharray: '4 4' }} />
-                                                <Area type="monotone" dataKey="visits" stroke="#ff0000" strokeWidth={3} fillOpacity={1} fill="url(#colorVisits)" activeDot={{ r: 6, fill: '#ff0000', stroke: '#111', strokeWidth: 2 }} />
-                                            </AreaChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </div>
-
-                                <div className="chart-container">
-                                    <div className="chart-header">
-                                        <h3>Напрямки</h3>
-                                    </div>
-                                    <div className="recharts-wrapper">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <PieChart>
-                                                <Pie data={dataClasses} innerRadius={70} outerRadius={90} paddingAngle={8} dataKey="value" stroke="none">
-                                                    {dataClasses.map((entry, index) => (
-                                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                                    ))}
-                                                </Pie>
-                                                <Tooltip contentStyle={{backgroundColor: '#111', border: '1px solid #333', borderRadius: '8px', color: '#fff'}} itemStyle={{color: '#fff'}} />
-                                                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', color: '#888' }} />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* --- РЯД 3: ДОДАТКОВА АНАЛІТИКА ТА ДІЇ --- */}
-                            <div className="charts-row three-cols">
-                                
-                                {/* Графік завантаженості (Бар) */}
-                                <div className="chart-container span-2">
-                                    <div className="chart-header">
-                                        <h3>Завантаженість за годинами (Сьогодні)</h3>
-                                    </div>
-                                    <div className="recharts-wrapper" style={{height: '250px'}}>
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={dataPeakHours} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                                <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                                                <XAxis dataKey="hour" stroke="#666" tick={{fill: '#888', fontSize: 12}} axisLine={false} tickLine={false} />
-                                                <YAxis stroke="#666" tick={{fill: '#888', fontSize: 12}} axisLine={false} tickLine={false} />
-                                                <Tooltip content={<PremiumTooltip suffix=" чол." />} cursor={{ fill: 'rgba(255,0,0,0.1)' }} />
-                                                <Bar dataKey="users" fill="#ff0000" radius={[4, 4, 0, 0]} maxBarSize={40}>
-                                                    {dataPeakHours.map((entry, index) => (
-                                                        <Cell key={`cell-${index}`} fill={entry.users > 60 ? '#ff0000' : '#880000'} />
-                                                    ))}
-                                                </Bar>
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </div>
-
-                                {/* Стрічка активності */}
-                                <div className="chart-container">
-                                    <div className="chart-header">
-                                        <h3>Останні події</h3>
-                                    </div>
-                                    <div className="activity-list">
-                                        {recentActivities.map(item => (
-                                            <div key={item.id} className="activity-item">
-                                                <div className="activity-icon" style={{color: item.color, background: `${item.color}20`}}>
-                                                    <i className={`fas ${item.icon}`}></i>
-                                                </div>
-                                                <div className="activity-info">
-                                                    <p className="activity-text">{item.text}</p>
-                                                    <span className="activity-time">{item.time}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* --- РЯД 4: ФІНАНСИ --- */}
-                            <div className="charts-row">
-                                <div className="chart-container" style={{gridColumn: '1 / -1'}}>
-                                    <div className="chart-header">
-                                        <h3>Динаміка виручки (Півріччя, тис. ₴)</h3>
-                                        <span className="trend positive" style={{margin: 0}}><i className="fas fa-chart-line"></i> +29%</span>
-                                    </div>
-                                    <div className="recharts-wrapper" style={{height: '250px'}}>
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <LineChart data={dataRevenue} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                                <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                                                <XAxis dataKey="month" stroke="#666" tick={{fill: '#888', fontSize: 12}} axisLine={false} tickLine={false} />
-                                                <YAxis stroke="#666" tick={{fill: '#888', fontSize: 12}} axisLine={false} tickLine={false} />
-                                                <Tooltip content={<PremiumTooltip prefix="₴ " suffix="K" />} />
-                                                <Line type="monotone" dataKey="rev" stroke="#ff0000" strokeWidth={4} dot={{ r: 4, fill: '#111', stroke: '#ff0000', strokeWidth: 2 }} activeDot={{ r: 8, fill: '#ff0000', stroke: '#fff', strokeWidth: 2 }} />
-                                            </LineChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
+                        <DashboardTab clientsCount={clients.length} trainersCount={trainers.length} />
                     )}
 
-                    {/* ІНШІ ТАБИ (без змін) */}
-                    {activeTab === 'schedule' && (
-                        <div className="admin-calendar-box fade-in">
-                            <FullCalendar plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]} initialView="timeGridWeek" locale={ukLocale} height="80vh" />
-                        </div>
-                    )}
+                    {activeTab === 'schedule' && <ScheduleTab />}
+
                     {(activeTab === 'trainers' || activeTab === 'clients') && (
-                        <div className="table-wrap fade-in">
-                            <table className="admin-table">
-                                <thead><tr><th>Ім'я</th><th>Контакт</th><th>Дії</th></tr></thead>
-                                <tbody>
-                                    {(activeTab === 'trainers' ? trainers : clients).map(item => (
-                                        <tr key={item.id}><td>{item.full_name || item.name}</td><td>{item.contact || item.email}</td><td><button>✏️</button></td></tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                        <DataTableTab 
+                            data={activeTab === 'trainers' ? trainers : clients} 
+                            tabType={activeTab}
+                            onRefresh={loadData}
+                        />
                     )}
                 </div>
             </main>
@@ -4755,634 +4962,200 @@ body { margin: 0; padding: 0; }
 ФАЙЛ: public\css\admin_styles.css
 =========================================
 
-/* admin_styles.css - SCOPED & ISOLATED */
+/* --- PREMIUM DASHBOARD STYLES --- */
+body.admin-body { background-color: #080808 !important; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
 
-/* Змінюємо фон тільки коли ми в адмінці */
-body.admin-body {
-    background-color: #121212 !important;
-    overflow-x: hidden;
-}
+.admin-wrapper { display: flex; min-height: 100vh; }
 
-.admin-wrapper {
-    display: flex;
-    min-height: 100vh;
-    font-family: 'Inter', sans-serif;
-    color: #eee;
-}
+.fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-/* SIDEBAR */
-.admin-sidebar {
-    width: 250px;
-    background: #050505;
-    border-right: 1px solid #222;
-    position: fixed;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    z-index: 1000;
-}
-.admin-logo {
-    height: 70px;
-    display: flex; align-items: center; padding-left: 20px;
-    font-size: 1.4rem; font-weight: 900; color: #fff;
-    border-bottom: 1px solid #222;
-}
-.admin-logo span { color: #e60000; }
+/* SIDEBAR & TOPBAR */
+.admin-sidebar { width: 260px; background: #0f0f0f; border-right: 1px solid #222; position: fixed; height: 100vh; z-index: 1000; transition: 0.3s; }
+.admin-logo { padding: 30px; font-size: 2rem; font-weight: 900; color: #fff; text-align: center; }
+.admin-logo span { color: #ff0000; }
+.admin-menu button { width: 100%; padding: 20px 30px; background: none; border: none; text-align: left; color: #666; font-weight: 800; cursor: pointer; text-transform: uppercase; border-left: 4px solid transparent; transition: 0.3s; }
+.admin-menu button:hover, .admin-menu button.active { color: #fff; border-left-color: #ff0000; background: linear-gradient(90deg, rgba(255,0,0,0.1), transparent); }
+.admin-footer { position: absolute; bottom: 0; width: 100%; padding: 20px; border-top: 1px solid #222; }
+.admin-footer button { width: 100%; background: none; border: none; color: #ff4d4d; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
 
-.admin-menu { flex: 1; padding: 20px 0; }
-.admin-menu button {
-    display: flex; align-items: center; gap: 10px;
-    width: 100%; padding: 15px 25px;
-    background: none; border: none;
-    color: #888; font-size: 1rem; font-weight: 600;
-    cursor: pointer; text-align: left;
-    border-left: 4px solid transparent;
-    transition: 0.2s;
-}
-.admin-menu button:hover { color: #fff; background: #111; }
-.admin-menu button.active { color: #fff; background: #1a1a1a; border-left-color: #e60000; }
+.admin-content { margin-left: 260px; flex: 1; padding: 30px; width: calc(100% - 260px); box-sizing: border-box; }
+.admin-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+.topbar-title { color: #fff; font-weight: 900; text-transform: uppercase; margin: 0; }
+.admin-user { display: flex; align-items: center; gap: 15px; color: #fff; font-weight: bold; }
+.avatar { width: 40px; height: 40px; background: #ff0000; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 900; }
+.mobile-toggle { display: none; background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer; }
 
-.admin-footer { padding: 20px; border-top: 1px solid #222; }
-.admin-footer button { background: none; border: none; color: #d32f2f; cursor: pointer; font-size: 1rem; }
+/* LAYOUT & CARDS */
+.dashboard-layout { display: flex; flex-direction: column; gap: 30px; }
+.admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 25px; }
+.admin-card { background: linear-gradient(145deg, #161616 0%, #0d0d0d 100%); border: 1px solid #222; padding: 25px; border-radius: 16px; display: flex; align-items: flex-start; gap: 20px; position: relative; overflow: hidden; transition: all 0.4s ease; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
+.admin-card:hover { border-color: #ff0000; transform: translateY(-5px); }
+.card-icon { background: rgba(255, 0, 0, 0.1); color: #ff0000; width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; }
+.card-data { z-index: 2; }
+.card-data h3 { font-size: 0.8rem; color: #888; text-transform: uppercase; margin: 0 0 8px 0; font-weight: 700; }
+.card-data .val { font-size: 2rem; font-weight: 900; color: #fff; line-height: 1; margin-bottom: 10px; }
+.trend { font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; border-radius: 20px; background: rgba(255, 255, 255, 0.03); }
+.trend.positive { color: #ff4d4d; background: rgba(255, 0, 0, 0.1); }
+.trend.neutral { color: #888; }
+.card-glow { position: absolute; top: -50%; right: -50%; width: 150px; height: 150px; background: radial-gradient(circle, rgba(255,0,0,0.1) 0%, rgba(0,0,0,0) 70%); border-radius: 50%; filter: blur(20px); transition: 0.5s; z-index: 1; }
+.admin-card:hover .card-glow { transform: scale(1.5); background: radial-gradient(circle, rgba(255,0,0,0.2) 0%, rgba(0,0,0,0) 70%); }
 
-/* CONTENT */
-.admin-content {
-    margin-left: 250px;
-    flex: 1;
-    display: flex; flex-direction: column;
-}
+/* CHARTS */
+.charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; }
+.charts-row.three-cols { grid-template-columns: 2fr 1.2fr; }
+.chart-container { background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(20px); border: 1px solid #222; border-radius: 16px; padding: 25px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); }
+.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+.chart-header h3 { font-size: 1rem; color: #eee; margin: 0; font-weight: 800; text-transform: uppercase;}
+.badge-red { background: rgba(255, 0, 0, 0.1); color: #ff4d4d; font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255, 0, 0, 0.2); }
+.recharts-wrapper { width: 100%; height: 350px; }
 
-.admin-topbar {
-    height: 70px; background: #181818; border-bottom: 1px solid #222;
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 0 30px; position: sticky; top: 0; z-index: 50;
-}
-.admin-user { display: flex; align-items: center; gap: 10px; }
-.admin-user .avatar { width: 35px; height: 35px; background: #e60000; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; }
+/* TOOLTIPS & ACTIVITIES */
+.premium-tooltip { background: rgba(15, 15, 15, 0.95); backdrop-filter: blur(10px); border: 1px solid #333; padding: 12px 16px; border-radius: 8px; color: #fff;}
+.tooltip-label { margin: 0 0 8px 0; color: #888; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
+.tooltip-value { margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
+.tooltip-value .dot { width: 8px; height: 8px; background: #ff0000; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px #ff0000; }
 
-.admin-page-content { padding: 30px; }
+.activity-list { display: flex; flex-direction: column; gap: 15px; height: 250px; overflow-y: auto; padding-right: 5px; }
+.activity-list::-webkit-scrollbar { width: 4px; }
+.activity-list::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+.activity-item { display: flex; align-items: center; gap: 15px; padding: 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; transition: 0.2s; }
+.activity-item:hover { background: rgba(255, 255, 255, 0.05); }
+.activity-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+.activity-text { margin: 0; font-size: 0.85rem; color: #eee; font-weight: 600; }
+.activity-time { font-size: 0.75rem; color: #666; }
 
-/* GRIDS & CARDS */
-.admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
-.admin-card {
-    background: #1e1e1e; padding: 25px; border-radius: 10px; border: 1px solid #333;
-}
-.admin-card h3 { margin: 0 0 10px; font-size: 0.9rem; color: #888; text-transform: uppercase; }
-.admin-card .val { font-size: 2rem; font-weight: 700; color: #fff; }
+/* TABLES */
+.table-wrap { background: #111; border: 1px solid #222; border-radius: 16px; padding: 25px; overflow-x: auto; }
+.admin-table { width: 100%; border-collapse: collapse; color: #fff; }
+.admin-table th { text-align: left; padding: 15px; color: #888; font-size: 0.8rem; text-transform: uppercase; border-bottom: 2px solid #222; }
+.admin-table td { padding: 15px; border-bottom: 1px solid #222; font-size: 0.95rem; }
+.admin-table button { background: none; border: 1px solid #333; color: #fff; padding: 8px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+.admin-table button:hover { background: #222; }
 
-/* TABLES & CONTROLS */
-.admin-controls { display: flex; justify-content: space-between; margin-bottom: 20px; gap: 10px; }
-.admin-controls input { background: #222; border: 1px solid #444; color: #fff; padding: 8px 15px; border-radius: 5px; }
-
-.table-wrap { overflow-x: auto; }
-.admin-table { width: 100%; border-collapse: collapse; color: #ccc; }
-.admin-table th { text-align: left; padding: 15px; background: #222; color: #fff; }
-.admin-table td { padding: 15px; border-bottom: 1px solid #2a2a2a; }
-.admin-table tr:hover { background: #252525; }
-
-.badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 700; }
-.badge.active { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
-.badge.inactive { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
-
-/* BUTTONS */
-.admin-btn { background: #e60000; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: 600; }
-.admin-btn:hover { background: #c00000; }
-
-/* CALENDAR OVERRIDES (Specific to admin) */
-.admin-calendar-box { background: #1e1e1e; padding: 20px; border-radius: 10px; }
-.admin-calendar-box .fc-toolbar-title { color: #fff; }
-.admin-calendar-box .fc-button-primary { background: #e60000 !important; border: none !important; }
-
-/* MODAL */
-.admin-modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.8); z-index: 2000;
-    display: flex; justify-content: center; align-items: center;
-}
-.admin-modal {
-    background: #181818; padding: 30px; border-radius: 10px; width: 90%; max-width: 450px;
-    position: relative; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-}
-.admin-modal h2 { margin-top: 0; color: #e60000; text-align: center; }
-.close-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; color: #666; font-size: 1.5rem; cursor: pointer; }
-
-.admin-modal input, .admin-modal select {
-    width: 100%; padding: 10px; margin-bottom: 15px;
-    background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 5px;
-}
-.admin-modal label { display: block; margin-bottom: 5px; font-size: 0.9rem; color: #aaa; }
-.admin-modal .row { display: flex; gap: 10px; }
-.admin-modal .row > * { flex: 1; }
-
-.actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
-.save-btn { background: #e60000; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
-.del-btn { background: #d32f2f; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
-
-/* MOBILE */
-.mobile-toggle { display: none; background: none; border: none; color: #fff; font-size: 1.5rem; }
-@media (max-width: 900px) {
-    .admin-sidebar { transform: translateX(-100%); transition: 0.3s; }
-    .admin-content { margin-left: 0; }
-    .sidebar-open .admin-sidebar { transform: translateX(0); }
+@media (max-width: 1100px) {
+    .charts-row, .charts-row.three-cols { grid-template-columns: 1fr; }
+    .admin-sidebar { transform: translateX(-100%); }
+    .admin-sidebar.active { transform: translateX(0); }
+    .admin-content { margin-left: 0; width: 100%; }
     .mobile-toggle { display: block; }
 }
 
-.admin-table button {
-    background: #2a2a2a;       /* Темно-сірий фон */
-    border: 1px solid #444;    /* Тонка рамка */
-    color: #fff;               /* Колір тексту/іконки */
-    width: 36px;               /* Фіксований розмір */
-    height: 36px;
-    border-radius: 6px;        /* Скруглення */
-    cursor: pointer;
-    font-size: 1.1rem;         /* Розмір емодзі */
-    transition: all 0.2s ease;
-    
-    /* Центрування вмісту */
-    display: inline-flex;
+
+/* --- MODALS & FORMS --- */
+.admin-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    display: flex;
     align-items: center;
     justify-content: center;
+    z-index: 2000;
 }
 
-.admin-table button:hover {
-    background: #e60000;       /* Червоний акцент при наведенні */
-    border-color: #e60000;
-    transform: translateY(-2px); /* Легкий підйом */
-    box-shadow: 0 4px 10px rgba(230, 0, 0, 0.4);
-}
-
-/* Додаткові стилі для Dashboard */
-.dashboard-crazy-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
-}
-
-.charts-container {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 25px;
-}
-
-.chart-box {
-    background: #1e1e1e;
-    padding: 25px;
-    border-radius: 12px;
+.admin-modal-content {
+    background: #111;
     border: 1px solid #333;
-}
-
-.chart-box h3 {
-    font-size: 1rem;
-    color: #888;
-    margin-bottom: 20px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.admin-card.highlight {
-    border-left: 4px solid #e60000;
-}
-
-.trend {
-    font-size: 0.8rem;
-    font-weight: 700;
-}
-
-.trend.positive { color: #2ecc71; }
-.trend.neutral { color: #888; }
-
-.recent-activity {
-    background: #1e1e1e;
-    padding: 25px;
-    border-radius: 12px;
-    border: 1px solid #333;
-}
-
-/* Анімація для карток */
-.admin-card {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.admin-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(230, 0, 0, 0.1);
-}
-
-@media (max-width: 1200px) {
-    .charts-container {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* --- CRAZY ANALYTICS STYLES --- */
-.dashboard-insane-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 25px;
-}
-
-.charts-row {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 25px;
-}
-
-.chart-container {
-    background: #1e1e1e; /* [cite: 2233] */
-    padding: 25px;
-    border-radius: 12px;
-    border: 1px solid #333; /* [cite: 2233] */
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-}
-
-.chart-container h3 {
-    font-size: 0.9rem;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 20px;
-    font-weight: 800;
-}
-
-.highlight-red {
-    border-left: 5px solid #e60000 !important;
-}
-
-.trend {
-    font-size: 0.8rem;
-    margin-top: 10px;
-    font-weight: 700;
-}
-
-.trend.positive { color: #2ecc71; }
-.trend.neutral { color: #888; }
-
-.full-width {
-    width: 100%;
-}
-
-@media (max-width: 1100px) {
-    .charts-row { grid-template-columns: 1fr; }
-}
-
-.dashboard-insane-grid { display: flex; flex-direction: column; gap: 30px; }
-.charts-row { display: grid; grid-template-columns: 1.8fr 1fr; gap: 25px; }
-.chart-container {
-    background: #181818;
-    border: 1px solid #2a2a2a;
-    border-radius: 12px;
-    padding: 25px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-}
-.chart-container h3 { font-size: 0.8rem; color: #888; text-transform: uppercase; margin-bottom: 20px; font-weight: 800; letter-spacing: 1px; }
-.highlight-red { border-left: 5px solid #e60000 !important; }
-
-@media (max-width: 1100px) { .charts-row { grid-template-columns: 1fr; } }
-
-/* DASHBOARD LAYOUT */
-.dashboard-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
-}
-
-.charts-row {
-    display: grid;
-    grid-template-columns: 1.8fr 1fr; /* Більше місця для лінійного графіка */
-    gap: 25px;
-    margin-top: 10px;
-}
-
-.chart-container {
-    background: #1e1e1e;
-    padding: 25px;
-    border-radius: 12px;
-    border: 1px solid #333;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    display: flex;
-    flex-direction: column;
-}
-
-.chart-container h3 {
-    font-size: 0.85rem;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 20px;
-    font-weight: 800;
-}
-
-/* ВАЖЛИВО: Фіксована висота для ResponsiveContainer */
-.recharts-wrapper {
-    width: 100%;
-    height: 350px; 
-    position: relative;
-}
-
-.highlight-red {
-    border-left: 5px solid #e60000 !important;
-}
-
-.trend {
-    font-size: 0.8rem;
-    font-weight: 700;
-    margin-top: 5px;
-    display: block;
-}
-
-.trend.positive { color: #2ecc71; }
-
-@media (max-width: 1100px) {
-    .charts-row {
-        grid-template-columns: 1fr; /* Стекуємо графіки на малих екранах */
-    }
-}
-
-/* --- PREMIUM DASHBOARD STYLES --- */
-body.admin-body {
-    background-color: #080808 !important; /* Глибокий чорний */
-}
-
-.fade-in {
-    animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(15px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.dashboard-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
-}
-
-/* Статистичні картки */
-.admin-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 25px;
-}
-
-.admin-card {
-    background: linear-gradient(145deg, #161616 0%, #0d0d0d 100%);
-    border: 1px solid #222;
-    padding: 30px 25px;
     border-radius: 16px;
-    display: flex;
-    align-items: flex-start;
-    gap: 20px;
-    position: relative;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8);
     overflow: hidden;
-    transition: all 0.4s ease;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
-.admin-card:hover {
-    border-color: #444;
-    transform: translateY(-5px);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(255, 0, 0, 0.1);
-}
-
-.card-icon {
-    background: rgba(255, 0, 0, 0.1);
-    color: #ff0000;
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.4rem;
-    flex-shrink: 0;
-}
-
-.card-data {
-    z-index: 2;
-}
-
-.card-data h3 {
-    font-size: 0.85rem;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin: 0 0 8px 0;
-    font-weight: 700;
-}
-
-.card-data .val {
-    font-size: 2.2rem;
-    font-weight: 900;
-    color: #fff;
-    line-height: 1;
-    margin-bottom: 10px;
-    letter-spacing: -1px;
-}
-
-.trend {
-    font-size: 0.8rem;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 8px;
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.03);
-}
-
-.trend.positive { color: #ff4d4d; background: rgba(255, 0, 0, 0.1); }
-.trend.neutral { color: #888; }
-
-/* Світіння на фоні картки */
-.card-glow {
-    position: absolute;
-    top: -50%;
-    right: -50%;
-    width: 150px;
-    height: 150px;
-    background: radial-gradient(circle, rgba(255,0,0,0.15) 0%, rgba(0,0,0,0) 70%);
-    border-radius: 50%;
-    filter: blur(20px);
-    transition: all 0.5s ease;
-    z-index: 1;
-}
-
-.admin-card:hover .card-glow {
-    transform: scale(1.5);
-    background: radial-gradient(circle, rgba(255,0,0,0.2) 0%, rgba(0,0,0,0) 70%);
-}
-
-/* Контейнери графіків */
-.charts-row {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 25px;
-}
-
-.chart-container {
-    background: rgba(20, 20, 20, 0.6);
-    backdrop-filter: blur(20px);
-    border: 1px solid #222;
-    border-radius: 16px;
-    padding: 25px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-    display: flex;
-    flex-direction: column;
-}
-
-.chart-header {
+.admin-modal-header {
+    padding: 20px 25px;
+    border-bottom: 1px solid #222;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 25px;
 }
 
-.chart-header h3 {
-    font-size: 1rem;
-    color: #eee;
-    margin: 0;
-    font-weight: 800;
-}
-
-.badge-red {
-    background: rgba(255, 0, 0, 0.1);
-    color: #ff4d4d;
-    font-size: 0.75rem;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 6px;
-    border: 1px solid rgba(255, 0, 0, 0.2);
-}
-
-.recharts-wrapper {
-    width: 100%;
-    height: 350px;
-}
-
-/* Кастомний Tooltip для Recharts */
-.premium-tooltip {
-    background: rgba(15, 15, 15, 0.95);
-    backdrop-filter: blur(10px);
-    border: 1px solid #333;
-    padding: 12px 16px;
-    border-radius: 8px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-}
-
-.tooltip-label {
-    margin: 0 0 8px 0;
-    color: #888;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    font-weight: 700;
-}
-
-.tooltip-value {
+.admin-modal-header h3 {
     margin: 0;
     color: #fff;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.close-btn:hover { color: #ff4d4d; }
+
+.admin-modal-body { padding: 25px; }
+
+/* Form Styles */
+.admin-form .form-group { margin-bottom: 20px; }
+.admin-form .form-row { display: flex; gap: 15px; }
+.admin-form .form-row .form-group { flex: 1; }
+
+.admin-form label {
+    display: block;
+    color: #888;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.admin-form input, .admin-form select {
+    width: 100%;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    color: #fff;
+    padding: 12px 15px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    outline: none;
+    transition: 0.3s;
+    box-sizing: border-box;
+}
+
+.admin-form input:focus, .admin-form select:focus {
+    border-color: #ff0000;
+    box-shadow: 0 0 0 2px rgba(255,0,0,0.2);
+}
+
+/* Form Buttons */
+.modal-actions {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 8px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #222;
 }
 
-.tooltip-value .dot {
-    width: 8px;
-    height: 8px;
-    background: #ff0000;
-    border-radius: 50%;
-    display: inline-block;
-    box-shadow: 0 0 8px #ff0000;
+.action-right { display: flex; gap: 10px; margin-left: auto; }
+
+.btn-cancel, .btn-save, .btn-delete {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: 0.2s;
+    border: none;
 }
 
-@media (max-width: 1100px) {
-    .charts-row { grid-template-columns: 1fr; }
-}
+.btn-cancel { background: transparent; color: #888; border: 1px solid #333; }
+.btn-cancel:hover { background: #222; color: #fff; }
 
-/* Додаткова сітка для 3-го ряду (2/3 + 1/3) */
-.charts-row.three-cols {
-    grid-template-columns: 2fr 1.2fr;
-}
+.btn-save { background: #e60000; color: #fff; }
+.btn-save:hover { background: #ff1a1a; box-shadow: 0 0 15px rgba(255,0,0,0.4); }
 
-.span-2 {
-    /* Допоміжний клас, якщо потрібно розтягнути елемент */
-}
+.btn-delete { background: rgba(255,0,0,0.1); color: #ff4d4d; border: 1px solid rgba(255,0,0,0.3); }
+.btn-delete:hover { background: rgba(255,0,0,0.2); }
 
-/* Стрічка активності (Activity Feed) */
-.activity-list {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    height: 250px;
-    overflow-y: auto;
-    padding-right: 5px;
-}
-
-/* Стилізація скролбару для activity-list */
-.activity-list::-webkit-scrollbar {
-    width: 6px;
-}
-.activity-list::-webkit-scrollbar-track {
-    background: #111;
-    border-radius: 4px;
-}
-.activity-list::-webkit-scrollbar-thumb {
-    background: #333;
-    border-radius: 4px;
-}
-.activity-list::-webkit-scrollbar-thumb:hover {
-    background: #555;
-}
-
-.activity-item {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 12px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-    transition: background 0.2s;
-}
-
-.activity-item:hover {
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.activity-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-    flex-shrink: 0;
-}
-
-.activity-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.activity-text {
-    margin: 0;
-    font-size: 0.85rem;
-    color: #eee;
-    font-weight: 600;
-}
-
-.activity-time {
-    font-size: 0.75rem;
-    color: #666;
-}
-
-@media (max-width: 1100px) {
-    .charts-row.three-cols { grid-template-columns: 1fr; }
-}
-
-@media (max-width: 768px) {
-    .admin-grid { grid-template-columns: 1fr; }
-}
+/* FullCalendar Customization overrides */
+.fc-event { cursor: pointer; border: none !important; background-color: #e60000 !important; }
+.fc-event:hover { opacity: 0.8; }
