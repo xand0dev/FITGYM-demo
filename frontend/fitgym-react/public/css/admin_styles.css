@@ -280,4 +280,35 @@ body.admin-body { background-color: #080808 !important; margin: 0; padding: 0; f
     border-color: #e60000 !important;
     color: #fff !important;
 }
-.fc-toolbar-title { font-size: 1.5rem !important; font-weight: 900; color: #fff; }
+.fc .fc-toolbar-title { 
+    font-size: 1.5rem !important; 
+    font-weight: 900 !important; 
+    color: #ffffff !important; 
+}
+
+/* --- СТИЛІЗАЦІЯ СКРОЛБАРУ КАЛЕНДАРЯ (Chrome, Safari, Edge) --- */
+.fc-scroller::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.fc-scroller::-webkit-scrollbar-track {
+    background: #111; /* Темний фон доріжки */
+    border-radius: 4px;
+}
+
+.fc-scroller::-webkit-scrollbar-thumb {
+    background: #333; /* Колір самого повзунка */
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+
+.fc-scroller::-webkit-scrollbar-thumb:hover {
+    background: #e60000; /* Червоний акцент при наведенні */
+}
+
+/* --- Для Firefox --- */
+.fc-scroller {
+    scrollbar-width: thin;
+    scrollbar-color: #333 #111;
+}
