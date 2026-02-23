@@ -4,7 +4,7 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 
 // Імпорт компонентів
-import Preloader from '../components/Preloader'; // Додано Preloader
+
 import Hero from '../components/Hero';
 import Stats from '../components/Stats'; 
 import Categories from '../components/Categories'; 
@@ -40,8 +40,7 @@ export default function Home() {
 
     return (
         <>
-            {/* Екран завантаження, що зникне через 1.5 сек */}
-            <Preloader />
+           
 
             <main style={{ background: '#fff' }}>
                 {/* 1. Головний банер (Брутальний стиль) */}
