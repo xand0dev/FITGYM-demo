@@ -29,7 +29,7 @@ DEBUG = True
 # Дозволити запити абсолютно з будь-яких сайтів (для тестування)
 CORS_ALLOW_ALL_ORIGINS = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
