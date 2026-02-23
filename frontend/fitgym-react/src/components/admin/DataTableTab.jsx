@@ -19,8 +19,8 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
         // Ініціалізація пустих полів залежно від типу
         setFormData(
             isTrainer 
-                ? { full_name: '', specialties: '', bio: '' } 
-                : { username: '', email: '', first_name: '', last_name: '', password: '' }
+                ? { username: '', password: '', first_name: '', last_name: '', specialties: '', contact: '' } 
+                : { username: '', email: '', first_name: '', last_name: '', password: '', contact: '' }
         );
         setIsModalOpen(true);
     };
@@ -146,21 +146,45 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
                     {isTrainer ? (
                         <>
                             <div className="form-group">
-                                <label>ПІБ Тренера</label>
-                                <input type="text" name="full_name" value={formData.full_name || ''} onChange={handleChange} required />
+                                <label>Username (Логін)</label>
+                                <input 
+                                    type="text" 
+                                    name="username" 
+                                    value={formData.username || ''} 
+                                    onChange={handleChange} 
+                                    required 
+                                    disabled={modalMode === 'edit'} 
+                                />
+                            </div>
+                            
+                            {modalMode === 'create' && (
+                                <div className="form-group">
+                                    <label>Пароль</label>
+                                    <input type="password" name="password" value={formData.password || ''} onChange={handleChange} required minLength="6" />
+                                </div>
+                            )}
+
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Ім'я</label>
+                                    <input type="text" name="first_name" value={formData.first_name || ''} onChange={handleChange} required />
+                                </div>
+                                <div className="form-group">
+                                    <label>Прізвище</label>
+                                    <input type="text" name="last_name" value={formData.last_name || ''} onChange={handleChange} required />
+                                </div>
                             </div>
                             <div className="form-group">
                                 <label>Спеціалізація</label>
-                                <input type="text" name="specialties" value={formData.specialties || ''} onChange={handleChange} placeholder="Crossfit, Yoga, Boxing..." />
+                                <input type="text" name="specialties" value={formData.specialties || ''} onChange={handleChange} placeholder="Crossfit, Yoga, Boxing..." required />
                             </div>
                             <div className="form-group">
-                                <label>Біографія (Bio)</label>
-                                <input type="text" name="bio" value={formData.bio || ''} onChange={handleChange} placeholder="Досвід роботи, досягнення..." />
+                                <label>Контакт (Телефон)</label>
+                                <input type="text" name="contact" value={formData.contact || ''} onChange={handleChange} placeholder="+380..." />
                             </div>
                         </>
                     ) : (
-                    
-                    /* ФОРМА ДЛЯ КЛІЄНТА (Користувача) */
+                        /* ФОРМА ДЛЯ КЛІЄНТА (Користувача) */
                         <>
                             <div className="form-group">
                                 <label>Username (Логін)</label>
@@ -170,7 +194,7 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
                                     value={formData.username || ''} 
                                     onChange={handleChange} 
                                     required 
-                                    disabled={modalMode === 'edit'} // Логін зазвичай не міняють після створення
+                                    disabled={modalMode === 'edit'} 
                                 />
                             </div>
                             <div className="form-group">
@@ -180,11 +204,11 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
                             <div className="form-row">
                                 <div className="form-group">
                                     <label>Ім'я</label>
-                                    <input type="text" name="first_name" value={formData.first_name || ''} onChange={handleChange} />
+                                    <input type="text" name="first_name" value={formData.first_name || ''} onChange={handleChange} required />
                                 </div>
                                 <div className="form-group">
                                     <label>Прізвище</label>
-                                    <input type="text" name="last_name" value={formData.last_name || ''} onChange={handleChange} />
+                                    <input type="text" name="last_name" value={formData.last_name || ''} onChange={handleChange} required />
                                 </div>
                             </div>
                             {modalMode === 'create' && (

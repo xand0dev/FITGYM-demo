@@ -401,71 +401,214 @@ export default function DashboardTab({ clientsCount, trainersCount }) {
 ФАЙЛ: src\components\admin\DataTableTab.jsx
 =========================================
 
+import { useState } from 'react';
 import { authRequest } from '../../utils/api';
+import AdminModal from './AdminModal';
 
 export default function DataTableTab({ data, tabType, onRefresh }) {
-    
-    // Функція для видалення запису через API
+    // Стан модалки та форми
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalMode, setModalMode] = useState('create'); // 'create' або 'edit'
+    const [formData, setFormData] = useState({});
+
+    // Визначаємо, в якій вкладці знаходимось
+    const isTrainer = tabType === 'trainers';
+    const title = isTrainer ? 'Тренери' : 'Клієнти';
+
+    // --- ОБРОБНИКИ ДІЙ ---
+
+    const handleAddNew = () => {
+        setModalMode('create');
+        // Ініціалізація пустих полів залежно від типу
+        setFormData(
+            isTrainer 
+                ? { full_name: '', specialties: '', bio: '' } 
+                : { username: '', email: '', first_name: '', last_name: '', password: '' }
+        );
+        setIsModalOpen(true);
+    };
+
+    const handleEdit = (item) => {
+        setModalMode('edit');
+        setFormData(item);
+        setIsModalOpen(true);
+    };
+
     const handleDelete = async (id) => {
-        if (!window.confirm('Ви впевнені, що хочете видалити цей запис?')) return;
-        
+        if (!window.confirm(`Ви впевнені, що хочете видалити цей запис?`)) return;
         try {
-            // Формуємо правильний ендпоінт залежно від того, де ми знаходимось
-            const endpoint = tabType === 'trainers' 
-                ? `/api/admin/instructors/${id}/` 
-                : `/api/admin/members/${id}/`;
-            
+            const endpoint = isTrainer ? `/api/admin/instructors/${id}/` : `/api/admin/members/${id}/`;
             await authRequest(endpoint, 'DELETE');
-            
-            // Якщо видалення успішне — смикаємо оновлення даних у батьківському компоненті
             if (onRefresh) onRefresh(); 
         } catch (e) {
-            console.error('Помилка видалення:', e);
             alert('Не вдалося видалити: ' + e.message);
         }
     };
 
-    if (!data || data.length === 0) {
-        return <div className="table-wrap fade-in"><p style={{color: '#888', padding: '20px'}}>Немає даних.</p></div>;
-    }
+    const handleSave = async (e) => {
+        e.preventDefault();
+        try {
+            const endpoint = isTrainer ? '/api/admin/instructors/' : '/api/admin/members/';
+            const url = modalMode === 'create' ? endpoint : `${endpoint}${formData.id}/`;
+            const method = modalMode === 'create' ? 'POST' : 'PUT';
+            
+            await authRequest(url, method, formData);
+            setIsModalOpen(false);
+            if (onRefresh) onRefresh();
+        } catch (e) {
+            alert('Помилка збереження: ' + e.message);
+        }
+    };
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    // Отримання гарного імені для відображення
+    const getDisplayName = (item) => {
+        if (item.full_name) return item.full_name;
+        const firstLast = `${item.first_name || ''} ${item.last_name || ''}`.trim();
+        return firstLast || item.username || 'Невідомий';
+    };
 
     return (
-        <div className="table-wrap fade-in">
-            <table className="admin-table">
-                <thead>
-                    <tr>
-                        <th>Ім'я</th>
-                        <th>Контакт</th>
-                        <th>Статус</th>
-                        <th>Дії</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {data.map(item => (
-                        <tr key={item.id}>
-                            <td><strong>{item.full_name || item.name || item.username}</strong></td>
-                            <td>{item.contact || item.email || '—'}</td>
-                            <td>
-                                <span className="badge active">
-                                    {tabType === 'trainers' ? 'Тренер' : 'Клієнт'}
-                                </span>
-                            </td>
-                            <td>
-                                <div style={{display: 'flex', gap: '8px'}}>
-                                    <button title="Редагувати"><i className="fas fa-pen"></i></button>
-                                    <button 
-                                        title="Видалити" 
-                                        onClick={() => handleDelete(item.id)} 
-                                        style={{color: '#ff4d4d', borderColor: 'rgba(255,0,0,0.3)'}}
-                                    >
-                                        <i className="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </td>
+        <div className="fade-in">
+            {/* ШАПКА ТАБЛИЦІ З КНОПКОЮ "ДОДАТИ" */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+                <h3 style={{ margin: 0, color: '#fff', fontSize: '1.2rem', textTransform: 'uppercase', fontWeight: '800' }}>
+                    Довідник: <span style={{ color: '#e60000' }}>{title}</span>
+                </h3>
+                <button onClick={handleAddNew} className="btn-save" style={{ padding: '10px 20px', borderRadius: '8px' }}>
+                    <i className="fas fa-plus"></i> Додати запис
+                </button>
+            </div>
+
+            {/* ТАБЛИЦЯ */}
+            <div className="table-wrap">
+                <table className="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Користувач</th>
+                            <th>{isTrainer ? 'Спеціалізація' : 'Контакти (Email)'}</th>
+                            <th>Роль</th>
+                            <th style={{ textAlign: 'right' }}>Дії</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {data && data.length > 0 ? data.map(item => (
+                            <tr key={item.id}>
+                                <td>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                        <div className="avatar" style={{ width: '36px', height: '36px', fontSize: '1rem', borderRadius: '8px' }}>
+                                            {getDisplayName(item).charAt(0).toUpperCase()}
+                                        </div>
+                                        <strong>{getDisplayName(item)}</strong>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span style={{ color: '#aaa', fontSize: '0.9rem' }}>
+                                        {isTrainer ? (item.specialties || '—') : (item.email || '—')}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span className="badge-red" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid #333' }}>
+                                        {isTrainer ? 'Тренер' : 'Клієнт'}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                        <button title="Редагувати" onClick={() => handleEdit(item)}>
+                                            <i className="fas fa-pen"></i>
+                                        </button>
+                                        <button title="Видалити" onClick={() => handleDelete(item.id)} style={{ color: '#ff4d4d', borderColor: 'rgba(255,0,0,0.3)' }}>
+                                            <i className="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        )) : (
+                            <tr>
+                                <td colSpan="4" style={{ textAlign: 'center', color: '#666', padding: '40px' }}>
+                                    Дані відсутні. Натисніть "Додати запис".
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* УНІВЕРСАЛЬНА МОДАЛКА (Створення / Редагування) */}
+            <AdminModal 
+                isOpen={isModalOpen} 
+                onClose={() => setIsModalOpen(false)} 
+                title={modalMode === 'create' ? `Новий ${isTrainer ? 'тренер' : 'клієнт'}` : `Редагування`}
+            >
+                <form className="admin-form" onSubmit={handleSave}>
+                    
+                    {/* ФОРМА ДЛЯ ТРЕНЕРА */}
+                    {isTrainer ? (
+                        <>
+                            <div className="form-group">
+                                <label>ПІБ Тренера</label>
+                                <input type="text" name="full_name" value={formData.full_name || ''} onChange={handleChange} required />
+                            </div>
+                            <div className="form-group">
+                                <label>Спеціалізація</label>
+                                <input type="text" name="specialties" value={formData.specialties || ''} onChange={handleChange} placeholder="Crossfit, Yoga, Boxing..." />
+                            </div>
+                            <div className="form-group">
+                                <label>Біографія (Bio)</label>
+                                <input type="text" name="bio" value={formData.bio || ''} onChange={handleChange} placeholder="Досвід роботи, досягнення..." />
+                            </div>
+                        </>
+                    ) : (
+                    
+                    /* ФОРМА ДЛЯ КЛІЄНТА (Користувача) */
+                        <>
+                            <div className="form-group">
+                                <label>Username (Логін)</label>
+                                <input 
+                                    type="text" 
+                                    name="username" 
+                                    value={formData.username || ''} 
+                                    onChange={handleChange} 
+                                    required 
+                                    disabled={modalMode === 'edit'} // Логін зазвичай не міняють після створення
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Email адрес</label>
+                                <input type="email" name="email" value={formData.email || ''} onChange={handleChange} required />
+                            </div>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Ім'я</label>
+                                    <input type="text" name="first_name" value={formData.first_name || ''} onChange={handleChange} />
+                                </div>
+                                <div className="form-group">
+                                    <label>Прізвище</label>
+                                    <input type="text" name="last_name" value={formData.last_name || ''} onChange={handleChange} />
+                                </div>
+                            </div>
+                            {modalMode === 'create' && (
+                                <div className="form-group">
+                                    <label>Пароль</label>
+                                    <input type="password" name="password" value={formData.password || ''} onChange={handleChange} required minLength="6" />
+                                </div>
+                            )}
+                        </>
+                    )}
+                    
+                    <div className="modal-actions">
+                        <div className="action-right" style={{ width: '100%' }}>
+                            <button type="button" className="btn-cancel" onClick={() => setIsModalOpen(false)}>Скасувати</button>
+                            <button type="submit" className="btn-save">
+                                <i className="fas fa-check" style={{marginRight: '8px'}}></i> Зберегти
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </AdminModal>
         </div>
     );
 }
@@ -2775,12 +2918,8 @@ import AdminSidebar from '../components/admin/AdminSidebar';
 import AdminTopbar from '../components/admin/AdminTopbar';
 import DashboardTab from '../components/admin/DashboardTab';
 import DataTableTab from '../components/admin/DataTableTab';
+import ScheduleTab from '../components/admin/ScheduleTab'; 
 
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import timeGridPlugin from '@fullcalendar/timegrid';
-import interactionPlugin from '@fullcalendar/interaction';
-import ukLocale from '@fullcalendar/core/locales/uk';
 
 export default function AdminPanel() {
     const { user, logout } = useAuth();
@@ -5042,26 +5181,33 @@ body.admin-body { background-color: #080808 !important; margin: 0; padding: 0; f
 }
 
 
-/* --- MODALS & FORMS --- */
+/* --- MODALS & FORMS (ОНОВЛЕНО) --- */
 .admin-modal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(5px);
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 2000;
+    padding: 20px;
 }
 
 .admin-modal-content {
-    background: #111;
+    background: linear-gradient(145deg, #1a1a1a 0%, #0f0f0f 100%);
     border: 1px solid #333;
     border-radius: 16px;
     width: 100%;
     max-width: 500px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    box-shadow: 0 25px 60px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.05);
     overflow: hidden;
+    animation: modalUp 0.3s ease-out forwards;
+}
+
+@keyframes modalUp {
+    from { opacity: 0; transform: translateY(30px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .admin-modal-header {
@@ -5070,59 +5216,78 @@ body.admin-body { background-color: #080808 !important; margin: 0; padding: 0; f
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background: rgba(255,255,255,0.02);
 }
 
 .admin-modal-header h3 {
     margin: 0;
     color: #fff;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 800;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .close-btn {
-    background: none;
+    background: rgba(255,255,255,0.05);
     border: none;
     color: #888;
-    font-size: 1.2rem;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
     cursor: pointer;
     transition: 0.2s;
 }
 
-.close-btn:hover { color: #ff4d4d; }
+.close-btn:hover { color: #fff; background: #e60000; }
 
-.admin-modal-body { padding: 25px; }
+.admin-modal-body { padding: 30px 25px; }
 
 /* Form Styles */
-.admin-form .form-group { margin-bottom: 20px; }
-.admin-form .form-row { display: flex; gap: 15px; }
+.admin-form .form-group { margin-bottom: 24px; }
+.admin-form .form-row { display: flex; gap: 20px; }
 .admin-form .form-row .form-group { flex: 1; }
 
 .admin-form label {
     display: block;
-    color: #888;
-    font-size: 0.8rem;
+    color: #999;
+    font-size: 0.75rem;
     font-weight: 700;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .admin-form input, .admin-form select {
     width: 100%;
-    background: #1a1a1a;
+    background: #141414; 
     border: 1px solid #333;
     color: #fff;
-    padding: 12px 15px;
-    border-radius: 8px;
-    font-size: 0.95rem;
+    padding: 14px 16px;
+    border-radius: 10px;
+    font-size: 1rem;
     outline: none;
-    transition: 0.3s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-sizing: border-box;
+    font-family: inherit;
+}
+
+.admin-form input::placeholder, .admin-form select::placeholder {
+    color: #555;
 }
 
 .admin-form input:focus, .admin-form select:focus {
-    border-color: #ff0000;
-    box-shadow: 0 0 0 2px rgba(255,0,0,0.2);
+    border-color: #e60000;
+    background: #1a1a1a;
+    box-shadow: 0 0 0 4px rgba(230, 0, 0, 0.15), inset 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.admin-form select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 16px;
 }
 
 /* Form Buttons */
@@ -5130,32 +5295,123 @@ body.admin-body { background-color: #080808 !important; margin: 0; padding: 0; f
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 30px;
-    padding-top: 20px;
+    margin-top: 40px;
+    padding-top: 25px;
     border-top: 1px solid #222;
 }
 
-.action-right { display: flex; gap: 10px; margin-left: auto; }
+.action-right { display: flex; gap: 15px; margin-left: auto; }
 
 .btn-cancel, .btn-save, .btn-delete {
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-weight: bold;
+    padding: 12px 48px;
+    border-radius: 10px;
+    font-weight: 700;
     cursor: pointer;
     font-size: 0.9rem;
-    transition: 0.2s;
+    transition: 0.3s;
     border: none;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .btn-cancel { background: transparent; color: #888; border: 1px solid #333; }
-.btn-cancel:hover { background: #222; color: #fff; }
+.btn-cancel:hover { background: #fff; color: #000; border-color: #fff; }
 
-.btn-save { background: #e60000; color: #fff; }
-.btn-save:hover { background: #ff1a1a; box-shadow: 0 0 15px rgba(255,0,0,0.4); }
+.btn-save { background: #e60000; color: #fff; box-shadow: 0 4px 15px rgba(230, 0, 0, 0.3); }
+.btn-save:hover { background: #ff1a1a; box-shadow: 0 8px 25px rgba(230, 0, 0, 0.5); transform: translateY(-2px); }
 
 .btn-delete { background: rgba(255,0,0,0.1); color: #ff4d4d; border: 1px solid rgba(255,0,0,0.3); }
-.btn-delete:hover { background: rgba(255,0,0,0.2); }
+.btn-delete:hover { background: #e60000; color: #fff; }
 
-/* FullCalendar Customization overrides */
-.fc-event { cursor: pointer; border: none !important; background-color: #e60000 !important; }
-.fc-event:hover { opacity: 0.8; }
+
+/* --- FULLCALENDAR DARK THEME OVERRIDES --- */
+.admin-calendar-box {
+    background: #111;
+    padding: 25px;
+    border-radius: 16px;
+    border: 1px solid #222;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+.fc { color: #eee !important; }
+.fc a { color: #eee !important; text-decoration: none; }
+
+.fc-col-header-cell-cushion {
+    color: #888;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    font-weight: 800;
+    padding: 10px 0 !important;
+}
+
+.fc-theme-standard td, .fc-theme-standard th, .fc-theme-standard .fc-scrollgrid {
+    border-color: #222 !important; 
+}
+
+.fc-timegrid-slot-label-cushion { color: #666; font-size: 0.8rem; }
+
+.fc-day-today {
+    background: rgba(230, 0, 0, 0.05) !important; 
+}
+.fc-timegrid-now-indicator-line { border-color: #e60000; }
+.fc-timegrid-now-indicator-arrow { border-color: #e60000; background: #e60000; }
+
+.fc-event {
+    box-shadow: 0 4px 12px rgba(230, 0, 0, 0.4);
+    border-radius: 6px !important;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 2px 4px;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    background-color: #e60000 !important;
+}
+.fc-event:hover { transform: scale(1.02); transition: 0.2s; z-index: 5; }
+.fc-event-time { margin-right: 5px; font-weight: normal; opacity: 0.8; }
+.fc-event-title { color: #fff; }
+
+.fc-button-primary {
+    background: #1a1a1a !important;
+    border: 1px solid #333 !important;
+    color: #eee !important;
+    text-transform: capitalize;
+    font-weight: 700;
+    box-shadow: none !important;
+    transition: 0.2s;
+}
+.fc-button-primary:hover, .fc-button-primary.fc-button-active {
+    background: #e60000 !important;
+    border-color: #e60000 !important;
+    color: #fff !important;
+}
+.fc .fc-toolbar-title { 
+    font-size: 1.5rem !important; 
+    font-weight: 900 !important; 
+    color: #ffffff !important; 
+}
+
+/* --- СТИЛІЗАЦІЯ СКРОЛБАРУ КАЛЕНДАРЯ (Chrome, Safari, Edge) --- */
+.fc-scroller::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.fc-scroller::-webkit-scrollbar-track {
+    background: #111; /* Темний фон доріжки */
+    border-radius: 4px;
+}
+
+.fc-scroller::-webkit-scrollbar-thumb {
+    background: #333; /* Колір самого повзунка */
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+
+.fc-scroller::-webkit-scrollbar-thumb:hover {
+    background: #e60000; /* Червоний акцент при наведенні */
+}
+
+/* --- Для Firefox --- */
+.fc-scroller {
+    scrollbar-width: thin;
+    scrollbar-color: #333 #111;
+}
