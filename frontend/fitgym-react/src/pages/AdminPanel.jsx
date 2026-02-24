@@ -1,36 +1,43 @@
 import { useState, useEffect } from 'react';
-import { authRequest } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+
+// Наша тактична матриця кешу
+import { useAuthData } from '../hooks/useFitQuery';
 
 import AdminSidebar from '../components/admin/AdminSidebar';
 import AdminTopbar from '../components/admin/AdminTopbar';
 import DashboardTab from '../components/admin/DashboardTab';
 import DataTableTab from '../components/admin/DataTableTab';
-import ScheduleTab from '../components/admin/ScheduleTab'; 
-
+import ScheduleTab from '../components/admin/ScheduleTab';
 
 export default function AdminPanel() {
     const { user, logout } = useAuth();
     const [activeTab, setActiveTab] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [trainers, setTrainers] = useState([]);
-    const [clients, setClients] = useState([]);
+
+    // Вживляємо хуки замість ручного fetch та стейтів
+    const { 
+        data: trainers = [], 
+        isLoading: isTrainersLoading,
+        refetch: refetchTrainers
+    } = useAuthData('admin-trainers', '/api/admin/instructors/');
+    
+    const { 
+        data: clients = [], 
+        isLoading: isClientsLoading,
+        refetch: refetchClients
+    } = useAuthData('admin-clients', '/api/admin/members/');
 
     useEffect(() => {
+        // Темний стиль для боді
         document.body.classList.add('admin-body');
-        loadData();
         return () => document.body.classList.remove('admin-body');
     }, []);
 
-    const loadData = async () => {
-        try {
-            const [t, c] = await Promise.all([
-                authRequest('/api/admin/instructors/').catch(()=>[]),
-                authRequest('/api/admin/members/').catch(()=>[])
-            ]);
-            setTrainers(t || []);
-            setClients(c || []);
-        } catch (e) { console.error(e); }
+    // Функція-міст для сумісності зі старим DataTableTab (поки ми його не оновили)
+    const forceRefetch = () => {
+        refetchTrainers();
+        refetchClients();
     };
 
     return (
@@ -51,8 +58,12 @@ export default function AdminPanel() {
                 />
 
                 <div className="admin-page-content">
+                    {/* Передаємо довжину масивів для Дашборда, або "..." під час завантаження */}
                     {activeTab === 'dashboard' && (
-                        <DashboardTab clientsCount={clients.length} trainersCount={trainers.length} />
+                        <DashboardTab 
+                            clientsCount={isClientsLoading ? '...' : clients.length} 
+                            trainersCount={isTrainersLoading ? '...' : trainers.length} 
+                        />
                     )}
 
                     {activeTab === 'schedule' && <ScheduleTab />}
@@ -61,7 +72,7 @@ export default function AdminPanel() {
                         <DataTableTab 
                             data={activeTab === 'trainers' ? trainers : clients} 
                             tabType={activeTab}
-                            onRefresh={loadData}
+                            onRefresh={forceRefetch}
                         />
                     )}
                 </div>
