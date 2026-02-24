@@ -1,4 +1,3 @@
-// src/components/Schedule.jsx
 import { useState, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -26,8 +25,8 @@ export default function Schedule() {
                 title: item.class_name || 'Тренування',
                 start: item.start_at,
                 end: item.end_at,
-                backgroundColor: 'var(--accent)',
-                borderColor: 'var(--accent)',
+                backgroundColor: '#ff0000',
+                borderColor: '#cc0000',
                 extendedProps: {
                     instructor: item.instructor_name,
                     capacity: item.capacity,
@@ -59,6 +58,7 @@ export default function Schedule() {
             return;
         }
 
+        // Використовуємо твій confirmAction для модалки "Я ВПЕВНЕНИЙ"
         confirmAction(
             `Записатися на заняття "${selectedEvent.title}"?`,
             async () => {
@@ -80,13 +80,14 @@ export default function Schedule() {
         );
     };
 
-    // Форматування дати для модалки
     const formatDate = (date) => {
         if (!date) return '';
         return new Intl.DateTimeFormat('uk-UA', {
             day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
         }).format(date);
     };
+
+    const isFull = selectedEvent?.booked >= selectedEvent?.capacity;
 
     return (
         <section id="schedule" className="section container">
@@ -106,51 +107,57 @@ export default function Schedule() {
                     slotMinTime="08:00:00"
                     slotMaxTime="22:00:00"
                     allDaySlot={false}
-                    slotLabelFormat={{
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false
-                    }}
-                    eventTimeFormat={{
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false
-                    }}
+                    slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+                    eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
                     events={fetchEvents}
                     eventClick={handleEventClick}
                     height="auto"
-                    aspectRatio={1.5}
                 />
             </div>
 
-            {/* Вбудована модалка для деталей події */}
             {selectedEvent && (
-                <div className="modal-overlay active">
-                    <div className="modal-content booking-modal">
+                <div className="modal-overlay active" onClick={() => setSelectedEvent(null)}>
+                    <div className="modal-content booking-modal" onClick={e => e.stopPropagation()}>
                         <button className="modal-close" onClick={() => setSelectedEvent(null)}>×</button>
 
                         <h3 className="modal-title">{selectedEvent.title}</h3>
+                        <div className="modal-divider"></div>
                         
                         <div className="booking-details">
-                            <p>
+                            <div className="detail-item">
                                 <i className="far fa-clock"></i> 
-                                <strong>Час:</strong> {formatDate(selectedEvent.start)}
-                            </p>
-                            <p>
+                                <div>
+                                    <span className="label">Час:</span>
+                                    <span className="value">{formatDate(selectedEvent.start)}</span>
+                                </div>
+                            </div>
+                            <div className="detail-item">
                                 <i className="fas fa-user-tie"></i>
-                                <strong>Тренер:</strong> {selectedEvent.instructor || 'Черговий'}
-                            </p>
-                            {selectedEvent.capacity && (
-                                <p>
-                                    <i className="fas fa-users"></i>
-                                    <strong>Місця:</strong> {selectedEvent.booked || 0} / {selectedEvent.capacity}
-                                </p>
-                            )}
+                                <div>
+                                    <span className="label">Тренер:</span>
+                                    <span className="value">{selectedEvent.instructor || 'Поліна Товстуха'}</span>
+                                </div>
+                            </div>
+                            <div className="detail-item">
+                                <i className="fas fa-users"></i>
+                                <div>
+                                    <span className="label">Місця:</span>
+                                    <span className={`value ${isFull ? 'text-danger' : ''}`}>
+                                        {selectedEvent.booked || 0} / {selectedEvent.capacity}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="booking-footer">
-                            <button onClick={() => setSelectedEvent(null)} className="btn btn-ghost">Скасувати</button>
-                            <button onClick={handleBooking} className="btn btn-primary">Записатися</button>
+                            <button onClick={() => setSelectedEvent(null)} className="btn-cancel">СКАСУВАТИ</button>
+                            <button 
+                                onClick={handleBooking} 
+                                className="btn-confirm" 
+                                disabled={isFull}
+                            >
+                                {isFull ? 'МІСЦЬ НЕМАЄ' : 'ЗАПИСАТИСЯ'}
+                            </button>
                         </div>
                     </div>
                 </div>
