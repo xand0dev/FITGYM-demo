@@ -4,7 +4,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import (
     Workout, Instructor, ClassSession, MembershipType, Class,
-    Member, Booking, Room, Payment  # <-- Додані нові моделі
+    Member, Booking, Room, Payment
 )
 
 
@@ -36,7 +36,7 @@ class MembershipTypeSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'amount', 'period_months', 'description']
 
 
-# Серіалізатор для Залів (НОВЕ)
+# Серіалізатор для Залів
 class RoomSerializer(serializers.ModelSerializer):
     class Meta:
         model = Room
@@ -46,7 +46,7 @@ class RoomSerializer(serializers.ModelSerializer):
 class ClassSessionSerializer(serializers.ModelSerializer):
     class_name = serializers.CharField(source='class_type.name', read_only=True)
     instructor_name = serializers.CharField(source='instructor.user.get_full_name', allow_null=True, read_only=True)
-    room_name = serializers.CharField(source='room.name', allow_null=True, read_only=True)  # <-- Додано Зал
+    room_name = serializers.CharField(source='room.name', allow_null=True, read_only=True)
 
     class Meta:
         model = ClassSession
@@ -100,7 +100,7 @@ class MemberSerializer(serializers.ModelSerializer):
             'email',
             'full_name',
             'is_staff',
-            'is_superuser',  # <-- Додано згідно вимог фронтенду
+            'is_superuser',
             'contact',
             'gender',
             'birth_date',
@@ -130,7 +130,7 @@ class BookingCreateSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'booked_at', 'status']
 
 
-# Серіалізатор для Оплат клієнта (НОВЕ)
+# Серіалізатор для Оплат клієнта
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
@@ -138,7 +138,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             'id', 'member', 'membership_history', 'amount',
             'payment_date', 'payment_method', 'status', 'gateway_transaction_id'
         ]
-        read_only_fields = ['payment_date', 'member'] # member підставлятиметься автоматично у view
+        read_only_fields = ['payment_date', 'member']
 
 
 # === АДМІНСЬКІ СЕРІАЛІЗАТОРИ ===
@@ -146,7 +146,6 @@ class PaymentSerializer(serializers.ModelSerializer):
 class AdminClassSessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClassSession
-        # Додали 'room', щоб адмін міг призначати зал при створенні розкладу
         fields = ['id', 'class_type', 'instructor', 'room', 'start_at', 'end_at', 'capacity']
 
 
@@ -176,6 +175,11 @@ class AdminInstructorSerializer(serializers.ModelSerializer):
             first_name=first_name,
             last_name=last_name
         )
+
+        # 👇 НОВЕ: Надаємо тренеру права персоналу (is_staff)
+        user.is_staff = True
+        user.save()
+
         instructor = Instructor.objects.create(user=user, **validated_data)
         return instructor
 
