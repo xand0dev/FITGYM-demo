@@ -302,3 +302,109 @@
         grid-template-columns: repeat(2, 1fr) !important;
     }
 }
+
+/* ========================================================== */
+/* ПРЕМІУМ СПОВІЩЕННЯ (TOASTS)                                */
+/* ========================================================== */
+.premium-toast-wrapper {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    pointer-events: none; /* Щоб не блокувати кліки поза тостом */
+}
+
+.premium-toast {
+    position: relative;
+    pointer-events: auto;
+    background: #0d0d0d;
+    border: 1px solid #222;
+    padding: 16px 24px 16px 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    min-width: 300px;
+    max-width: 400px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8);
+    cursor: pointer;
+    overflow: hidden;
+    transform: translateX(120%);
+    animation: slideInRight 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+/* Анімація появи */
+@keyframes slideInRight {
+    to { transform: translateX(0); }
+}
+
+/* Внутрішнє світіння */
+.toast-glow {
+    position: absolute;
+    top: -50%; right: -50%;
+    width: 100px; height: 100px;
+    background: radial-gradient(circle, rgba(255,0,0,0.15) 0%, rgba(0,0,0,0) 70%);
+    border-radius: 50%;
+    filter: blur(15px);
+    z-index: 0;
+}
+
+.toast-icon-wrap {
+    z-index: 1;
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.toast-content {
+    z-index: 1;
+    flex-grow: 1;
+}
+
+.toast-content h4 {
+    margin: 0 0 4px 0;
+    font-size: 0.75rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 800;
+}
+
+.toast-content p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #fff;
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+/* Статус-бар, що зникає за 3 секунди (час життя тоста з UIContext) */
+.toast-progress {
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 3px;
+    background: #e60000;
+    width: 100%;
+    animation: progressShrink 3s linear forwards;
+}
+
+@keyframes progressShrink {
+    to { width: 0%; }
+}
+
+/* Модифікатори для SUCCESS та ERROR */
+.toast-success { border-left: 4px solid #e60000; }
+.toast-success .toast-icon-wrap { color: #e60000; }
+
+.toast-error { border-left: 4px solid #ff9900; }
+.toast-error .toast-icon-wrap { color: #ff9900; }
+.toast-error .toast-progress { background: #ff9900; }
+.toast-error .toast-glow { background: radial-gradient(circle, rgba(255,153,0,0.1) 0%, rgba(0,0,0,0) 70%); }

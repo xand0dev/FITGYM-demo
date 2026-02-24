@@ -422,8 +422,8 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
         // Ініціалізація пустих полів залежно від типу
         setFormData(
             isTrainer 
-                ? { full_name: '', specialties: '', bio: '' } 
-                : { username: '', email: '', first_name: '', last_name: '', password: '' }
+                ? { username: '', password: '', first_name: '', last_name: '', specialties: '', contact: '' } 
+                : { username: '', email: '', first_name: '', last_name: '', password: '', contact: '' }
         );
         setIsModalOpen(true);
     };
@@ -549,21 +549,45 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
                     {isTrainer ? (
                         <>
                             <div className="form-group">
-                                <label>ПІБ Тренера</label>
-                                <input type="text" name="full_name" value={formData.full_name || ''} onChange={handleChange} required />
+                                <label>Username (Логін)</label>
+                                <input 
+                                    type="text" 
+                                    name="username" 
+                                    value={formData.username || ''} 
+                                    onChange={handleChange} 
+                                    required 
+                                    disabled={modalMode === 'edit'} 
+                                />
+                            </div>
+                            
+                            {modalMode === 'create' && (
+                                <div className="form-group">
+                                    <label>Пароль</label>
+                                    <input type="password" name="password" value={formData.password || ''} onChange={handleChange} required minLength="6" />
+                                </div>
+                            )}
+
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label>Ім'я</label>
+                                    <input type="text" name="first_name" value={formData.first_name || ''} onChange={handleChange} required />
+                                </div>
+                                <div className="form-group">
+                                    <label>Прізвище</label>
+                                    <input type="text" name="last_name" value={formData.last_name || ''} onChange={handleChange} required />
+                                </div>
                             </div>
                             <div className="form-group">
                                 <label>Спеціалізація</label>
-                                <input type="text" name="specialties" value={formData.specialties || ''} onChange={handleChange} placeholder="Crossfit, Yoga, Boxing..." />
+                                <input type="text" name="specialties" value={formData.specialties || ''} onChange={handleChange} placeholder="Crossfit, Yoga, Boxing..." required />
                             </div>
                             <div className="form-group">
-                                <label>Біографія (Bio)</label>
-                                <input type="text" name="bio" value={formData.bio || ''} onChange={handleChange} placeholder="Досвід роботи, досягнення..." />
+                                <label>Контакт (Телефон)</label>
+                                <input type="text" name="contact" value={formData.contact || ''} onChange={handleChange} placeholder="+380..." />
                             </div>
                         </>
                     ) : (
-                    
-                    /* ФОРМА ДЛЯ КЛІЄНТА (Користувача) */
+                        /* ФОРМА ДЛЯ КЛІЄНТА (Користувача) */
                         <>
                             <div className="form-group">
                                 <label>Username (Логін)</label>
@@ -573,7 +597,7 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
                                     value={formData.username || ''} 
                                     onChange={handleChange} 
                                     required 
-                                    disabled={modalMode === 'edit'} // Логін зазвичай не міняють після створення
+                                    disabled={modalMode === 'edit'} 
                                 />
                             </div>
                             <div className="form-group">
@@ -583,11 +607,11 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
                             <div className="form-row">
                                 <div className="form-group">
                                     <label>Ім'я</label>
-                                    <input type="text" name="first_name" value={formData.first_name || ''} onChange={handleChange} />
+                                    <input type="text" name="first_name" value={formData.first_name || ''} onChange={handleChange} required />
                                 </div>
                                 <div className="form-group">
                                     <label>Прізвище</label>
-                                    <input type="text" name="last_name" value={formData.last_name || ''} onChange={handleChange} />
+                                    <input type="text" name="last_name" value={formData.last_name || ''} onChange={handleChange} required />
                                 </div>
                             </div>
                             {modalMode === 'create' && (
@@ -2153,79 +2177,6 @@ export default function Plans() {
 }
 
 =========================================
-ФАЙЛ: src\components\Preloader.jsx
-=========================================
-
-import React, { useEffect, useState } from 'react';
-
-export default function Preloader() {
-    const [visible, setVisible] = useState(true);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setVisible(false);
-        }, 1500); // Зникне через 1.5 секунди
-        return () => clearTimeout(timer);
-    }, []);
-
-    if (!visible) return null;
-
-    return (
-        <div className="preloader-overlay">
-            <div className="preloader-content">
-                <h1 className="preloader-logo">FIT<span className="red">GYM</span></h1>
-                <div className="preloader-bar">
-                    <div className="preloader-progress"></div>
-                </div>
-                <p className="preloader-text">ГОТУЄМО ЗАЛ ДО ТРЕНУВАННЯ...</p>
-            </div>
-
-            <style>{`
-                .preloader-overlay {
-                    position: fixed;
-                    top: 0; left: 0; width: 100%; height: 100%;
-                    background: #000;
-                    display: flex; align-items: center; justify-content: center;
-                    z-index: 999999;
-                }
-                .preloader-content { text-align: center; }
-                .preloader-logo {
-                    font-size: 5rem;
-                    font-weight: 950;
-                    color: #fff;
-                    margin-bottom: 20px;
-                    letter-spacing: -2px;
-                    animation: pulse 1s infinite alternate;
-                }
-                .red { color: #ff0000; }
-                .preloader-bar {
-                    width: 200px;
-                    height: 4px;
-                    background: #222;
-                    margin: 0 auto 15px;
-                    position: relative;
-                    overflow: hidden;
-                }
-                .preloader-progress {
-                    width: 0%;
-                    height: 100%;
-                    background: #ff0000;
-                    animation: load 1.5s ease-in-out forwards;
-                }
-                .preloader-text {
-                    color: #666;
-                    font-weight: 800;
-                    font-size: 0.8rem;
-                    letter-spacing: 2px;
-                }
-                @keyframes load { to { width: 100%; } }
-                @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.05); } }
-            `}</style>
-        </div>
-    );
-}
-
-=========================================
 ФАЙЛ: src\components\RegisterModal.jsx
 =========================================
 
@@ -3240,7 +3191,7 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 
 // Імпорт компонентів
-import Preloader from '../components/Preloader'; // Додано Preloader
+
 import Hero from '../components/Hero';
 import Stats from '../components/Stats'; 
 import Categories from '../components/Categories'; 
@@ -3276,8 +3227,7 @@ export default function Home() {
 
     return (
         <>
-            {/* Екран завантаження, що зникне через 1.5 сек */}
-            <Preloader />
+           
 
             <main style={{ background: '#fff' }}>
                 {/* 1. Головний банер (Брутальний стиль) */}
