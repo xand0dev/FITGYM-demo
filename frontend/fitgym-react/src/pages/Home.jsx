@@ -1,10 +1,8 @@
-import { useEffect, useState } from 'react';
-import { publicRequest } from '../utils/api';
+import { useEffect } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 
 // Імпорт компонентів
-
 import Hero from '../components/Hero';
 import Stats from '../components/Stats'; 
 import Categories from '../components/Categories'; 
@@ -14,10 +12,14 @@ import BMICalculator from '../components/BMICalculator';
 import Carousel from '../components/Carousel'; 
 import Schedule from '../components/Schedule';
 import { useAuth } from '../context/AuthContext';
+import { usePublicData } from '../hooks/useFitQuery'; // Підключаємо наш арсенал
 
 export default function Home() {
-    const [trainers, setTrainers] = useState([]);
     const { user } = useAuth(); 
+    
+    // --- REACT QUERY В ДІЇ ---
+    // Автоматичне кешування, ретраї, відслідковування завантаження
+    const { data: trainers = [], isLoading: isTrainersLoading } = usePublicData('trainers', '/api/instructors/');
 
     useEffect(() => {
         // Ініціалізація анімацій при скролі
@@ -26,22 +28,10 @@ export default function Home() {
             once: true,
             offset: 120 
         });
-        loadTrainers();
     }, []);
-
-    const loadTrainers = async () => {
-        try {
-            const data = await publicRequest('/api/instructors/');
-            setTrainers(data);
-        } catch (e) { 
-            console.error("Помилка завантаження тренерів:", e); 
-        }
-    };
 
     return (
         <>
-           
-
             <main style={{ background: '#fff' }}>
                 {/* 1. Головний банер (Брутальний стиль) */}
                 <Hero />
@@ -174,27 +164,41 @@ export default function Home() {
                 {/* 7. Галерея (Слайдер) */}
                 <Carousel /> 
 
-                {/* 8. Секція Команди */}
+                {/* 8. Секція Команди (З інтеграцією React Query та Скелетонів) */}
                 <section id="trainers" className="section container" style={{ padding: '100px 20px' }}>
                     <h2 style={{ textAlign: 'center', fontSize: '2.8rem', fontWeight: '950', marginBottom: '60px', textTransform: 'uppercase' }}>
                         Команда <span style={{color: '#ff0000'}}>профі</span>
                     </h2>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '30px' }}>
-                        {trainers.map(t => (
-                            <div key={t.id} className="trainer-card" data-aos="zoom-in" style={{ 
-                                border: '3px solid #000', 
-                                background: '#fff',
-                                transition: '0.3s'
-                            }}>
-                                <div style={{ height: '350px', background: '#111', color: '#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
-                                    <i className="fas fa-user fa-6x" style={{opacity: '0.2'}}></i>
+                        {isTrainersLoading ? (
+                            // --- БОЙОВІ СКЕЛЕТОНИ (Поки вантажаться дані) ---
+                            [1, 2, 3, 4].map((skel) => (
+                                <div key={skel} className="trainer-card" style={{ border: '3px solid #000', background: '#fff' }}>
+                                    <div className="skeleton-box" style={{ height: '350px', borderRadius: '0' }}></div>
+                                    <div style={{ padding: '30px' }}>
+                                        <div className="skeleton-box skeleton-title" style={{ margin: '0 auto 10px', width: '70%' }}></div>
+                                        <div className="skeleton-box skeleton-text" style={{ margin: '0 auto', width: '50%' }}></div>
+                                    </div>
                                 </div>
-                                <div style={{ padding: '30px', textAlign: 'center' }}>
-                                    <h3 style={{ fontWeight: '900', textTransform: 'uppercase', margin: '0 0 10px 0', fontSize: '1.4rem' }}>{t.full_name || t.name}</h3>
-                                    <p style={{ color: '#ff0000', fontWeight: '800', fontSize: '0.9rem', letterSpacing: '1px', textTransform: 'uppercase' }}>{t.specialties || t.specialization}</p>
+                            ))
+                        ) : (
+                            // --- РЕАЛЬНІ ДАНІ ---
+                            trainers.map(t => (
+                                <div key={t.id} className="trainer-card" data-aos="zoom-in" style={{ 
+                                    border: '3px solid #000', 
+                                    background: '#fff',
+                                    transition: '0.3s'
+                                }}>
+                                    <div style={{ height: '350px', background: '#111', color: '#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
+                                        <i className="fas fa-user fa-6x" style={{opacity: '0.2'}}></i>
+                                    </div>
+                                    <div style={{ padding: '30px', textAlign: 'center' }}>
+                                        <h3 style={{ fontWeight: '900', textTransform: 'uppercase', margin: '0 0 10px 0', fontSize: '1.4rem' }}>{t.full_name || t.name}</h3>
+                                        <p style={{ color: '#ff0000', fontWeight: '800', fontSize: '0.9rem', letterSpacing: '1px', textTransform: 'uppercase' }}>{t.specialties || t.specialization}</p>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 </section>
 
