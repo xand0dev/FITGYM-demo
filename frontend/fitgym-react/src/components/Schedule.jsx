@@ -4,9 +4,13 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import ukLocale from '@fullcalendar/core/locales/uk';
-import { publicRequest, authRequest } from '../utils/api';
+import { publicRequest } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
+
+// Підключаємо наш арсенал React Query
+import { useQueryClient } from '@tanstack/react-query';
+import { useFitMutation } from '../hooks/useFitQuery';
 
 export default function Schedule() {
     const { user } = useAuth();
@@ -14,11 +18,22 @@ export default function Schedule() {
     
     const [selectedEvent, setSelectedEvent] = useState(null);
     const calendarRef = useRef(null);
+    
+    // Отримуємо доступ до головного когітатора кешу
+    const queryClient = useQueryClient();
+    
+    // Заряджаємо мутацію для бронювання
+    const bookMutation = useFitMutation('POST');
 
+    // Календар викликає цю функцію при зміні дат
     const fetchEvents = async (info, successCallback, failureCallback) => {
         try {
-            const url = `/api/schedule/?start=${info.startStr}&end=${info.endStr}`;
-            const data = await publicRequest(url);
+            // Замість прямого запиту, пропускаємо його через матрицю кешування
+            const data = await queryClient.fetchQuery({
+                queryKey: ['schedule', info.startStr, info.endStr],
+                queryFn: () => publicRequest(`/api/schedule/?start=${info.startStr}&end=${info.endStr}`),
+                staleTime: 1000 * 60 * 5, // 5 хвилин дані вважаються свіжими
+            });
             
             const events = data.map(item => ({
                 id: item.id,
@@ -58,24 +73,28 @@ export default function Schedule() {
             return;
         }
 
-        // Використовуємо твій confirmAction для модалки "Я ВПЕВНЕНИЙ"
+        // Використовуємо confirmAction для модалки "Я ВПЕВНЕНИЙ"
         confirmAction(
             `Записатися на заняття "${selectedEvent.title}"?`,
-            async () => {
-                try {
-                    await authRequest('/api/book/', 'POST', { 
-                        session: selectedEvent.id 
-                    });
-                    
-                    addToast('Ви успішно записалися!', 'success');
-                    setSelectedEvent(null);
-                    
-                    if (calendarRef.current) {
-                        calendarRef.current.getApi().refetchEvents();
+            () => {
+                // Виконуємо тактичний удар через мутацію
+                bookMutation.mutate(
+                    { endpoint: '/api/book/', data: { session: selectedEvent.id } },
+                    {
+                        onSuccess: () => {
+                            addToast('Ви успішно записалися!', 'success');
+                            setSelectedEvent(null);
+                            
+                            // Примусово оновлюємо події в календарі після успішного запису
+                            if (calendarRef.current) {
+                                calendarRef.current.getApi().refetchEvents();
+                            }
+                        },
+                        onError: (error) => {
+                            addToast(error.message || 'Помилка бронювання', 'error');
+                        }
                     }
-                } catch (e) {
-                    addToast(e.message || 'Помилка бронювання', 'error');
-                }
+                );
             }
         );
     };
@@ -88,6 +107,8 @@ export default function Schedule() {
     };
 
     const isFull = selectedEvent?.booked >= selectedEvent?.capacity;
+    // Блокуємо кнопку, якщо місць немає або якщо зараз іде запит на сервер
+    const isActionDisabled = isFull || bookMutation.isPending;
 
     return (
         <section id="schedule" className="section container">
@@ -116,9 +137,13 @@ export default function Schedule() {
             </div>
 
             {selectedEvent && (
-                <div className="modal-overlay active" onClick={() => setSelectedEvent(null)}>
+                <div className="modal-overlay active" onClick={() => !bookMutation.isPending && setSelectedEvent(null)}>
                     <div className="modal-content booking-modal" onClick={e => e.stopPropagation()}>
-                        <button className="modal-close" onClick={() => setSelectedEvent(null)}>×</button>
+                        <button 
+                            className="modal-close" 
+                            onClick={() => setSelectedEvent(null)}
+                            disabled={bookMutation.isPending}
+                        >×</button>
 
                         <h3 className="modal-title">{selectedEvent.title}</h3>
                         <div className="modal-divider"></div>
@@ -150,13 +175,19 @@ export default function Schedule() {
                         </div>
 
                         <div className="booking-footer">
-                            <button onClick={() => setSelectedEvent(null)} className="btn-cancel">СКАСУВАТИ</button>
+                            <button 
+                                onClick={() => setSelectedEvent(null)} 
+                                className="btn-cancel"
+                                disabled={bookMutation.isPending}
+                            >
+                                СКАСУВАТИ
+                            </button>
                             <button 
                                 onClick={handleBooking} 
                                 className="btn-confirm" 
-                                disabled={isFull}
+                                disabled={isActionDisabled}
                             >
-                                {isFull ? 'МІСЦЬ НЕМАЄ' : 'ЗАПИСАТИСЯ'}
+                                {bookMutation.isPending ? 'ОБРОБКА...' : (isFull ? 'МІСЦЬ НЕМАЄ' : 'ЗАПИСАТИСЯ')}
                             </button>
                         </div>
                     </div>
