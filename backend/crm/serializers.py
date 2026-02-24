@@ -1,35 +1,28 @@
 # crm/serializers.py
 
 from rest_framework import serializers
-# 👇 'Booking' та 'ClassSession' вже імпортовані, чудово
-from .models import Workout, Instructor, ClassSession, MembershipType, Class, Member, Booking
 from django.contrib.auth.models import User
+from .models import (
+    Workout, Instructor, ClassSession, MembershipType, Class,
+    Member, Booking, Room, Payment  # <-- Додані нові моделі
+)
 
 
-# Серіалізатор для моделі Workout
+# === ПУБЛІЧНІ СЕРІАЛІЗАТОРИ ===
+
 class WorkoutSerializer(serializers.ModelSerializer):
     class Meta:
         model = Workout
-        fields = ['id', 'name', 'description']  # Які поля показувати
+        fields = ['id', 'name', 'description']
 
-
-# ---
-# СЕРІАЛІЗАТОРИ ДЛЯ ФРОНТЕНДУ (ПУБЛІЧНІ)
-# ---
-
-# Серіалізатор для типів занять (Class)
 
 class ClassSerializer(serializers.ModelSerializer):
-    """
-    Використовується для списків (Dropdown) в адмінці та на сайті.
-    """
     class Meta:
         model = Class
         fields = ['id', 'name', 'description']
 
-# Серіалізатор для Тренерів
+
 class InstructorSerializer(serializers.ModelSerializer):
-    # 'source' дозволяє взяти дані з іншої моделі (user.get_full_name)
     full_name = serializers.CharField(source='user.get_full_name', read_only=True)
 
     class Meta:
@@ -37,40 +30,37 @@ class InstructorSerializer(serializers.ModelSerializer):
         fields = ['id', 'full_name', 'specialties']
 
 
-# Серіалізатор для Абонементів
 class MembershipTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = MembershipType
         fields = ['id', 'name', 'amount', 'period_months', 'description']
 
 
-# Серіалізатор для Розкладу
+# Серіалізатор для Залів (НОВЕ)
+class RoomSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Room
+        fields = ['id', 'name', 'capacity', 'description']
+
+
 class ClassSessionSerializer(serializers.ModelSerializer):
-    # 'source' дозволяє взяти дані з іншої моделі (user.get_full_name)
     class_name = serializers.CharField(source='class_type.name', read_only=True)
     instructor_name = serializers.CharField(source='instructor.user.get_full_name', allow_null=True, read_only=True)
+    room_name = serializers.CharField(source='room.name', allow_null=True, read_only=True)  # <-- Додано Зал
 
     class Meta:
         model = ClassSession
-        fields = ['id', 'class_name', 'instructor_name', 'start_at', 'end_at', 'capacity']
+        fields = ['id', 'class_name', 'instructor_name', 'room_name', 'start_at', 'end_at', 'capacity']
 
 
-# ---
-# ЕТАП 2: СЕРІАЛІЗАТОР ДЛЯ РЕЄСТРАЦІЇ
-# ---
+# === АВТОРИЗАЦІЯ ТА ПРОФІЛЬ ===
 
 class RegisterSerializer(serializers.ModelSerializer):
-    """
-    Серіалізатор для реєстрації. Створює User + Member.
-    """
-    # Додаткові поля, яких нема в User, але потрібні для форми.
-    # 'write_only' = поле можна тільки надіслати, але не отримати у відповіді.
     name = serializers.CharField(write_only=True, required=True)
     password = serializers.CharField(write_only=True, required=True, min_length=8)
 
     class Meta:
         model = User
-        # Поля, які очікуємо з фронту
         fields = ('email', 'username', 'password', 'name')
         extra_kwargs = {
             'username': {'required': True},
@@ -78,51 +68,39 @@ class RegisterSerializer(serializers.ModelSerializer):
         }
 
     def create(self, validated_data):
-        # 'create' - це тут головне. Перевизначаємо, щоб створити 2 об'єкти.
-
-        # 'pop' name, бо його нема в 'create_user' напряму.
         name = validated_data.pop('name')
-
-        # Використовуємо 'create_user', він сам хешує пароль.
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
             password=validated_data['password'],
-            first_name=name  # Запишемо 'name' у 'first_name'
+            first_name=name
         )
-
-        # ВАЖЛИВО: одразу створюємо пустий профіль Member і прив'язуємо його.
         Member.objects.create(user=user)
-
         return user
 
-
-# ---
-# ЕТАП 2: СЕРІАЛІЗАТОР ДЛЯ ОСОБИСТОГО КАБІНЕТУ (/api/me/)
-# ---
 
 class MemberSerializer(serializers.ModelSerializer):
     """
     Серіалізатор для профілю Клієнта (Member).
     Використовується для /api/me/
     """
-    # Беремо дані з прив'язаної моделі User
     username = serializers.CharField(source='user.username', read_only=True)
     email = serializers.EmailField(source='user.email', read_only=True)
     full_name = serializers.CharField(source='user.get_full_name', read_only=True)
 
-    # 👇 НОВЕ ПОЛЕ: беремо is_staff з моделі User
+    # RBAC Прапорці
     is_staff = serializers.BooleanField(source='user.is_staff', read_only=True)
+    is_superuser = serializers.BooleanField(source='user.is_superuser', read_only=True)
 
     class Meta:
         model = Member
-        # Вказуємо всі поля, які хочемо повернути фронтенду
         fields = [
             'id',
             'username',
             'email',
             'full_name',
-            'is_staff',  
+            'is_staff',
+            'is_superuser',  # <-- Додано згідно вимог фронтенду
             'contact',
             'gender',
             'birth_date',
@@ -130,38 +108,17 @@ class MemberSerializer(serializers.ModelSerializer):
         ]
 
 
-# ---
-# ЕТАП 2: СЕРІАЛІЗАТОР ДЛЯ "МОЇХ ЗАПИСІВ" (/api/my-bookings/)
-# ---
+# === КЛІЄНТСЬКІ ДІЇ ===
 
 class BookingSerializer(serializers.ModelSerializer):
-    """
-    Серіалізатор для записів (Bookings) користувача.
-    """
-    # "Вкладаємо" серіалізатор сесії, щоб бачити повну інфу про заняття
-    # 'read_only=True' означає, що ми не можемо *створювати* сесію через цей API,
-    # а можемо тільки *читати* її.
     session = ClassSessionSerializer(read_only=True)
 
     class Meta:
         model = Booking
-        # Повертаємо ID самого запису, статус, час запису,
-        # і "вкладений" об'єкт 'session'
         fields = ['id', 'session', 'booked_at', 'status']
 
 
-# ---
-# ЕТАП 3: СЕРІАЛІЗАТОР ДЛЯ СТВОРЕННЯ ЗАПИСУ (/api/book/)
-# ---
-
-class BookingCreateSerializer(serializers.ModelSerializer):  # <-- НОВИЙ КЛАС
-    """
-    Серіалізатор для POST /api/book/
-    Приймає 'session' (ID сесії) і автоматично додає 'member'.
-    """
-
-    # PrimaryKeyRelatedField - це найкращий спосіб прийняти ID
-    # і автоматично перевірити, що об'єкт (ClassSession) з таким ID існує.
+class BookingCreateSerializer(serializers.ModelSerializer):
     session = serializers.PrimaryKeyRelatedField(
         queryset=ClassSession.objects.all(),
         label="ID Заняття"
@@ -169,35 +126,31 @@ class BookingCreateSerializer(serializers.ModelSerializer):  # <-- НОВИЙ К
 
     class Meta:
         model = Booking
-        # 'member' буде додано автоматично у view
-        # 'booked_at' (якщо auto_now_add=True) і 'status' (якщо default='active')
-        # додадуться автоматично при збереженні.
         fields = ['id', 'session', 'booked_at', 'status']
-
-        # 'id', 'booked_at', 'status' ми не очікуємо від юзера,
-        # вони встановлюються сервером.
         read_only_fields = ['id', 'booked_at', 'status']
 
 
-# ---
-# ЕТАП 4: АДМІНСЬКІ СЕРІАЛІЗАТОРИ
-# ---
+# Серіалізатор для Оплат клієнта (НОВЕ)
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = [
+            'id', 'member', 'membership_history', 'amount',
+            'payment_date', 'payment_method', 'status', 'gateway_transaction_id'
+        ]
+        read_only_fields = ['payment_date', 'member'] # member підставлятиметься автоматично у view
+
+
+# === АДМІНСЬКІ СЕРІАЛІЗАТОРИ ===
 
 class AdminClassSessionSerializer(serializers.ModelSerializer):
-    """
-    Серіалізатор для CRUD операцій із розкладом (лише для адмінів).
-    На відміну від публічного, тут ми працюємо з ID (class_type, instructor),
-    а не з іменами, щоб мати змогу створювати та редагувати об'єкти.
-    """
     class Meta:
         model = ClassSession
-        fields = ['id', 'class_type', 'instructor', 'start_at', 'end_at', 'capacity']
+        # Додали 'room', щоб адмін міг призначати зал при створенні розкладу
+        fields = ['id', 'class_type', 'instructor', 'room', 'start_at', 'end_at', 'capacity']
 
 
 class AdminInstructorSerializer(serializers.ModelSerializer):
-    """
-    Серіалізатор для Адміна. Створює тренера + User + контакт.
-    """
     username = serializers.CharField(write_only=True)
     password = serializers.CharField(write_only=True, style={'input_type': 'password'})
     first_name = serializers.CharField(write_only=True)
@@ -207,70 +160,50 @@ class AdminInstructorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Instructor
         fields = [
-            'id',
-            'username', 'password', 'first_name', 'last_name',
-            'full_name',
-            'specialties',
-            'contact'
+            'id', 'username', 'password', 'first_name', 'last_name',
+            'full_name', 'specialties', 'contact'
         ]
 
     def create(self, validated_data):
-        # 1. "Вирізаємо" дані для User (щоб вони не потрапили в Instructor)
         username = validated_data.pop('username')
         password = validated_data.pop('password')
         first_name = validated_data.pop('first_name')
         last_name = validated_data.pop('last_name')
 
-        # 2. Створюємо User
         user = User.objects.create_user(
             username=username,
             password=password,
             first_name=first_name,
             last_name=last_name
         )
-
-        # 3. Створюємо Instructor
-        # Всі поля, що лишилися в validated_data (в т.ч. contact),
-        # підуть в модель Instructor
         instructor = Instructor.objects.create(user=user, **validated_data)
-
         return instructor
 
 
 class AdminMemberSerializer(serializers.ModelSerializer):
-    """
-    Серіалізатор для створення/редагування клієнтів адміном.
-    При створенні вимагає дані для User (username, password).
-    """
-    # Поля для створення User
-    username = serializers.CharField(write_only=True, required=False) # required=False для PUT
+    username = serializers.CharField(write_only=True, required=False)
     password = serializers.CharField(write_only=True, required=False, style={'input_type': 'password'})
     first_name = serializers.CharField(write_only=True, required=False)
     last_name = serializers.CharField(write_only=True, required=False)
     email = serializers.EmailField(write_only=True, required=False)
 
-    # Поля для читання
     full_name = serializers.CharField(source='user.get_full_name', read_only=True)
     user_email = serializers.EmailField(source='user.email', read_only=True)
 
     class Meta:
         model = Member
         fields = [
-            'id',
-            'username', 'password', 'first_name', 'last_name', 'email', # Write only (Create)
-            'full_name', 'user_email', # Read only
-            'contact', 'status', 'birth_date', 'gender' # Member fields
+            'id', 'username', 'password', 'first_name', 'last_name', 'email',
+            'full_name', 'user_email', 'contact', 'status', 'birth_date', 'gender'
         ]
 
     def create(self, validated_data):
-        # 1. Витягуємо дані для User
         username = validated_data.pop('username')
         password = validated_data.pop('password')
         first_name = validated_data.pop('first_name', '')
         last_name = validated_data.pop('last_name', '')
         email = validated_data.pop('email', '')
 
-        # 2. Створюємо User
         user = User.objects.create_user(
             username=username,
             password=password,
@@ -278,15 +211,10 @@ class AdminMemberSerializer(serializers.ModelSerializer):
             first_name=first_name,
             last_name=last_name
         )
-
-        # 3. Створюємо Member
         member = Member.objects.create(user=user, **validated_data)
         return member
 
     def update(self, instance, validated_data):
-        # Для PUT/PATCH оновлюємо тільки поля Member (статус, контакт)
-        # Якщо треба оновлювати і User (ім'я, email) - це треба прописувати окремо,
-        # але поки спростимо задачу.
         instance.contact = validated_data.get('contact', instance.contact)
         instance.status = validated_data.get('status', instance.status)
         instance.save()
