@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { authRequest } from '../../utils/api';
 import AdminModal from './AdminModal';
+import { useFitMutation } from '../../hooks/useFitQuery'; // Підключаємо наш бойовий арсенал
 
 export default function DataTableTab({ data, tabType, onRefresh }) {
     // Стан модалки та форми
@@ -12,8 +12,16 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
     const isTrainer = tabType === 'trainers';
     const title = isTrainer ? 'Тренери' : 'Клієнти';
 
-    // --- ОБРОБНИКИ ДІЙ ---
+    // --- ЗАРЯДЖАЄМО МУТАЦІЇ (REACT QUERY) ---
+    const createMutation = useFitMutation('POST');
+    const updateMutation = useFitMutation('PUT');
+    const deleteMutation = useFitMutation('DELETE');
 
+    // Перевірка активних запитів (блокує кнопки від подвійних кліків)
+    const isSubmitting = createMutation.isPending || updateMutation.isPending;
+    const isDeleting = deleteMutation.isPending;
+
+    // --- ОБРОБНИКИ ДІЙ ---
     const handleAddNew = () => {
         setModalMode('create');
         // Ініціалізація пустих полів залежно від типу
@@ -31,30 +39,42 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
         setIsModalOpen(true);
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm(`Ви впевнені, що хочете видалити цей запис?`)) return;
-        try {
-            const endpoint = isTrainer ? `/api/admin/instructors/${id}/` : `/api/admin/members/${id}/`;
-            await authRequest(endpoint, 'DELETE');
-            if (onRefresh) onRefresh(); 
-        } catch (e) {
-            alert('Не вдалося видалити: ' + e.message);
-        }
+    const handleDelete = (id) => {
+        if (!window.confirm(`Ви впевнені, що хочете знищити цей запис?`)) return;
+        
+        const endpoint = isTrainer ? `/api/admin/instructors/${id}/` : `/api/admin/members/${id}/`;
+        
+        // Тактичний удар
+        deleteMutation.mutate(
+            { endpoint, data: null },
+            {
+                onSuccess: () => {
+                    if (onRefresh) onRefresh(); // Синхронізація з батьківським компонентом
+                },
+                onError: (e) => alert('Не вдалося видалити: ' + e.message)
+            }
+        );
     };
 
-    const handleSave = async (e) => {
+    const handleSave = (e) => {
         e.preventDefault();
-        try {
-            const endpoint = isTrainer ? '/api/admin/instructors/' : '/api/admin/members/';
-            const url = modalMode === 'create' ? endpoint : `${endpoint}${formData.id}/`;
-            const method = modalMode === 'create' ? 'POST' : 'PUT';
-            
-            await authRequest(url, method, formData);
-            setIsModalOpen(false);
-            if (onRefresh) onRefresh();
-        } catch (e) {
-            alert('Помилка збереження: ' + e.message);
-        }
+        
+        const endpoint = isTrainer ? '/api/admin/instructors/' : '/api/admin/members/';
+        const url = modalMode === 'create' ? endpoint : `${endpoint}${formData.id}/`;
+        
+        // Обираємо зброю залежно від режиму
+        const mutation = modalMode === 'create' ? createMutation : updateMutation;
+
+        mutation.mutate(
+            { endpoint: url, data: formData },
+            {
+                onSuccess: () => {
+                    setIsModalOpen(false);
+                    if (onRefresh) onRefresh();
+                },
+                onError: (e) => alert('Помилка збереження: ' + e.message)
+            }
+        );
     };
 
     const handleChange = (e) => {
@@ -114,10 +134,19 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
                                 </td>
                                 <td>
                                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                        <button title="Редагувати" onClick={() => handleEdit(item)}>
+                                        <button 
+                                            title="Редагувати" 
+                                            onClick={() => handleEdit(item)}
+                                            disabled={isDeleting}
+                                        >
                                             <i className="fas fa-pen"></i>
                                         </button>
-                                        <button title="Видалити" onClick={() => handleDelete(item.id)} style={{ color: '#ff4d4d', borderColor: 'rgba(255,0,0,0.3)' }}>
+                                        <button 
+                                            title="Видалити" 
+                                            onClick={() => handleDelete(item.id)} 
+                                            style={{ color: '#ff4d4d', borderColor: 'rgba(255,0,0,0.3)', opacity: isDeleting ? 0.5 : 1 }}
+                                            disabled={isDeleting}
+                                        >
                                             <i className="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -137,7 +166,7 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
             {/* УНІВЕРСАЛЬНА МОДАЛКА (Створення / Редагування) */}
             <AdminModal 
                 isOpen={isModalOpen} 
-                onClose={() => setIsModalOpen(false)} 
+                onClose={() => !isSubmitting && setIsModalOpen(false)} 
                 title={modalMode === 'create' ? `Новий ${isTrainer ? 'тренер' : 'клієнт'}` : `Редагування`}
             >
                 <form className="admin-form" onSubmit={handleSave}>
@@ -153,34 +182,34 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
                                     value={formData.username || ''} 
                                     onChange={handleChange} 
                                     required 
-                                    disabled={modalMode === 'edit'} 
+                                    disabled={modalMode === 'edit' || isSubmitting} 
                                 />
                             </div>
                             
                             {modalMode === 'create' && (
                                 <div className="form-group">
                                     <label>Пароль</label>
-                                    <input type="password" name="password" value={formData.password || ''} onChange={handleChange} required minLength="6" />
+                                    <input type="password" name="password" value={formData.password || ''} onChange={handleChange} required minLength="6" disabled={isSubmitting} />
                                 </div>
                             )}
 
                             <div className="form-row">
                                 <div className="form-group">
                                     <label>Ім'я</label>
-                                    <input type="text" name="first_name" value={formData.first_name || ''} onChange={handleChange} required />
+                                    <input type="text" name="first_name" value={formData.first_name || ''} onChange={handleChange} required disabled={isSubmitting} />
                                 </div>
                                 <div className="form-group">
                                     <label>Прізвище</label>
-                                    <input type="text" name="last_name" value={formData.last_name || ''} onChange={handleChange} required />
+                                    <input type="text" name="last_name" value={formData.last_name || ''} onChange={handleChange} required disabled={isSubmitting} />
                                 </div>
                             </div>
                             <div className="form-group">
                                 <label>Спеціалізація</label>
-                                <input type="text" name="specialties" value={formData.specialties || ''} onChange={handleChange} placeholder="Crossfit, Yoga, Boxing..." required />
+                                <input type="text" name="specialties" value={formData.specialties || ''} onChange={handleChange} placeholder="Crossfit, Yoga, Boxing..." required disabled={isSubmitting} />
                             </div>
                             <div className="form-group">
                                 <label>Контакт (Телефон)</label>
-                                <input type="text" name="contact" value={formData.contact || ''} onChange={handleChange} placeholder="+380..." />
+                                <input type="text" name="contact" value={formData.contact || ''} onChange={handleChange} placeholder="+380..." disabled={isSubmitting} />
                             </div>
                         </>
                     ) : (
@@ -194,27 +223,27 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
                                     value={formData.username || ''} 
                                     onChange={handleChange} 
                                     required 
-                                    disabled={modalMode === 'edit'} 
+                                    disabled={modalMode === 'edit' || isSubmitting} 
                                 />
                             </div>
                             <div className="form-group">
                                 <label>Email адрес</label>
-                                <input type="email" name="email" value={formData.email || ''} onChange={handleChange} required />
+                                <input type="email" name="email" value={formData.email || ''} onChange={handleChange} required disabled={isSubmitting} />
                             </div>
                             <div className="form-row">
                                 <div className="form-group">
                                     <label>Ім'я</label>
-                                    <input type="text" name="first_name" value={formData.first_name || ''} onChange={handleChange} required />
+                                    <input type="text" name="first_name" value={formData.first_name || ''} onChange={handleChange} required disabled={isSubmitting} />
                                 </div>
                                 <div className="form-group">
                                     <label>Прізвище</label>
-                                    <input type="text" name="last_name" value={formData.last_name || ''} onChange={handleChange} required />
+                                    <input type="text" name="last_name" value={formData.last_name || ''} onChange={handleChange} required disabled={isSubmitting} />
                                 </div>
                             </div>
                             {modalMode === 'create' && (
                                 <div className="form-group">
                                     <label>Пароль</label>
-                                    <input type="password" name="password" value={formData.password || ''} onChange={handleChange} required minLength="6" />
+                                    <input type="password" name="password" value={formData.password || ''} onChange={handleChange} required minLength="6" disabled={isSubmitting} />
                                 </div>
                             )}
                         </>
@@ -222,9 +251,10 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
                     
                     <div className="modal-actions">
                         <div className="action-right" style={{ width: '100%' }}>
-                            <button type="button" className="btn-cancel" onClick={() => setIsModalOpen(false)}>Скасувати</button>
-                            <button type="submit" className="btn-save">
-                                <i className="fas fa-check" style={{marginRight: '8px'}}></i> Зберегти
+                            <button type="button" className="btn-cancel" onClick={() => setIsModalOpen(false)} disabled={isSubmitting}>Скасувати</button>
+                            <button type="submit" className="btn-save" disabled={isSubmitting}>
+                                <i className={isSubmitting ? "fas fa-spinner fa-spin" : "fas fa-check"} style={{marginRight: '8px'}}></i> 
+                                {isSubmitting ? 'ОБРОБКА...' : 'ЗБЕРЕГТИ'}
                             </button>
                         </div>
                     </div>
