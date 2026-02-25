@@ -158,10 +158,7 @@ class AdminInstructorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Instructor
-        fields = [
-            'id', 'username', 'password', 'first_name', 'last_name',
-            'full_name', 'specialties', 'contact'
-        ]
+        fields = ['id', 'username', 'password', 'first_name', 'last_name', 'full_name', 'specialties', 'contact']
 
     def create(self, validated_data):
         username = validated_data.pop('username')
@@ -169,15 +166,14 @@ class AdminInstructorSerializer(serializers.ModelSerializer):
         first_name = validated_data.pop('first_name')
         last_name = validated_data.pop('last_name')
 
-        user = User.objects.create_user(
+        # 👇 ЯВНЕ ХЕШУВАННЯ ТА ПРАВА ПЕРСОНАЛУ
+        user = User(
             username=username,
-            password=password,
             first_name=first_name,
-            last_name=last_name
+            last_name=last_name,
+            is_staff=True
         )
-
-        # 👇 НОВЕ: Надаємо тренеру права персоналу (is_staff)
-        user.is_staff = True
+        user.set_password(password)
         user.save()
 
         instructor = Instructor.objects.create(user=user, **validated_data)
