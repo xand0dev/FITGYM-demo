@@ -6,10 +6,12 @@ import Layout from './components/Layout';
 import Home from './pages/Home';
 import Cabinet from './pages/Cabinet';
 import AdminPanel from './pages/AdminPanel';
+import NotFound from './pages/NotFound';
 import LoginModal from './components/LoginModal';
 import RegisterModal from './components/RegisterModal';
 import ToastContainer from './components/ToastContainer';
 import GlobalConfirmModal from './components/GlobalConfirmModal';
+
 
 import { useAuth } from './context/AuthContext';
 import { useUI } from './context/UIContext';
@@ -17,9 +19,11 @@ import AnimatedPage from './components/AnimatedPage';
 
 const PrivateRoute = ({ children, adminOnly = false }) => {
     const { user, loading } = useAuth();
+    
     if (loading) return null;
-    if (!user) return <Navigate to="/" />;
-    if (adminOnly && !user.is_staff) return <Navigate to="/" />;
+    if (!user) return <Navigate to="/404" replace />;
+    if (adminOnly && !user.is_staff) return <Navigate to="/404" replace />;
+    
     return children;
 };
 
@@ -53,7 +57,10 @@ function App() {
               </PrivateRoute>
           } />
 
-          <Route path="*" element={<Navigate to="/" />} />
+          {/* Маршрут для помилки 404 */}
+          <Route path="*" element={
+              <AnimatedPage><NotFound /></AnimatedPage>
+          } />
         </Routes>
       </AnimatePresence>
 
