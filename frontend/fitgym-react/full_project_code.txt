@@ -140,26 +140,52 @@ export default function AdminModal({ isOpen, onClose, title, children }) {
 ФАЙЛ: src\components\admin\AdminSidebar.jsx
 =========================================
 
+import { useAuth } from '../../context/AuthContext';
+
 export default function AdminSidebar({ activeTab, setActiveTab, sidebarOpen, logout }) {
+    // Підключаємо наш когітатор для ідентифікації
+    const { user } = useAuth();
+    const isSuperAdmin = user?.is_superuser;
+
     return (
         <aside className={`admin-sidebar ${sidebarOpen ? 'active' : ''}`}>
             <div className="admin-logo">FIT<span>GYM</span></div>
+            
+            {/* Мікро-бейдж для перевірки статусу (без зламу CSS) */}
+            <div style={{ textAlign: 'center', color: isSuperAdmin ? '#ff0000' : '#888', fontSize: '11px', fontWeight: '900', marginBottom: '20px', letterSpacing: '2px' }}>
+                {isSuperAdmin ? 'АДМІНІСТРАТОР' : 'ТРЕНЕР'}
+            </div>
+
             <nav className="admin-menu">
-                <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>
-                    <i className="fas fa-chart-line"></i> Огляд
-                </button>
+                {/* --- ОГЛЯД (ТІЛЬКИ ВЛАСНИК) --- */}
+                {isSuperAdmin && (
+                    <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>
+                        <i className="fas fa-chart-line"></i> Огляд
+                    </button>
+                )}
+
+                {/* --- РОЗКЛАД (ДОСТУПНО ВСІМ) --- */}
                 <button className={activeTab === 'schedule' ? 'active' : ''} onClick={() => setActiveTab('schedule')}>
                     <i className="fas fa-calendar-alt"></i> Розклад
                 </button>
+
+                {/* --- КЛІЄНТИ (ДОСТУПНО ВСІМ) --- */}
                 <button className={activeTab === 'clients' ? 'active' : ''} onClick={() => setActiveTab('clients')}>
                     <i className="fas fa-users"></i> Клієнти
                 </button>
-                <button className={activeTab === 'trainers' ? 'active' : ''} onClick={() => setActiveTab('trainers')}>
-                    <i className="fas fa-dumbbell"></i> Тренери
-                </button>
+
+                {/* --- ТРЕНЕРИ (ТІЛЬКИ ВЛАСНИК) --- */}
+                {isSuperAdmin && (
+                    <button className={activeTab === 'trainers' ? 'active' : ''} onClick={() => setActiveTab('trainers')}>
+                        <i className="fas fa-dumbbell"></i> Тренери
+                    </button>
+                )}
             </nav>
+
             <div className="admin-footer">
-                <button onClick={logout}><i className="fas fa-sign-out-alt"></i> Вихід</button>
+                <button onClick={logout}>
+                    <i className="fas fa-sign-out-alt"></i> Вихід
+                </button>
             </div>
         </aside>
     );
@@ -402,8 +428,8 @@ export default function DashboardTab({ clientsCount, trainersCount }) {
 =========================================
 
 import { useState } from 'react';
-import { authRequest } from '../../utils/api';
 import AdminModal from './AdminModal';
+import { useFitMutation } from '../../hooks/useFitQuery'; // Підключаємо наш бойовий арсенал
 
 export default function DataTableTab({ data, tabType, onRefresh }) {
     // Стан модалки та форми
@@ -415,8 +441,16 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
     const isTrainer = tabType === 'trainers';
     const title = isTrainer ? 'Тренери' : 'Клієнти';
 
-    // --- ОБРОБНИКИ ДІЙ ---
+    // --- ЗАРЯДЖАЄМО МУТАЦІЇ (REACT QUERY) ---
+    const createMutation = useFitMutation('POST');
+    const updateMutation = useFitMutation('PUT');
+    const deleteMutation = useFitMutation('DELETE');
 
+    // Перевірка активних запитів (блокує кнопки від подвійних кліків)
+    const isSubmitting = createMutation.isPending || updateMutation.isPending;
+    const isDeleting = deleteMutation.isPending;
+
+    // --- ОБРОБНИКИ ДІЙ ---
     const handleAddNew = () => {
         setModalMode('create');
         // Ініціалізація пустих полів залежно від типу
@@ -434,30 +468,42 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
         setIsModalOpen(true);
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm(`Ви впевнені, що хочете видалити цей запис?`)) return;
-        try {
-            const endpoint = isTrainer ? `/api/admin/instructors/${id}/` : `/api/admin/members/${id}/`;
-            await authRequest(endpoint, 'DELETE');
-            if (onRefresh) onRefresh(); 
-        } catch (e) {
-            alert('Не вдалося видалити: ' + e.message);
-        }
+    const handleDelete = (id) => {
+        if (!window.confirm(`Ви впевнені, що хочете знищити цей запис?`)) return;
+        
+        const endpoint = isTrainer ? `/api/admin/instructors/${id}/` : `/api/admin/members/${id}/`;
+        
+        // Тактичний удар
+        deleteMutation.mutate(
+            { endpoint, data: null },
+            {
+                onSuccess: () => {
+                    if (onRefresh) onRefresh(); // Синхронізація з батьківським компонентом
+                },
+                onError: (e) => alert('Не вдалося видалити: ' + e.message)
+            }
+        );
     };
 
-    const handleSave = async (e) => {
+    const handleSave = (e) => {
         e.preventDefault();
-        try {
-            const endpoint = isTrainer ? '/api/admin/instructors/' : '/api/admin/members/';
-            const url = modalMode === 'create' ? endpoint : `${endpoint}${formData.id}/`;
-            const method = modalMode === 'create' ? 'POST' : 'PUT';
-            
-            await authRequest(url, method, formData);
-            setIsModalOpen(false);
-            if (onRefresh) onRefresh();
-        } catch (e) {
-            alert('Помилка збереження: ' + e.message);
-        }
+        
+        const endpoint = isTrainer ? '/api/admin/instructors/' : '/api/admin/members/';
+        const url = modalMode === 'create' ? endpoint : `${endpoint}${formData.id}/`;
+        
+        // Обираємо зброю залежно від режиму
+        const mutation = modalMode === 'create' ? createMutation : updateMutation;
+
+        mutation.mutate(
+            { endpoint: url, data: formData },
+            {
+                onSuccess: () => {
+                    setIsModalOpen(false);
+                    if (onRefresh) onRefresh();
+                },
+                onError: (e) => alert('Помилка збереження: ' + e.message)
+            }
+        );
     };
 
     const handleChange = (e) => {
@@ -517,10 +563,19 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
                                 </td>
                                 <td>
                                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                        <button title="Редагувати" onClick={() => handleEdit(item)}>
+                                        <button 
+                                            title="Редагувати" 
+                                            onClick={() => handleEdit(item)}
+                                            disabled={isDeleting}
+                                        >
                                             <i className="fas fa-pen"></i>
                                         </button>
-                                        <button title="Видалити" onClick={() => handleDelete(item.id)} style={{ color: '#ff4d4d', borderColor: 'rgba(255,0,0,0.3)' }}>
+                                        <button 
+                                            title="Видалити" 
+                                            onClick={() => handleDelete(item.id)} 
+                                            style={{ color: '#ff4d4d', borderColor: 'rgba(255,0,0,0.3)', opacity: isDeleting ? 0.5 : 1 }}
+                                            disabled={isDeleting}
+                                        >
                                             <i className="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -540,7 +595,7 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
             {/* УНІВЕРСАЛЬНА МОДАЛКА (Створення / Редагування) */}
             <AdminModal 
                 isOpen={isModalOpen} 
-                onClose={() => setIsModalOpen(false)} 
+                onClose={() => !isSubmitting && setIsModalOpen(false)} 
                 title={modalMode === 'create' ? `Новий ${isTrainer ? 'тренер' : 'клієнт'}` : `Редагування`}
             >
                 <form className="admin-form" onSubmit={handleSave}>
@@ -556,34 +611,34 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
                                     value={formData.username || ''} 
                                     onChange={handleChange} 
                                     required 
-                                    disabled={modalMode === 'edit'} 
+                                    disabled={modalMode === 'edit' || isSubmitting} 
                                 />
                             </div>
                             
                             {modalMode === 'create' && (
                                 <div className="form-group">
                                     <label>Пароль</label>
-                                    <input type="password" name="password" value={formData.password || ''} onChange={handleChange} required minLength="6" />
+                                    <input type="password" name="password" value={formData.password || ''} onChange={handleChange} required minLength="6" disabled={isSubmitting} />
                                 </div>
                             )}
 
                             <div className="form-row">
                                 <div className="form-group">
                                     <label>Ім'я</label>
-                                    <input type="text" name="first_name" value={formData.first_name || ''} onChange={handleChange} required />
+                                    <input type="text" name="first_name" value={formData.first_name || ''} onChange={handleChange} required disabled={isSubmitting} />
                                 </div>
                                 <div className="form-group">
                                     <label>Прізвище</label>
-                                    <input type="text" name="last_name" value={formData.last_name || ''} onChange={handleChange} required />
+                                    <input type="text" name="last_name" value={formData.last_name || ''} onChange={handleChange} required disabled={isSubmitting} />
                                 </div>
                             </div>
                             <div className="form-group">
                                 <label>Спеціалізація</label>
-                                <input type="text" name="specialties" value={formData.specialties || ''} onChange={handleChange} placeholder="Crossfit, Yoga, Boxing..." required />
+                                <input type="text" name="specialties" value={formData.specialties || ''} onChange={handleChange} placeholder="Crossfit, Yoga, Boxing..." required disabled={isSubmitting} />
                             </div>
                             <div className="form-group">
                                 <label>Контакт (Телефон)</label>
-                                <input type="text" name="contact" value={formData.contact || ''} onChange={handleChange} placeholder="+380..." />
+                                <input type="text" name="contact" value={formData.contact || ''} onChange={handleChange} placeholder="+380..." disabled={isSubmitting} />
                             </div>
                         </>
                     ) : (
@@ -597,27 +652,27 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
                                     value={formData.username || ''} 
                                     onChange={handleChange} 
                                     required 
-                                    disabled={modalMode === 'edit'} 
+                                    disabled={modalMode === 'edit' || isSubmitting} 
                                 />
                             </div>
                             <div className="form-group">
                                 <label>Email адрес</label>
-                                <input type="email" name="email" value={formData.email || ''} onChange={handleChange} required />
+                                <input type="email" name="email" value={formData.email || ''} onChange={handleChange} required disabled={isSubmitting} />
                             </div>
                             <div className="form-row">
                                 <div className="form-group">
                                     <label>Ім'я</label>
-                                    <input type="text" name="first_name" value={formData.first_name || ''} onChange={handleChange} required />
+                                    <input type="text" name="first_name" value={formData.first_name || ''} onChange={handleChange} required disabled={isSubmitting} />
                                 </div>
                                 <div className="form-group">
                                     <label>Прізвище</label>
-                                    <input type="text" name="last_name" value={formData.last_name || ''} onChange={handleChange} required />
+                                    <input type="text" name="last_name" value={formData.last_name || ''} onChange={handleChange} required disabled={isSubmitting} />
                                 </div>
                             </div>
                             {modalMode === 'create' && (
                                 <div className="form-group">
                                     <label>Пароль</label>
-                                    <input type="password" name="password" value={formData.password || ''} onChange={handleChange} required minLength="6" />
+                                    <input type="password" name="password" value={formData.password || ''} onChange={handleChange} required minLength="6" disabled={isSubmitting} />
                                 </div>
                             )}
                         </>
@@ -625,9 +680,10 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
                     
                     <div className="modal-actions">
                         <div className="action-right" style={{ width: '100%' }}>
-                            <button type="button" className="btn-cancel" onClick={() => setIsModalOpen(false)}>Скасувати</button>
-                            <button type="submit" className="btn-save">
-                                <i className="fas fa-check" style={{marginRight: '8px'}}></i> Зберегти
+                            <button type="button" className="btn-cancel" onClick={() => setIsModalOpen(false)} disabled={isSubmitting}>Скасувати</button>
+                            <button type="submit" className="btn-save" disabled={isSubmitting}>
+                                <i className={isSubmitting ? "fas fa-spinner fa-spin" : "fas fa-check"} style={{marginRight: '8px'}}></i> 
+                                {isSubmitting ? 'ОБРОБКА...' : 'ЗБЕРЕГТИ'}
                             </button>
                         </div>
                     </div>
@@ -641,25 +697,22 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
 ФАЙЛ: src\components\admin\ScheduleTab.jsx
 =========================================
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import ukLocale from '@fullcalendar/core/locales/uk';
-import { authRequest, publicRequest } from '../../utils/api';
 import AdminModal from './AdminModal';
 
+// Підключаємо наш бойовий арсенал React Query
+import { usePublicData, useAuthData, useFitMutation } from '../../hooks/useFitQuery';
+
 export default function ScheduleTab() {
-    const [events, setEvents] = useState([]);
-    const [classes, setClasses] = useState([]);
-    const [instructors, setInstructors] = useState([]);
-    
-    // Стейт модалки
+    // Стейт модалки та форми
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('create'); // 'create' або 'edit'
     
-    // Стейт форми
     const [formData, setFormData] = useState({
         id: null,
         class_type: '',
@@ -669,41 +722,32 @@ export default function ScheduleTab() {
         capacity: 15
     });
 
-    useEffect(() => {
-        fetchInitialData();
-    }, []);
+    // --- 1. ОТРИМАННЯ ДАНИХ (РАДАР) ---
+    // Кешуємо довідники, щоб не вантажити їх постійно
+    const { data: classes = [] } = usePublicData('classes', '/api/classes/');
+    const { data: instructors = [] } = useAuthData('admin-trainers', '/api/admin/instructors/');
+    const { data: scheduleData = [] } = usePublicData('admin-schedule', '/api/schedule/');
 
-    const fetchInitialData = async () => {
-        try {
-            // Отримуємо довідники для селектів та самі події
-            const [classesData, instructorsData, scheduleData] = await Promise.all([
-                publicRequest('/api/classes/').catch(() => []),
-                authRequest('/api/admin/instructors/').catch(() => []),
-                publicRequest('/api/schedule/').catch(() => [])
-            ]);
-            
-            setClasses(classesData || []);
-            setInstructors(instructorsData || []);
-            
-            // Форматуємо дані для FullCalendar
-            if (scheduleData) {
-                const formattedEvents = scheduleData.map(session => ({
-                    id: session.id,
-                    title: session.class_name || 'Заняття',
-                    start: session.start_at,
-                    end: session.end_at,
-                    extendedProps: {
-                        instructor: session.instructor, // ID тренера, якщо є
-                        class_type: session.class_type, // ID класу
-                        capacity: session.capacity
-                    }
-                }));
-                setEvents(formattedEvents);
-            }
-        } catch (error) {
-            console.error("Помилка завантаження розкладу:", error);
+    // --- 2. БОЙОВІ МУТАЦІЇ (АРТИЛЕРІЯ) ---
+    const createMutation = useFitMutation('POST');
+    const updateMutation = useFitMutation('PUT');
+    const deleteMutation = useFitMutation('DELETE');
+
+    // Блокуємо інтерфейс під час атаки на сервер
+    const isSubmitting = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
+
+    // Форматуємо події для календаря (виконується автоматично при отриманні scheduleData)
+    const events = scheduleData.map(session => ({
+        id: session.id,
+        title: session.class_name || 'Заняття',
+        start: session.start_at,
+        end: session.end_at,
+        extendedProps: {
+            instructor: session.instructor,
+            class_type: session.class_type,
+            capacity: session.capacity
         }
-    };
+    }));
 
     // Клік по пустому місцю (Створення)
     const handleDateSelect = (selectInfo) => {
@@ -712,7 +756,6 @@ export default function ScheduleTab() {
             id: null,
             class_type: classes.length > 0 ? classes[0].id : '',
             instructor: instructors.length > 0 ? instructors[0].id : '',
-            // Форматуємо дату для datetime-local інпута (YYYY-MM-DDTHH:mm)
             start_at: selectInfo.startStr.slice(0, 16),
             end_at: selectInfo.endStr.slice(0, 16),
             capacity: 15
@@ -735,39 +778,41 @@ export default function ScheduleTab() {
         setIsModalOpen(true);
     };
 
-    const handleSave = async (e) => {
+    // Збереження (Створення або Оновлення)
+    const handleSave = (e) => {
         e.preventDefault();
-        try {
-            const payload = {
-                class_type: parseInt(formData.class_type),
-                instructor: parseInt(formData.instructor),
-                start_at: new Date(formData.start_at).toISOString(),
-                end_at: new Date(formData.end_at).toISOString(),
-                capacity: parseInt(formData.capacity)
-            };
+        
+        const payload = {
+            class_type: parseInt(formData.class_type),
+            instructor: parseInt(formData.instructor),
+            start_at: new Date(formData.start_at).toISOString(),
+            end_at: new Date(formData.end_at).toISOString(),
+            capacity: parseInt(formData.capacity)
+        };
 
-            if (modalMode === 'create') {
-                await authRequest('/api/admin/schedule/', 'POST', payload);
-            } else {
-                await authRequest(`/api/admin/schedule/${formData.id}/`, 'PUT', payload);
+        const endpoint = modalMode === 'create' ? '/api/admin/schedule/' : `/api/admin/schedule/${formData.id}/`;
+        const mutation = modalMode === 'create' ? createMutation : updateMutation;
+
+        mutation.mutate(
+            { endpoint, data: payload },
+            {
+                onSuccess: () => setIsModalOpen(false),
+                onError: (error) => alert('Помилка збереження: ' + error.message)
             }
-            
-            setIsModalOpen(false);
-            fetchInitialData(); // Оновлюємо календар
-        } catch (error) {
-            alert('Помилка збереження: ' + error.message);
-        }
+        );
     };
 
-    const handleDelete = async () => {
-        if (!window.confirm('Видалити це тренування?')) return;
-        try {
-            await authRequest(`/api/admin/schedule/${formData.id}/`, 'DELETE');
-            setIsModalOpen(false);
-            fetchInitialData();
-        } catch (error) {
-            alert('Помилка видалення: ' + error.message);
-        }
+    // Видалення
+    const handleDelete = () => {
+        if (!window.confirm('Знищити це тренування з бази?')) return;
+        
+        deleteMutation.mutate(
+            { endpoint: `/api/admin/schedule/${formData.id}/`, data: null },
+            {
+                onSuccess: () => setIsModalOpen(false),
+                onError: (error) => alert('Помилка видалення: ' + error.message)
+            }
+        );
     };
 
     return (
@@ -791,7 +836,7 @@ export default function ScheduleTab() {
 
             <AdminModal 
                 isOpen={isModalOpen} 
-                onClose={() => setIsModalOpen(false)} 
+                onClose={() => !isSubmitting && setIsModalOpen(false)} 
                 title={modalMode === 'create' ? 'Створити тренування' : 'Редагувати тренування'}
             >
                 <form className="admin-form" onSubmit={handleSave}>
@@ -801,6 +846,7 @@ export default function ScheduleTab() {
                             value={formData.class_type} 
                             onChange={e => setFormData({...formData, class_type: e.target.value})}
                             required
+                            disabled={isSubmitting}
                         >
                             <option value="" disabled>Оберіть заняття...</option>
                             {classes.map(c => (
@@ -815,6 +861,7 @@ export default function ScheduleTab() {
                             value={formData.instructor} 
                             onChange={e => setFormData({...formData, instructor: e.target.value})}
                             required
+                            disabled={isSubmitting}
                         >
                             <option value="" disabled>Оберіть тренера...</option>
                             {instructors.map(i => (
@@ -831,6 +878,7 @@ export default function ScheduleTab() {
                                 value={formData.start_at} 
                                 onChange={e => setFormData({...formData, start_at: e.target.value})} 
                                 required
+                                disabled={isSubmitting}
                             />
                         </div>
                         <div className="form-group">
@@ -840,6 +888,7 @@ export default function ScheduleTab() {
                                 value={formData.end_at} 
                                 onChange={e => setFormData({...formData, end_at: e.target.value})} 
                                 required
+                                disabled={isSubmitting}
                             />
                         </div>
                     </div>
@@ -852,18 +901,37 @@ export default function ScheduleTab() {
                             value={formData.capacity} 
                             onChange={e => setFormData({...formData, capacity: e.target.value})} 
                             required
+                            disabled={isSubmitting}
                         />
                     </div>
 
                     <div className="modal-actions">
                         {modalMode === 'edit' && (
-                            <button type="button" className="btn-delete" onClick={handleDelete}>
+                            <button 
+                                type="button" 
+                                className="btn-delete" 
+                                onClick={handleDelete}
+                                disabled={isSubmitting}
+                            >
                                 <i className="fas fa-trash"></i> Видалити
                             </button>
                         )}
-                        <div className="action-right">
-                            <button type="button" className="btn-cancel" onClick={() => setIsModalOpen(false)}>Скасувати</button>
-                            <button type="submit" className="btn-save">Зберегти</button>
+                        <div className="action-right" style={{ width: modalMode === 'create' ? '100%' : 'auto' }}>
+                            <button 
+                                type="button" 
+                                className="btn-cancel" 
+                                onClick={() => setIsModalOpen(false)}
+                                disabled={isSubmitting}
+                            >
+                                Скасувати
+                            </button>
+                            <button 
+                                type="submit" 
+                                className="btn-save"
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? 'ОБРОБКА...' : 'ЗБЕРЕГТИ'}
+                            </button>
                         </div>
                     </div>
                 </form>
@@ -2348,9 +2416,13 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import ukLocale from '@fullcalendar/core/locales/uk';
-import { publicRequest, authRequest } from '../utils/api';
+import { publicRequest } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
+
+// Підключаємо наш арсенал React Query
+import { useQueryClient } from '@tanstack/react-query';
+import { useFitMutation } from '../hooks/useFitQuery';
 
 export default function Schedule() {
     const { user } = useAuth();
@@ -2358,11 +2430,22 @@ export default function Schedule() {
     
     const [selectedEvent, setSelectedEvent] = useState(null);
     const calendarRef = useRef(null);
+    
+    // Отримуємо доступ до головного когітатора кешу
+    const queryClient = useQueryClient();
+    
+    // Заряджаємо мутацію для бронювання
+    const bookMutation = useFitMutation('POST');
 
+    // Календар викликає цю функцію при зміні дат
     const fetchEvents = async (info, successCallback, failureCallback) => {
         try {
-            const url = `/api/schedule/?start=${info.startStr}&end=${info.endStr}`;
-            const data = await publicRequest(url);
+            // Замість прямого запиту, пропускаємо його через матрицю кешування
+            const data = await queryClient.fetchQuery({
+                queryKey: ['schedule', info.startStr, info.endStr],
+                queryFn: () => publicRequest(`/api/schedule/?start=${info.startStr}&end=${info.endStr}`),
+                staleTime: 1000 * 60 * 5, // 5 хвилин дані вважаються свіжими
+            });
             
             const events = data.map(item => ({
                 id: item.id,
@@ -2402,24 +2485,28 @@ export default function Schedule() {
             return;
         }
 
-        // Використовуємо твій confirmAction для модалки "Я ВПЕВНЕНИЙ"
+        // Використовуємо confirmAction для модалки "Я ВПЕВНЕНИЙ"
         confirmAction(
             `Записатися на заняття "${selectedEvent.title}"?`,
-            async () => {
-                try {
-                    await authRequest('/api/book/', 'POST', { 
-                        session: selectedEvent.id 
-                    });
-                    
-                    addToast('Ви успішно записалися!', 'success');
-                    setSelectedEvent(null);
-                    
-                    if (calendarRef.current) {
-                        calendarRef.current.getApi().refetchEvents();
+            () => {
+                // Виконуємо тактичний удар через мутацію
+                bookMutation.mutate(
+                    { endpoint: '/api/book/', data: { session: selectedEvent.id } },
+                    {
+                        onSuccess: () => {
+                            addToast('Ви успішно записалися!', 'success');
+                            setSelectedEvent(null);
+                            
+                            // Примусово оновлюємо події в календарі після успішного запису
+                            if (calendarRef.current) {
+                                calendarRef.current.getApi().refetchEvents();
+                            }
+                        },
+                        onError: (error) => {
+                            addToast(error.message || 'Помилка бронювання', 'error');
+                        }
                     }
-                } catch (e) {
-                    addToast(e.message || 'Помилка бронювання', 'error');
-                }
+                );
             }
         );
     };
@@ -2432,6 +2519,8 @@ export default function Schedule() {
     };
 
     const isFull = selectedEvent?.booked >= selectedEvent?.capacity;
+    // Блокуємо кнопку, якщо місць немає або якщо зараз іде запит на сервер
+    const isActionDisabled = isFull || bookMutation.isPending;
 
     return (
         <section id="schedule" className="section container">
@@ -2460,9 +2549,13 @@ export default function Schedule() {
             </div>
 
             {selectedEvent && (
-                <div className="modal-overlay active" onClick={() => setSelectedEvent(null)}>
+                <div className="modal-overlay active" onClick={() => !bookMutation.isPending && setSelectedEvent(null)}>
                     <div className="modal-content booking-modal" onClick={e => e.stopPropagation()}>
-                        <button className="modal-close" onClick={() => setSelectedEvent(null)}>×</button>
+                        <button 
+                            className="modal-close" 
+                            onClick={() => setSelectedEvent(null)}
+                            disabled={bookMutation.isPending}
+                        >×</button>
 
                         <h3 className="modal-title">{selectedEvent.title}</h3>
                         <div className="modal-divider"></div>
@@ -2494,13 +2587,19 @@ export default function Schedule() {
                         </div>
 
                         <div className="booking-footer">
-                            <button onClick={() => setSelectedEvent(null)} className="btn-cancel">СКАСУВАТИ</button>
+                            <button 
+                                onClick={() => setSelectedEvent(null)} 
+                                className="btn-cancel"
+                                disabled={bookMutation.isPending}
+                            >
+                                СКАСУВАТИ
+                            </button>
                             <button 
                                 onClick={handleBooking} 
                                 className="btn-confirm" 
-                                disabled={isFull}
+                                disabled={isActionDisabled}
                             >
-                                {isFull ? 'МІСЦЬ НЕМАЄ' : 'ЗАПИСАТИСЯ'}
+                                {bookMutation.isPending ? 'ОБРОБКА...' : (isFull ? 'МІСЦЬ НЕМАЄ' : 'ЗАПИСАТИСЯ')}
                             </button>
                         </div>
                     </div>
@@ -2818,6 +2917,43 @@ export function UIProvider({ children }) {
 export const useUI = () => useContext(UIContext);
 
 =========================================
+ФАЙЛ: src\hooks\useFitQuery.js
+=========================================
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { publicRequest, authRequest } from '../utils/api';
+
+// 1. УНІВЕРСАЛЬНИЙ РАДАР (Отримання даних)
+// Використання: const { data: trainers, isLoading } = usePublicData('trainers', '/api/instructors/');
+export const usePublicData = (key, endpoint) => {
+    return useQuery({
+        queryKey: [key],
+        queryFn: () => publicRequest(endpoint),
+    });
+};
+
+export const useAuthData = (key, endpoint) => {
+    return useQuery({
+        queryKey: [key],
+        queryFn: () => authRequest(endpoint),
+    });
+};
+
+// 2. УНІВЕРСАЛЬНА АРТИЛЕРІЯ (Відправка/Зміна даних)
+// Автоматично скидає кеш, щоб UI миттєво оновився після дії
+export const useFitMutation = (method = 'POST') => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ endpoint, data }) => authRequest(endpoint, method, data),
+        onSuccess: () => {
+            // Примушуємо всі дані оновитися після успішного удару (створення/видалення)
+            queryClient.invalidateQueries();
+        }
+    });
+};
+
+=========================================
 ФАЙЛ: src\index.css
 =========================================
 
@@ -2860,18 +2996,36 @@ import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
-import { UIProvider } from './context/UIContext' // Важливо!
-import './index.css' // Або './App.css' залежно від того, що у тебе є
+import { UIProvider } from './context/UIContext'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import './index.css' 
+
+// Створюємо головний когітатор для кешування запитів
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // Дані вважаються свіжими 5 хвилин (не смикаємо бекенд зайвий раз)
+      cacheTime: 1000 * 60 * 30, // Зберігаємо в пам'яті 30 хвилин
+      refetchOnWindowFocus: false, // Не перезапитувати при зміні вкладок (економимо ресурси)
+      retry: 2, // Якщо бек впав, робимо 2 спроби перед тим як викинути помилку
+    },
+  },
+})
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <UIProvider> {/* <--- UIProvider має бути всередині або зовні AuthProvider, головне щоб обгортав App */}
-            <App />
-        </UIProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AuthProvider>
+          <UIProvider>
+              <App />
+          </UIProvider>
+        </AuthProvider>
+      </BrowserRouter>
+      {/* Тактичний візор - буде видно тільки під час розробки в кутку екрану */}
+      <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
+    </QueryClientProvider>
   </React.StrictMode>,
 )
 
@@ -2880,38 +3034,45 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 =========================================
 
 import { useState, useEffect } from 'react';
-import { authRequest } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+
+// Наша тактична матриця кешу
+import { useAuthData } from '../hooks/useFitQuery';
 
 import AdminSidebar from '../components/admin/AdminSidebar';
 import AdminTopbar from '../components/admin/AdminTopbar';
 import DashboardTab from '../components/admin/DashboardTab';
 import DataTableTab from '../components/admin/DataTableTab';
-import ScheduleTab from '../components/admin/ScheduleTab'; 
-
+import ScheduleTab from '../components/admin/ScheduleTab';
 
 export default function AdminPanel() {
     const { user, logout } = useAuth();
     const [activeTab, setActiveTab] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [trainers, setTrainers] = useState([]);
-    const [clients, setClients] = useState([]);
+
+    // Вживляємо хуки замість ручного fetch та стейтів
+    const { 
+        data: trainers = [], 
+        isLoading: isTrainersLoading,
+        refetch: refetchTrainers
+    } = useAuthData('admin-trainers', '/api/admin/instructors/');
+    
+    const { 
+        data: clients = [], 
+        isLoading: isClientsLoading,
+        refetch: refetchClients
+    } = useAuthData('admin-clients', '/api/admin/members/');
 
     useEffect(() => {
+        // Темний стиль для боді
         document.body.classList.add('admin-body');
-        loadData();
         return () => document.body.classList.remove('admin-body');
     }, []);
 
-    const loadData = async () => {
-        try {
-            const [t, c] = await Promise.all([
-                authRequest('/api/admin/instructors/').catch(()=>[]),
-                authRequest('/api/admin/members/').catch(()=>[])
-            ]);
-            setTrainers(t || []);
-            setClients(c || []);
-        } catch (e) { console.error(e); }
+    // Функція-міст для сумісності зі старим DataTableTab (поки ми його не оновили)
+    const forceRefetch = () => {
+        refetchTrainers();
+        refetchClients();
     };
 
     return (
@@ -2932,8 +3093,12 @@ export default function AdminPanel() {
                 />
 
                 <div className="admin-page-content">
+                    {/* Передаємо довжину масивів для Дашборда, або "..." під час завантаження */}
                     {activeTab === 'dashboard' && (
-                        <DashboardTab clientsCount={clients.length} trainersCount={trainers.length} />
+                        <DashboardTab 
+                            clientsCount={isClientsLoading ? '...' : clients.length} 
+                            trainersCount={isTrainersLoading ? '...' : trainers.length} 
+                        />
                     )}
 
                     {activeTab === 'schedule' && <ScheduleTab />}
@@ -2942,7 +3107,7 @@ export default function AdminPanel() {
                         <DataTableTab 
                             data={activeTab === 'trainers' ? trainers : clients} 
                             tabType={activeTab}
-                            onRefresh={loadData}
+                            onRefresh={forceRefetch}
                         />
                     )}
                 </div>
@@ -3243,13 +3408,11 @@ export default function Cabinet() {
 ФАЙЛ: src\pages\Home.jsx
 =========================================
 
-import { useEffect, useState } from 'react';
-import { publicRequest } from '../utils/api';
+import { useEffect } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 
 // Імпорт компонентів
-
 import Hero from '../components/Hero';
 import Stats from '../components/Stats'; 
 import Categories from '../components/Categories'; 
@@ -3259,10 +3422,14 @@ import BMICalculator from '../components/BMICalculator';
 import Carousel from '../components/Carousel'; 
 import Schedule from '../components/Schedule';
 import { useAuth } from '../context/AuthContext';
+import { usePublicData } from '../hooks/useFitQuery'; // Підключаємо наш арсенал
 
 export default function Home() {
-    const [trainers, setTrainers] = useState([]);
     const { user } = useAuth(); 
+    
+    // --- REACT QUERY В ДІЇ ---
+    // Автоматичне кешування, ретраї, відслідковування завантаження
+    const { data: trainers = [], isLoading: isTrainersLoading } = usePublicData('trainers', '/api/instructors/');
 
     useEffect(() => {
         // Ініціалізація анімацій при скролі
@@ -3271,22 +3438,10 @@ export default function Home() {
             once: true,
             offset: 120 
         });
-        loadTrainers();
     }, []);
-
-    const loadTrainers = async () => {
-        try {
-            const data = await publicRequest('/api/instructors/');
-            setTrainers(data);
-        } catch (e) { 
-            console.error("Помилка завантаження тренерів:", e); 
-        }
-    };
 
     return (
         <>
-           
-
             <main style={{ background: '#fff' }}>
                 {/* 1. Головний банер (Брутальний стиль) */}
                 <Hero />
@@ -3419,27 +3574,41 @@ export default function Home() {
                 {/* 7. Галерея (Слайдер) */}
                 <Carousel /> 
 
-                {/* 8. Секція Команди */}
+                {/* 8. Секція Команди (З інтеграцією React Query та Скелетонів) */}
                 <section id="trainers" className="section container" style={{ padding: '100px 20px' }}>
                     <h2 style={{ textAlign: 'center', fontSize: '2.8rem', fontWeight: '950', marginBottom: '60px', textTransform: 'uppercase' }}>
                         Команда <span style={{color: '#ff0000'}}>профі</span>
                     </h2>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '30px' }}>
-                        {trainers.map(t => (
-                            <div key={t.id} className="trainer-card" data-aos="zoom-in" style={{ 
-                                border: '3px solid #000', 
-                                background: '#fff',
-                                transition: '0.3s'
-                            }}>
-                                <div style={{ height: '350px', background: '#111', color: '#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
-                                    <i className="fas fa-user fa-6x" style={{opacity: '0.2'}}></i>
+                        {isTrainersLoading ? (
+                            // --- БОЙОВІ СКЕЛЕТОНИ (Поки вантажаться дані) ---
+                            [1, 2, 3, 4].map((skel) => (
+                                <div key={skel} className="trainer-card" style={{ border: '3px solid #000', background: '#fff' }}>
+                                    <div className="skeleton-box" style={{ height: '350px', borderRadius: '0' }}></div>
+                                    <div style={{ padding: '30px' }}>
+                                        <div className="skeleton-box skeleton-title" style={{ margin: '0 auto 10px', width: '70%' }}></div>
+                                        <div className="skeleton-box skeleton-text" style={{ margin: '0 auto', width: '50%' }}></div>
+                                    </div>
                                 </div>
-                                <div style={{ padding: '30px', textAlign: 'center' }}>
-                                    <h3 style={{ fontWeight: '900', textTransform: 'uppercase', margin: '0 0 10px 0', fontSize: '1.4rem' }}>{t.full_name || t.name}</h3>
-                                    <p style={{ color: '#ff0000', fontWeight: '800', fontSize: '0.9rem', letterSpacing: '1px', textTransform: 'uppercase' }}>{t.specialties || t.specialization}</p>
+                            ))
+                        ) : (
+                            // --- РЕАЛЬНІ ДАНІ ---
+                            trainers.map(t => (
+                                <div key={t.id} className="trainer-card" data-aos="zoom-in" style={{ 
+                                    border: '3px solid #000', 
+                                    background: '#fff',
+                                    transition: '0.3s'
+                                }}>
+                                    <div style={{ height: '350px', background: '#111', color: '#fff', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
+                                        <i className="fas fa-user fa-6x" style={{opacity: '0.2'}}></i>
+                                    </div>
+                                    <div style={{ padding: '30px', textAlign: 'center' }}>
+                                        <h3 style={{ fontWeight: '900', textTransform: 'uppercase', margin: '0 0 10px 0', fontSize: '1.4rem' }}>{t.full_name || t.name}</h3>
+                                        <p style={{ color: '#ff0000', fontWeight: '800', fontSize: '0.9rem', letterSpacing: '1px', textTransform: 'uppercase' }}>{t.specialties || t.specialization}</p>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 </section>
 
