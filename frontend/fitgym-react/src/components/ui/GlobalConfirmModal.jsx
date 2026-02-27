@@ -1,5 +1,5 @@
 // src/components/GlobalConfirmModal.jsx
-import { useUI } from '../context/UIContext';
+import { useUI } from '../../context/UIContext';
 
 export default function GlobalConfirmModal() {
     const { confirmModal, closeConfirm, executeConfirm } = useUI();

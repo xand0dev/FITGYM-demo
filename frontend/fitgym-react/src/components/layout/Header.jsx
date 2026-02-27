@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { useUI } from '../context/UIContext';
+import { useAuth } from '../../context/AuthContext';
+import { useUI } from '../../context/UIContext';
 import { useState, useEffect } from 'react';
+
 
 export default function Header() {
     const { user, logout } = useAuth();

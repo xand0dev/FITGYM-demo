@@ -1,5 +1,5 @@
 // src/components/ToastContainer.jsx
-import { useUI } from '../context/UIContext';
+import { useUI } from '../../context/UIContext';
 import { useEffect } from 'react';
 
 export default function ToastContainer() {

@@ -4,13 +4,13 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import ukLocale from '@fullcalendar/core/locales/uk';
-import { publicRequest } from '../utils/api';
-import { useAuth } from '../context/AuthContext';
-import { useUI } from '../context/UIContext';
+import { publicRequest } from '../../utils/api';
+import { useAuth } from '../../context/AuthContext';
+import { useUI } from '../../context/UIContext';
 
 // Підключаємо наш арсенал React Query
 import { useQueryClient } from '@tanstack/react-query';
-import { useFitMutation } from '../hooks/useFitQuery';
+import { useFitMutation } from '../../hooks/useFitQuery';
 
 export default function Schedule() {
     const { user } = useAuth();

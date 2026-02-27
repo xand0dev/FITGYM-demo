@@ -2,17 +2,18 @@ import { useEffect } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 
-// Імпорт компонентів
-import Hero from '../components/Hero';
-import Stats from '../components/Stats'; 
-import Categories from '../components/Categories'; 
-import Plans from '../components/Plans';
-import Contacts from '../components/Contacts';
-import BMICalculator from '../components/BMICalculator';
-import Carousel from '../components/Carousel'; 
-import Schedule from '../components/Schedule';
+// Імпорт компонентів з папки home
+import Hero from '../components/home/Hero';
+import Stats from '../components/home/Stats'; 
+import Categories from '../components/home/Categories'; 
+import Plans from '../components/home/Plans';
+import Contacts from '../components/home/Contacts';
+import BMICalculator from '../components/home/BMICalculator';
+import Carousel from '../components/home/Carousel'; 
+import Schedule from '../components/home/Schedule';
+
 import { useAuth } from '../context/AuthContext';
-import { usePublicData } from '../hooks/useFitQuery'; // Підключаємо наш арсенал
+import { usePublicData } from '../hooks/useFitQuery';
 
 export default function Home() {
     const { user } = useAuth(); 

@@ -2,20 +2,23 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 
-import Layout from './components/Layout';
+// Каркас та сторінки
+import Layout from './components/layout/Layout';
 import Home from './pages/Home';
 import Cabinet from './pages/Cabinet';
 import AdminPanel from './pages/AdminPanel';
 import NotFound from './pages/NotFound';
-import LoginModal from './components/LoginModal';
-import RegisterModal from './components/RegisterModal';
-import ToastContainer from './components/ToastContainer';
-import GlobalConfirmModal from './components/GlobalConfirmModal';
 
+// UI та Авторизація
+import LoginModal from './components/auth/LoginModal';
+import RegisterModal from './components/auth/RegisterModal';
+import ToastContainer from './components/ui/ToastContainer';
+import GlobalConfirmModal from './components/ui/GlobalConfirmModal';
+import AnimatedPage from './components/ui/AnimatedPage';
 
+// Контекст
 import { useAuth } from './context/AuthContext';
 import { useUI } from './context/UIContext';
-import AnimatedPage from './components/AnimatedPage';
 
 const PrivateRoute = ({ children, adminOnly = false }) => {
     const { user, loading } = useAuth();
