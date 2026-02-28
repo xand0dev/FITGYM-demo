@@ -10,7 +10,7 @@ export default function AdminSidebar({ activeTab, setActiveTab, sidebarOpen, log
             <div className="admin-logo">FIT<span>GYM</span></div>
             
             {/* Мікро-бейдж для перевірки статусу (без зламу CSS) */}
-            <div style={{ textAlign: 'center', color: isSuperAdmin ? '#ff0000' : '#888', fontSize: '11px', fontWeight: '900', marginBottom: '20px', letterSpacing: '2px' }}>
+            <div style={{ textAlign: 'center', color: isSuperAdmin ? '#ff0000' : '#888', fontSize: '11px', fontWeight: '900', margin: '0 20px 30px', letterSpacing: '2px', background: 'rgba(255,255,255,0.03)', padding: '5px', borderRadius: '4px' }}>
                 {isSuperAdmin ? 'АДМІНІСТРАТОР' : 'ТРЕНЕР'}
             </div>
 

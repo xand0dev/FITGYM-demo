@@ -1,13 +1,15 @@
 /* --- PREMIUM DASHBOARD STYLES --- */
 body.admin-body { background-color: #080808 !important; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
 
-.admin-wrapper { display: flex; min-height: 100vh; }
+/* ВИПРАВЛЕНО: додано align-items: flex-start для коректної роботи sticky */
+.admin-wrapper { display: flex; min-height: 100vh; align-items: flex-start; }
 
 .fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
 /* SIDEBAR & TOPBAR */
-.admin-sidebar { width: 260px; background: #0f0f0f; border-right: 1px solid #222; position: fixed; height: 100vh; z-index: 1000; transition: 0.3s; }
+/* ВИПРАВЛЕНО: position: sticky замість fixed, додано top: 0 та flex-shrink: 0 */
+.admin-sidebar { width: 260px; background: #0f0f0f; border-right: 1px solid #222; position: sticky; top: 0; height: 100vh; z-index: 1000; transition: 0.3s; flex-shrink: 0; }
 .admin-logo { padding: 30px; font-size: 2rem; font-weight: 900; color: #fff; text-align: center; }
 .admin-logo span { color: #ff0000; }
 .admin-menu button { width: 100%; padding: 20px 30px; background: none; border: none; text-align: left; color: #666; font-weight: 800; cursor: pointer; text-transform: uppercase; border-left: 4px solid transparent; transition: 0.3s; }
@@ -15,7 +17,8 @@ body.admin-body { background-color: #080808 !important; margin: 0; padding: 0; f
 .admin-footer { position: absolute; bottom: 0; width: 100%; padding: 20px; border-top: 1px solid #222; }
 .admin-footer button { width: 100%; background: none; border: none; color: #ff4d4d; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
 
-.admin-content { margin-left: 260px; flex: 1; padding: 30px; width: calc(100% - 260px); box-sizing: border-box; }
+/* ВИПРАВЛЕНО: прибрано margin-left, оскільки sticky займає фізичне місце в DOM */
+.admin-content { flex: 1; padding: 30px; width: 100%; box-sizing: border-box; }
 .admin-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
 .topbar-title { color: #fff; font-weight: 900; text-transform: uppercase; margin: 0; }
 .admin-user { display: flex; align-items: center; gap: 15px; color: #fff; font-weight: bold; }
@@ -71,14 +74,15 @@ body.admin-body { background-color: #080808 !important; margin: 0; padding: 0; f
 
 @media (max-width: 1100px) {
     .charts-row, .charts-row.three-cols { grid-template-columns: 1fr; }
-    .admin-sidebar { transform: translateX(-100%); }
+    /* ВИПРАВЛЕНО: для мобільних повертаємо position: fixed, щоб сайдбар працював як off-canvas меню */
+    .admin-sidebar { position: fixed; transform: translateX(-100%); }
     .admin-sidebar.active { transform: translateX(0); }
     .admin-content { margin-left: 0; width: 100%; }
     .mobile-toggle { display: block; }
 }
 
 
-/* --- MODALS & FORMS (ОНОВЛЕНО) --- */
+/* --- MODALS & FORMS --- */
 .admin-modal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
