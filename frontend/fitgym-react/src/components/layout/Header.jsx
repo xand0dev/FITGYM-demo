@@ -3,7 +3,6 @@ import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import { useState, useEffect } from 'react';
 
-
 export default function Header() {
     const { user, logout } = useAuth();
     const { openLogin, openRegister } = useUI();
@@ -21,157 +20,96 @@ export default function Header() {
 
     const closeMenu = () => setMobileMenuOpen(false);
 
+    // Допоміжний компонент для посилань
+    const NavLink = ({ to, href, children, className = "" }) => {
+        const baseClasses = "text-[#e0e0e0] hover:text-white text-[1.1rem] lg:text-[0.95rem] font-semibold uppercase tracking-wide transition-colors relative group py-1";
+        const underline = <span className="absolute -bottom-1 left-0 w-0 h-[2px] bg-primary transition-all duration-300 group-hover:w-full shadow-[0_0_8px_#ff0000]"></span>;
+        
+        if (to) {
+            return <Link to={to} onClick={closeMenu} className={`${baseClasses} ${className}`}>{children}{underline}</Link>
+        }
+        return <a href={href} onClick={closeMenu} className={`${baseClasses} ${className}`}>{children}{underline}</a>
+    };
+
     return (
-        <header className={`site-header ${isScrolled ? 'scrolled' : ''}`}>
-            <div className="container header-inner">
-                {/* ЛОГОТИП */}
-                <Link to="/" className="logo" onClick={closeMenu}>
-                    FIT<span>GYM</span>
-                </Link>
+        <header className={`fixed top-0 left-0 w-full z-[1000] transition-all duration-300 ${isScrolled ? 'bg-black/90 backdrop-blur-md py-3 border-b border-white/10 shadow-lg' : 'bg-gradient-to-b from-black/80 to-transparent py-5'}`}>
+            <div className="container mx-auto px-5 lg:px-8 flex items-center justify-between">
                 
-                {/* НАВІГАЦІЯ */}
-                <nav className={`nav-primary ${mobileMenuOpen ? 'open' : ''}`}>
-                    <Link to="/" onClick={closeMenu}>Головна</Link>
-                    <a href="/#schedule" onClick={closeMenu}>Розклад</a>
-                    <a href="/#trainers" onClick={closeMenu}>Тренери</a>
-                    <a href="/#plans" onClick={closeMenu}>Абонементи</a>
+                {/* ЛІВА ЧАСТИНА: Логотип (займає 1 рівну частину простору) */}
+                <div className="flex-1 flex justify-start z-[1002]">
+                    <Link to="/" className="text-[1.8rem] font-black text-white no-underline uppercase tracking-wide flex items-center" onClick={closeMenu}>
+                        FIT<span className="text-primary ml-[2px]">GYM</span>
+                    </Link>
+                </div>
+                
+                {/* ЦЕНТРАЛЬНА ЧАСТИНА: Навігація */}
+                <nav className={`
+                    fixed lg:static top-0 right-0 h-screen lg:h-auto w-[280px] lg:w-auto 
+                    bg-black lg:bg-transparent flex flex-col lg:flex-row items-start lg:items-center 
+                    pt-[100px] lg:pt-0 px-[40px] lg:px-0 gap-8 lg:gap-10 
+                    transition-transform duration-500 z-[1001] 
+                    ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
+                `}>
+                    <NavLink to="/">Головна</NavLink>
+                    <NavLink href="/#schedule">Розклад</NavLink>
+                    <NavLink href="/#trainers">Тренери</NavLink>
+                    <NavLink href="/#plans">Абонементи</NavLink>
                     
                     {user?.is_staff && (
-                        <Link to="/admin" onClick={closeMenu} className="admin-accent">
+                        <Link to="/admin" onClick={closeMenu} className="text-primary font-extrabold uppercase text-[1.1rem] lg:text-[0.95rem] flex items-center gap-2 group relative">
                             <i className="fas fa-shield-alt"></i> Адмін
+                            <span className="absolute -bottom-1 left-0 w-0 h-[2px] bg-primary transition-all duration-300 group-hover:w-full shadow-[0_0_8px_#ff0000]"></span>
                         </Link>
                     )}
+
+                    {/* Авторизація ТІЛЬКИ для мобільного меню */}
+                    <div className="flex flex-col w-full gap-4 mt-4 lg:hidden border-t border-white/10 pt-8">
+                        {user ? (
+                            <>
+                                <div className="text-white mb-2 opacity-70 text-sm uppercase tracking-wide">Користувач: <span className="text-primary font-bold">{user.username}</span></div>
+                                <button onClick={() => { logout(); closeMenu(); }} className="w-full border border-primary text-primary font-bold py-3 rounded-md uppercase hover:bg-primary hover:text-white transition-colors">Вийти</button>
+                            </>
+                        ) : (
+                            <>
+                                <button onClick={() => { openLogin(); closeMenu(); }} className="w-full bg-white/10 text-white font-bold py-3 rounded-md uppercase hover:bg-white/20 transition-colors">Вхід</button>
+                                <button onClick={() => { openRegister(); closeMenu(); }} className="w-full bg-primary text-white font-bold py-3 rounded-md uppercase shadow-[0_4px_10px_rgba(255,0,0,0.3)]">Реєстрація</button>
+                            </>
+                        )}
+                    </div>
                 </nav>
 
-                {/* ПРАВА ЧАСТИНА (АВТОРИЗАЦІЯ) */}
-                <div className="auth-zone">
-                    {user ? (
-                        <div className="user-pill-container">
-                            <Link to="/cabinet" className="user-pill" onClick={closeMenu}>
-                                <span className="pill-label">Привіт, </span>
-                                <b className="pill-name">{user.username}</b>
-                            </Link>
-                            <button onClick={logout} className="logout-icon-btn" title="Вийти">
-                                <i className="fas fa-sign-out-alt"></i>
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="guest-btns">
-                            <button className="login-link" onClick={openLogin}>Вхід</button>
-                            <button className="btn-red-sm" onClick={openRegister}>Реєстрація</button>
-                        </div>
-                    )}
+                {/* ПРАВА ЧАСТИНА: Авторизація (займає 1 рівну частину простору) */}
+                <div className="flex-1 flex justify-end items-center gap-5 z-[1002]">
+                    <div className="hidden lg:flex items-center gap-5">
+                        {user ? (
+                            <div className="flex items-center gap-3">
+                                <Link to="/cabinet" className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-1.5 rounded-full text-white transition-colors hover:bg-white/10 hover:border-primary">
+                                    <span className="text-xs opacity-70">Привіт, </span>
+                                    <b className="text-primary uppercase font-black">{user.username}</b>
+                                </Link>
+                                <button onClick={logout} className="text-white/70 text-xl transition-all hover:text-primary hover:scale-110 flex items-center" title="Вийти">
+                                    <i className="fas fa-sign-out-alt"></i>
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-5">
+                                <button className="bg-transparent border-none text-white font-extrabold text-[0.9rem] uppercase cursor-pointer transition-colors tracking-wide hover:text-primary" onClick={openLogin}>Вхід</button>
+                                <button className="bg-primary text-white border-none px-6 py-2.5 rounded-md font-extrabold text-[0.9rem] uppercase cursor-pointer transition-all duration-300 shadow-[0_4px_10px_rgba(255,0,0,0.3)] hover:bg-[#cc0000] hover:-translate-y-0.5 hover:shadow-[0_6px_15px_rgba(255,0,0,0.5)]" onClick={openRegister}>Реєстрація</button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* БУРГЕР КНОПКА (МОБІЛЬНА) - Завжди вирівняна по правому краю */}
+                    <button 
+                        className="lg:hidden flex flex-col justify-between w-[26px] h-[18px] bg-transparent border-none cursor-pointer relative ml-4"
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                    >
+                        <span className={`w-full h-[3px] bg-white rounded-sm transition-all duration-300 origin-center ${mobileMenuOpen ? 'rotate-45 translate-y-[7.5px] !bg-primary' : ''}`}></span>
+                        <span className={`w-full h-[3px] bg-white rounded-sm transition-all duration-300 ${mobileMenuOpen ? 'opacity-0' : ''}`}></span>
+                        <span className={`w-full h-[3px] bg-white rounded-sm transition-all duration-300 origin-center ${mobileMenuOpen ? '-rotate-45 -translate-y-[7.5px] !bg-primary' : ''}`}></span>
+                    </button>
                 </div>
-
-                {/* БУРГЕР КНОПКА */}
-                <button 
-                    className={`hamburger ${mobileMenuOpen ? 'active' : ''}`} 
-                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                >
-                    <span></span><span></span><span></span>
-                </button>
             </div>
-
-            <style>{`
-                .site-header {
-                    position: fixed;
-                    top: 0; left: 0; width: 100%; z-index: 1000;
-                    padding: 20px 0; transition: 0.4s ease;
-                }
-                .site-header.scrolled {
-                    background: rgba(0, 0, 0, 0.85);
-                    backdrop-filter: blur(15px);
-                    padding: 12px 0;
-                    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-                }
-                .header-inner { display: flex; align-items: center; justify-content: space-between; }
-                
-                .logo { font-size: 1.8rem; font-weight: 900; color: #fff; text-decoration: none; }
-                .logo span { color: #ff0000; }
-
-                /* --- КНОПКИ ДЛЯ ГОСТЕЙ (Вхід/Реєстрація) --- */
-                .guest-btns {
-                    display: flex;
-                    align-items: center;
-                    gap: 20px;
-                }
-                .login-link {
-                    background: none;
-                    border: none;
-                    color: #fff;
-                    font-weight: 800;
-                    font-size: 0.9rem;
-                    text-transform: uppercase;
-                    cursor: pointer;
-                    transition: color 0.3s;
-                    padding: 0;
-                    letter-spacing: 0.5px;
-                }
-                .login-link:hover {
-                    color: #ff0000;
-                }
-                .btn-red-sm {
-                    background: #ff0000;
-                    color: #fff;
-                    border: none;
-                    padding: 10px 24px;
-                    border-radius: 6px;
-                    font-weight: 800;
-                    font-size: 0.9rem;
-                    text-transform: uppercase;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                    box-shadow: 0 4px 10px rgba(255, 0, 0, 0.3);
-                }
-                .btn-red-sm:hover {
-                    background: #cc0000;
-                    transform: translateY(-2px);
-                    box-shadow: 0 6px 15px rgba(255, 0, 0, 0.5);
-                }
-
-                /* --- USER PILL - Скляний ефект --- */
-                .user-pill-container { display: flex; align-items: center; gap: 10px; }
-                
-                .user-pill {
-                    display: flex; align-items: center; gap: 8px;
-                    background: rgba(255, 255, 255, 0.05);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    padding: 6px 16px; border-radius: 30px;
-                    text-decoration: none; color: #fff; transition: 0.3s;
-                }
-                .user-pill:hover { background: rgba(255, 255, 255, 0.1); border-color: #ff0000; }
-                .pill-label { font-size: 0.8rem; opacity: 0.7; }
-                .pill-name { color: #ff0000; text-transform: uppercase; font-weight: 900; }
-
-                .logout-icon-btn {
-                    background: none; border: none; color: #fff; opacity: 0.7;
-                    font-size: 1.2rem; cursor: pointer; transition: 0.3s;
-                    display: flex; align-items: center;
-                }
-                .logout-icon-btn:hover { color: #ff0000; opacity: 1; transform: scale(1.1); }
-
-                .admin-accent { color: #ff0000 !important; font-weight: 800; }
-
-                /* --- HAMBURGER --- */
-                .hamburger { display: none; background: transparent; border: none; cursor: pointer; }
-                .hamburger span { display: block; width: 25px; height: 3px; background: #fff; margin: 5px 0; transition: 0.4s; }
-                .hamburger.active span:nth-child(1) { transform: rotate(-45deg) translate(-5px, 6px); }
-                .hamburger.active span:nth-child(2) { opacity: 0; }
-                .hamburger.active span:nth-child(3) { transform: rotate(45deg) translate(-5px, -6px); }
-
-                /* --- МЕДІА ЗАПИТИ (МОБІЛЬНІ) --- */
-                @media (max-width: 991px) {
-                    .hamburger { display: block; }
-                    .nav-primary {
-                        position: fixed; top: 0; right: -100%; width: 280px; height: 100vh;
-                        background: #000; flex-direction: column; padding: 100px 40px; transition: 0.5s;
-                    }
-                    .nav-primary.open { right: 0; }
-                    
-                    /* Ховаємо кнопки з верхньої панелі на мобільному (вони мають бути в меню, якщо треба) */
-                    .auth-zone { display: none; }
-                }
-            `}</style>
         </header>
     );
 }

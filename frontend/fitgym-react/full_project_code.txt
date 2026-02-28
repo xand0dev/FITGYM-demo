@@ -235,7 +235,7 @@ export default function AdminSidebar({ activeTab, setActiveTab, sidebarOpen, log
             <div className="admin-logo">FIT<span>GYM</span></div>
             
             {/* Мікро-бейдж для перевірки статусу (без зламу CSS) */}
-            <div style={{ textAlign: 'center', color: isSuperAdmin ? '#ff0000' : '#888', fontSize: '11px', fontWeight: '900', marginBottom: '20px', letterSpacing: '2px' }}>
+            <div style={{ textAlign: 'center', color: isSuperAdmin ? '#ff0000' : '#888', fontSize: '11px', fontWeight: '900', margin: '0 20px 30px', letterSpacing: '2px', background: 'rgba(255,255,255,0.03)', padding: '5px', borderRadius: '4px' }}>
                 {isSuperAdmin ? 'АДМІНІСТРАТОР' : 'ТРЕНЕР'}
             </div>
 
@@ -1600,6 +1600,7 @@ export default function Carousel() {
 =========================================
 
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom'; // Додано імпорт порталу
 
 const CategoryCard = ({ title, img, isLarge, isTall, onClick }) => (
     <div 
@@ -1690,8 +1691,8 @@ export default function Categories() {
                 </div>
             </div>
 
-            {/* ПОВНОЕКРАННЕ ВІКНО З ФОТОМ */}
-            {current && (
+            {/* ПОВНОЕКРАННЕ ВІКНО З ФОТОМ ВИВОДИТЬСЯ ЧЕРЕЗ PORTAL */}
+            {current && createPortal(
                 <div className="modal-photo-overlay" onClick={() => setSelectedId(null)}>
                     {/* Фонове зображення */}
                     <div className="modal-bg-image" style={{ backgroundImage: `url(${current.img})` }}></div>
@@ -1710,7 +1711,8 @@ export default function Categories() {
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             <style>{`
@@ -1718,9 +1720,10 @@ export default function Categories() {
                 .category-card:hover .cat-overlay { background: rgba(255, 0, 0, 0.3) !important; }
                 .category-card:hover .cat-line { width: 60% !important; }
 
+                /* ВИПРАВЛЕНО розміри на vw/vh для надійності */
                 .modal-photo-overlay {
                     position: fixed;
-                    top: 0; left: 0; width: 100%; height: 100%;
+                    top: 0; left: 0; width: 100vw; height: 100vh;
                     z-index: 100000;
                     display: flex; align-items: center; justify-content: center;
                     background: #000;
@@ -2002,10 +2005,13 @@ export default function Hero() {
 =========================================
 
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom'; // Додано імпорт порталу
 
 const Modal = ({ isOpen, onClose, planTitle }) => {
     if (!isOpen) return null;
-    return (
+    
+    // Використовуємо портал для рендеру модалки в body
+    return createPortal(
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-body" onClick={(e) => e.stopPropagation()}>
                 <button className="close-modal" onClick={onClose}>&times;</button>
@@ -2017,7 +2023,8 @@ const Modal = ({ isOpen, onClose, planTitle }) => {
                     <button type="submit" className="plan-button small-btn">Замовити</button>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body // <-- Куди рендерити
     );
 };
 
@@ -2057,6 +2064,7 @@ export default function Plans() {
                     <PlanCard title="PRO" price="2500" features={["Персональний план", "Заморозка", "Пріоритет"]} onSelect={handlePlanSelect} />
                 </div>
             </div>
+            
             <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} planTitle={selectedPlan} />
 
             <style>{`
@@ -2103,8 +2111,8 @@ export default function Plans() {
                 .plan-button:hover { background: #ff0000; }
                 .featured .plan-button { background: #ff0000; }
 
-                /* MODAL */
-                .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+                /* MODAL: Змінено width/height на vh/vw для надійності */
+                .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 1000; }
                 .modal-body { background: rgba(255,255,255,0.1); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.2); padding: 30px; border-radius: 15px; width: 90%; max-width: 320px; color: #fff; text-align: center; position: relative; }
                 .close-modal { position: absolute; top: 10px; right: 15px; background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; }
                 .modal-header { font-size: 1.2rem; text-transform: uppercase; margin-bottom: 5px; }
@@ -2121,6 +2129,7 @@ export default function Plans() {
 =========================================
 
 import { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -2258,7 +2267,8 @@ export default function Schedule() {
                 />
             </div>
 
-            {selectedEvent && (
+            {/* Використовуємо React Portal для рендеру модалки безпосередньо в <body> */}
+            {selectedEvent && createPortal(
                 <div className="modal-overlay active" onClick={() => !bookMutation.isPending && setSelectedEvent(null)}>
                     <div className="modal-content booking-modal" onClick={e => e.stopPropagation()}>
                         <button 
@@ -2274,21 +2284,21 @@ export default function Schedule() {
                             <div className="detail-item">
                                 <i className="far fa-clock"></i> 
                                 <div>
-                                    <span className="label">Час:</span>
+                                    <span className="label">Час: </span>
                                     <span className="value">{formatDate(selectedEvent.start)}</span>
                                 </div>
                             </div>
                             <div className="detail-item">
                                 <i className="fas fa-user-tie"></i>
                                 <div>
-                                    <span className="label">Тренер:</span>
+                                    <span className="label">Тренер: </span>
                                     <span className="value">{selectedEvent.instructor || 'Поліна Товстуха'}</span>
                                 </div>
                             </div>
                             <div className="detail-item">
                                 <i className="fas fa-users"></i>
                                 <div>
-                                    <span className="label">Місця:</span>
+                                    <span className="label">Місця: </span>
                                     <span className={`value ${isFull ? 'text-danger' : ''}`}>
                                         {selectedEvent.booked || 0} / {selectedEvent.capacity}
                                     </span>
@@ -2306,14 +2316,15 @@ export default function Schedule() {
                             </button>
                             <button 
                                 onClick={handleBooking} 
-                                className="btn-confirm" 
+                                className="btn btn-primary" 
                                 disabled={isActionDisabled}
                             >
                                 {bookMutation.isPending ? 'ОБРОБКА...' : (isFull ? 'МІСЦЬ НЕМАЄ' : 'ЗАПИСАТИСЯ')}
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body // <-- Куди рендерити
             )}
         </section>
     );
@@ -3233,16 +3244,22 @@ export default function AdminPanel() {
 =========================================
 
 import { useEffect, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
-import { useAuthData } from '../hooks/useFitQuery'; 
+import { useAuthData, useFitMutation } from '../hooks/useFitQuery'; 
+import { useQueryClient } from '@tanstack/react-query';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 
 export default function Cabinet() {
     const { user, logout } = useAuth();
-    const { addToast } = useUI();
+    const { addToast, confirmAction } = useUI();
+    const queryClient = useQueryClient();
     
+    // Мутація для скасування запису
+    const cancelMutation = useFitMutation('DELETE');
+
     // --- 1. ЛОГІКА ТЕМИ ---
     const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('gym_theme') !== 'light');
     useEffect(() => {
@@ -3263,8 +3280,29 @@ export default function Cabinet() {
     const progressToGoal = Math.min(100, Math.round((weight / goal) * 100));
 
     // --- 4. РАДАР ЗАПИСІВ (REACT QUERY) ---
-    // ВИПРАВЛЕНО: Правильний ендпоінт /api/my-bookings/
     const { data: bookings = [], isLoading: isBookingsLoading } = useAuthData('my-bookings', '/api/my-bookings/');
+
+    // Логіка скасування запису
+    const handleCancelBooking = (bookingId) => {
+        confirmAction(
+            "Ви впевнені, що хочете скасувати цей запис на тренування?",
+            () => {
+                cancelMutation.mutate(
+                    { endpoint: `/api/my-bookings/${bookingId}/` },
+                    {
+                        onSuccess: () => {
+                            if (addToast) addToast('Запис успішно скасовано!', 'success');
+                            // Оновлюємо кеш, щоб запис зник або змінив статус
+                            queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+                        },
+                        onError: (error) => {
+                            if (addToast) addToast(error.message || 'Помилка при скасуванні', 'error');
+                        }
+                    }
+                );
+            }
+        );
+    };
 
     // --- 5. КАЛЕНДАР ТА НОТАТКИ ---
     const [userNotes, setUserNotes] = useState(() => JSON.parse(localStorage.getItem('gym_notes')) || {});
@@ -3331,7 +3369,6 @@ export default function Cabinet() {
         return days;
     };
 
-    // Трансляція статусів з бекенду
     const getStatusLabel = (status) => {
         switch(status) {
             case 'booked': return 'ЗАПЛАНОВАНО';
@@ -3412,13 +3449,28 @@ export default function Cabinet() {
                                     </div>
                                 ) : (
                                     bookings.map(b => (
-                                        <div key={b.id} style={{ padding: '15px 20px', background: 'var(--c-input)', borderRadius: '12px', borderLeft: '4px solid #ff0000', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div key={b.id} style={{ padding: '15px 20px', background: 'var(--c-input)', borderRadius: '12px', borderLeft: `4px solid ${b.status === 'cancelled' ? '#888' : '#ff0000'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <div>
                                                 <strong style={{ display: 'block', fontSize: '1.1rem', color: 'var(--c-text)' }}>{b.session?.class_name || 'Групове заняття'}</strong>
                                                 <span style={{ fontSize: '0.85rem', color: '#888' }}>{new Date(b.session?.start_at).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' })}</span>
                                             </div>
-                                            <div style={{ color: b.status === 'cancelled' ? '#888' : '#ff0000', fontWeight: '900', fontSize: '0.8rem', letterSpacing: '1px' }}>
-                                                {getStatusLabel(b.status)}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                                <div style={{ color: b.status === 'cancelled' ? '#888' : '#ff0000', fontWeight: '900', fontSize: '0.8rem', letterSpacing: '1px' }}>
+                                                    {getStatusLabel(b.status)}
+                                                </div>
+                                                
+                                                {/* Кнопка скасування показується тільки для активних записів */}
+                                                {b.status === 'booked' && (
+                                                    <button 
+                                                        onClick={() => handleCancelBooking(b.id)}
+                                                        className="btn-cancel"
+                                                        disabled={cancelMutation.isPending}
+                                                        title="Скасувати запис"
+                                                        style={{ width: '30px', height: '30px', fontSize: '1.2rem', padding: 0 }}
+                                                    >
+                                                        ×
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     ))
@@ -3468,14 +3520,16 @@ export default function Cabinet() {
                 </div>
             </div>
 
-            {activeDayKey && (
-                <div className="cab-modal-overlay" onClick={() => setActiveDayKey(null)}>
+            {/* Портал для модалки нотаток, щоб вона теж не ламалася від Framer Motion */}
+            {activeDayKey && createPortal(
+                <div className="cab-modal-overlay" onClick={() => setActiveDayKey(null)} style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 100000, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)' }}>
                     <div className="cab-modal-content" onClick={e => e.stopPropagation()}>
                         <h5>ПЛАН: {activeDayKey.split('-').reverse().join('.')}</h5>
                         <input type="text" value={tempNote} onChange={e => setTempNote(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSaveNote()} placeholder="Назва тренування..." autoFocus />
                         <button className="cab-btn-save" onClick={handleSaveNote}>ЗБЕРЕГТИ ДАНІ</button>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             <style>{`
@@ -3528,7 +3582,6 @@ export default function Cabinet() {
                 .cab-cal-day.cab-active { border-color: #ff0000; background: rgba(255,0,0,0.05); }
                 .cab-dot { width: 6px; height: 6px; background: #ff0000; border-radius: 50%; margin-top: 4px; box-shadow: 0 0 10px #ff0000; }
 
-                .cab-modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
                 .cab-modal-content { background: var(--c-card); border: 1px solid #ff0000; padding: 40px; border-radius: 30px; width: 350px; text-align: center; }
                 .cab-modal-content h5 { color: #ff0000; font-weight: 900; margin-bottom: 20px; }
                 .cab-modal-content input { width: 100%; background: var(--c-input); border: 1px solid var(--c-border); padding: 15px; color: var(--c-text); border-radius: 12px; margin-bottom: 20px; outline: none; }
@@ -4040,8 +4093,8 @@ body { margin: 0; padding: 0; }
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    width: 100vw;  /* ВИПРАВЛЕНО: жорстка прив'язка до ширини екрана */
+    height: 100vh; /* ВИПРАВЛЕНО: жорстка прив'язка до висоти екрана */
     z-index: 9999; /* Найвищий пріоритет */
 
     /* 3. Центрування контенту (Flexbox) */
@@ -5619,13 +5672,15 @@ body { margin: 0; padding: 0; }
 /* --- PREMIUM DASHBOARD STYLES --- */
 body.admin-body { background-color: #080808 !important; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
 
-.admin-wrapper { display: flex; min-height: 100vh; }
+/* ВИПРАВЛЕНО: додано align-items: flex-start для коректної роботи sticky */
+.admin-wrapper { display: flex; min-height: 100vh; align-items: flex-start; }
 
 .fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
 /* SIDEBAR & TOPBAR */
-.admin-sidebar { width: 260px; background: #0f0f0f; border-right: 1px solid #222; position: fixed; height: 100vh; z-index: 1000; transition: 0.3s; }
+/* ВИПРАВЛЕНО: position: sticky замість fixed, додано top: 0 та flex-shrink: 0 */
+.admin-sidebar { width: 260px; background: #0f0f0f; border-right: 1px solid #222; position: sticky; top: 0; height: 100vh; z-index: 1000; transition: 0.3s; flex-shrink: 0; }
 .admin-logo { padding: 30px; font-size: 2rem; font-weight: 900; color: #fff; text-align: center; }
 .admin-logo span { color: #ff0000; }
 .admin-menu button { width: 100%; padding: 20px 30px; background: none; border: none; text-align: left; color: #666; font-weight: 800; cursor: pointer; text-transform: uppercase; border-left: 4px solid transparent; transition: 0.3s; }
@@ -5633,7 +5688,8 @@ body.admin-body { background-color: #080808 !important; margin: 0; padding: 0; f
 .admin-footer { position: absolute; bottom: 0; width: 100%; padding: 20px; border-top: 1px solid #222; }
 .admin-footer button { width: 100%; background: none; border: none; color: #ff4d4d; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
 
-.admin-content { margin-left: 260px; flex: 1; padding: 30px; width: calc(100% - 260px); box-sizing: border-box; }
+/* ВИПРАВЛЕНО: прибрано margin-left, оскільки sticky займає фізичне місце в DOM */
+.admin-content { flex: 1; padding: 30px; width: 100%; box-sizing: border-box; }
 .admin-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
 .topbar-title { color: #fff; font-weight: 900; text-transform: uppercase; margin: 0; }
 .admin-user { display: flex; align-items: center; gap: 15px; color: #fff; font-weight: bold; }
@@ -5689,14 +5745,15 @@ body.admin-body { background-color: #080808 !important; margin: 0; padding: 0; f
 
 @media (max-width: 1100px) {
     .charts-row, .charts-row.three-cols { grid-template-columns: 1fr; }
-    .admin-sidebar { transform: translateX(-100%); }
+    /* ВИПРАВЛЕНО: для мобільних повертаємо position: fixed, щоб сайдбар працював як off-canvas меню */
+    .admin-sidebar { position: fixed; transform: translateX(-100%); }
     .admin-sidebar.active { transform: translateX(0); }
     .admin-content { margin-left: 0; width: 100%; }
     .mobile-toggle { display: block; }
 }
 
 
-/* --- MODALS & FORMS (ОНОВЛЕНО) --- */
+/* --- MODALS & FORMS --- */
 .admin-modal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
