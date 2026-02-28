@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -136,7 +137,8 @@ export default function Schedule() {
                 />
             </div>
 
-            {selectedEvent && (
+            {/* Використовуємо React Portal для рендеру модалки безпосередньо в <body> */}
+            {selectedEvent && createPortal(
                 <div className="modal-overlay active" onClick={() => !bookMutation.isPending && setSelectedEvent(null)}>
                     <div className="modal-content booking-modal" onClick={e => e.stopPropagation()}>
                         <button 
@@ -152,21 +154,21 @@ export default function Schedule() {
                             <div className="detail-item">
                                 <i className="far fa-clock"></i> 
                                 <div>
-                                    <span className="label">Час:</span>
+                                    <span className="label">Час: </span>
                                     <span className="value">{formatDate(selectedEvent.start)}</span>
                                 </div>
                             </div>
                             <div className="detail-item">
                                 <i className="fas fa-user-tie"></i>
                                 <div>
-                                    <span className="label">Тренер:</span>
+                                    <span className="label">Тренер: </span>
                                     <span className="value">{selectedEvent.instructor || 'Поліна Товстуха'}</span>
                                 </div>
                             </div>
                             <div className="detail-item">
                                 <i className="fas fa-users"></i>
                                 <div>
-                                    <span className="label">Місця:</span>
+                                    <span className="label">Місця: </span>
                                     <span className={`value ${isFull ? 'text-danger' : ''}`}>
                                         {selectedEvent.booked || 0} / {selectedEvent.capacity}
                                     </span>
@@ -184,14 +186,15 @@ export default function Schedule() {
                             </button>
                             <button 
                                 onClick={handleBooking} 
-                                className="btn-confirm" 
+                                className="btn btn-primary" 
                                 disabled={isActionDisabled}
                             >
                                 {bookMutation.isPending ? 'ОБРОБКА...' : (isFull ? 'МІСЦЬ НЕМАЄ' : 'ЗАПИСАТИСЯ')}
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body // <-- Куди рендерити
             )}
         </section>
     );
