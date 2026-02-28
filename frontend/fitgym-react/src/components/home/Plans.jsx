@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom'; // Додано імпорт порталу
 
 const Modal = ({ isOpen, onClose, planTitle }) => {
     if (!isOpen) return null;
-    return (
+    
+    // Використовуємо портал для рендеру модалки в body
+    return createPortal(
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-body" onClick={(e) => e.stopPropagation()}>
                 <button className="close-modal" onClick={onClose}>&times;</button>
@@ -14,7 +17,8 @@ const Modal = ({ isOpen, onClose, planTitle }) => {
                     <button type="submit" className="plan-button small-btn">Замовити</button>
                 </form>
             </div>
-        </div>
+        </div>,
+        document.body // <-- Куди рендерити
     );
 };
 
@@ -54,6 +58,7 @@ export default function Plans() {
                     <PlanCard title="PRO" price="2500" features={["Персональний план", "Заморозка", "Пріоритет"]} onSelect={handlePlanSelect} />
                 </div>
             </div>
+            
             <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} planTitle={selectedPlan} />
 
             <style>{`
@@ -100,8 +105,8 @@ export default function Plans() {
                 .plan-button:hover { background: #ff0000; }
                 .featured .plan-button { background: #ff0000; }
 
-                /* MODAL */
-                .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+                /* MODAL: Змінено width/height на vh/vw для надійності */
+                .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 1000; }
                 .modal-body { background: rgba(255,255,255,0.1); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.2); padding: 30px; border-radius: 15px; width: 90%; max-width: 320px; color: #fff; text-align: center; position: relative; }
                 .close-modal { position: absolute; top: 10px; right: 15px; background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; }
                 .modal-header { font-size: 1.2rem; text-transform: uppercase; margin-bottom: 5px; }
