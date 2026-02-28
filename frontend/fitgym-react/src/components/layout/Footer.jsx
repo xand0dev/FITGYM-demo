@@ -3,127 +3,71 @@ import { Link } from 'react-router-dom';
 
 export default function Footer() {
     return (
-        <footer className="footer">
-            <div className="container footer-content">
-                <div className="footer-grid">
+        <footer className="bg-black text-white pt-[80px] pb-[30px] border-t-[5px] border-primary">
+            <div className="container mx-auto px-5 lg:px-8">
+                <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1.5fr] gap-10 md:gap-[60px] mb-[60px] text-center md:text-left">
                     
                     {/* Лого та опис */}
-                    <div className="footer-brand">
-                        <h2 className="footer-logo">FIT<span>GYM</span></h2>
-                        <p className="footer-about">
+                    <div className="mx-auto md:mx-0">
+                        <h2 className="text-[2.5rem] font-[950] mb-5 tracking-[-2px]">
+                            FIT<span className="text-primary">GYM</span>
+                        </h2>
+                        <p className="text-[#888] leading-relaxed max-w-[350px] mx-auto md:mx-0">
                             Найсучасніший фітнес-центр у Бердичеві. Твій результат — наш пріоритет. 
                             Працюємо 24/7 для твоєї досконалості.
                         </p>
-                        <div className="footer-socials">
-                            <a href="#"><i className="fab fa-instagram"></i></a>
-                            <a href="#"><i className="fab fa-facebook-f"></i></a>
-                            <a href="#"><i className="fab fa-tiktok"></i></a>
+                        <div className="flex justify-center md:justify-start gap-5 mt-[25px]">
+                            <a href="#" className="w-10 h-10 bg-[#222] flex items-center justify-center text-white no-underline transition-all duration-300 hover:bg-primary hover:-translate-y-1">
+                                <i className="fab fa-instagram"></i>
+                            </a>
+                            <a href="#" className="w-10 h-10 bg-[#222] flex items-center justify-center text-white no-underline transition-all duration-300 hover:bg-primary hover:-translate-y-1">
+                                <i className="fab fa-facebook-f"></i>
+                            </a>
+                            <a href="#" className="w-10 h-10 bg-[#222] flex items-center justify-center text-white no-underline transition-all duration-300 hover:bg-primary hover:-translate-y-1">
+                                <i className="fab fa-tiktok"></i>
+                            </a>
                         </div>
                     </div>
 
                     {/* Навігація */}
-                    <div className="footer-links">
-                        <h4>Навігація</h4>
-                        <ul>
-                            <li><a href="#categories">Тренування</a></li>
-                            <li><a href="#trainers">Тренери</a></li>
-                            <li><a href="#plans">Тарифи</a></li>
-                            <li><a href="#schedule">Розклад</a></li>
+                    <div>
+                        <h4 className="uppercase font-black mb-[25px] tracking-[1px]">Навігація</h4>
+                        <ul className="list-none p-0 m-0">
+                            <li className="mb-3">
+                                <a href="#categories" className="text-[#888] no-underline font-semibold transition-all duration-300 hover:text-primary hover:pl-1">Тренування</a>
+                            </li>
+                            <li className="mb-3">
+                                <a href="#trainers" className="text-[#888] no-underline font-semibold transition-all duration-300 hover:text-primary hover:pl-1">Тренери</a>
+                            </li>
+                            <li className="mb-3">
+                                <a href="#plans" className="text-[#888] no-underline font-semibold transition-all duration-300 hover:text-primary hover:pl-1">Тарифи</a>
+                            </li>
+                            <li className="mb-3">
+                                <a href="#schedule" className="text-[#888] no-underline font-semibold transition-all duration-300 hover:text-primary hover:pl-1">Розклад</a>
+                            </li>
                         </ul>
                     </div>
 
                     {/* Контакти */}
-                    <div className="footer-contacts">
-                        <h4>Контакти</h4>
-                        <p><i className="fas fa-map-marker-alt"></i> м. Бердичів, вул. Європейська, 15</p>
-                        <p><i className="fas fa-phone"></i> +38 (097) 123-45-67</p>
-                        <p><i className="fas fa-envelope"></i> info@fitgym.ua</p>
+                    <div>
+                        <h4 className="uppercase font-black mb-[25px] tracking-[1px]">Контакти</h4>
+                        <p className="text-[#888] mb-[15px] flex items-center justify-center md:justify-start gap-3">
+                            <i className="fas fa-map-marker-alt text-primary"></i> м. Бердичів, вул. Європейська, 15
+                        </p>
+                        <p className="text-[#888] mb-[15px] flex items-center justify-center md:justify-start gap-3">
+                            <i className="fas fa-phone text-primary"></i> +38 (097) 123-45-67
+                        </p>
+                        <p className="text-[#888] mb-[15px] flex items-center justify-center md:justify-start gap-3">
+                            <i className="fas fa-envelope text-primary"></i> info@fitgym.ua
+                        </p>
                     </div>
 
                 </div>
 
-                <div className="footer-bottom">
-                    <p>&copy; 2026 FITGYM BERDYCHIV. Всі права захищені.</p>
-                   
+                <div className="border-t border-[#222] pt-[30px] flex flex-col md:flex-row justify-between items-center text-[#444] text-[0.9rem] font-bold gap-[10px]">
+                    <p className="m-0">&copy; 2026 FITGYM BERDYCHIV. Всі права захищені.</p>
                 </div>
             </div>
-
-            <style>{`
-                .footer {
-                    background: #000;
-                    color: #fff;
-                    padding: 80px 0 30px;
-                    border-top: 5px solid #ff0000;
-                }
-                .footer-grid {
-                    display: grid;
-                    grid-template-columns: 2fr 1fr 1.5fr;
-                    gap: 60px;
-                    margin-bottom: 60px;
-                }
-                .footer-logo {
-                    font-size: 2.5rem;
-                    font-weight: 950;
-                    margin-bottom: 20px;
-                    letter-spacing: -2px;
-                }
-                .footer-logo span { color: #ff0000; }
-                .footer-about { color: #888; line-height: 1.6; max-width: 350px; }
-                
-                .footer-links h4, .footer-contacts h4 {
-                    text-transform: uppercase;
-                    font-weight: 900;
-                    margin-bottom: 25px;
-                    letter-spacing: 1px;
-                }
-                .footer-links ul { list-style: none; padding: 0; }
-                .footer-links li { margin-bottom: 12px; }
-                .footer-links a { 
-                    color: #888; 
-                    text-decoration: none; 
-                    transition: 0.3s;
-                    font-weight: 600;
-                }
-                .footer-links a:hover { color: #ff0000; padding-left: 5px; }
-
-                .footer-contacts p { 
-                    color: #888; 
-                    margin-bottom: 15px; 
-                    display: flex; 
-                    align-items: center; 
-                    gap: 12px; 
-                }
-                .footer-contacts i { color: #ff0000; }
-
-                .footer-socials { display: flex; gap: 20px; margin-top: 25px; }
-                .footer-socials a { 
-                    width: 40px; height: 40px; 
-                    background: #222; 
-                    display: flex; align-items: center; justify-content: center;
-                    color: #fff; text-decoration: none;
-                    transition: 0.3s;
-                }
-                .footer-socials a:hover { background: #ff0000; transform: translateY(-5px); }
-
-                .footer-bottom {
-                    border-top: 1px solid #222;
-                    padding-top: 30px;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    color: #444;
-                    font-size: 0.9rem;
-                    font-weight: 700;
-                }
-                .developer span { color: #666; }
-
-                @media (max-width: 768px) {
-                    .footer-grid { grid-template-columns: 1fr; gap: 40px; text-align: center; }
-                    .footer-about { margin: 0 auto; }
-                    .footer-socials { justify-content: center; }
-                    .footer-bottom { flex-direction: column; gap: 10px; }
-                }
-            `}</style>
         </footer>
     );
 }
