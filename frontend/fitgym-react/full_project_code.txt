@@ -2583,8 +2583,8 @@ export default function Footer() {
 =========================================
 
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { useUI } from '../context/UIContext';
+import { useAuth } from '../../context/AuthContext';
+import { useUI } from '../../context/UIContext';
 import { useState, useEffect } from 'react';
 
 
@@ -3541,10 +3541,6 @@ export default function Cabinet() {
 =========================================
 ФАЙЛ: src\pages\Home.jsx
 =========================================
-
-import { useEffect } from 'react';
-import AOS from 'aos';
-import 'aos/dist/aos.css';
 
 import { useEffect } from 'react';
 import AOS from 'aos';

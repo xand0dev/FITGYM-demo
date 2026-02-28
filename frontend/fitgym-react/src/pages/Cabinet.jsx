@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
-import { useAuthData } from '../hooks/useFitQuery'; // Наша матриця
+import { useAuthData } from '../hooks/useFitQuery'; 
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 
@@ -16,7 +16,6 @@ export default function Cabinet() {
     }, [isDarkMode]);
 
     // --- 2. ДАНІ ПРОФІЛЮ З БЕКЕНДУ ---
-    // Витягуємо реальні дані замість localStorage
     const firstName = user?.first_name || user?.username || 'Невідомий';
     const lastName = user?.last_name || 'Атлет';
     const email = user?.email || 'Немає email';
@@ -27,11 +26,11 @@ export default function Cabinet() {
     const [goal, setGoal] = useState(() => Number(localStorage.getItem('gym_goal')) || 90);
     
     const bmi = height > 0 ? (weight / ((height / 100) ** 2)).toFixed(1) : 0;
-    const progressToGoal = Math.min(100, Math.round((weight / goal) * 100)); // Формула для набору маси
+    const progressToGoal = Math.min(100, Math.round((weight / goal) * 100));
 
     // --- 4. РАДАР ЗАПИСІВ (REACT QUERY) ---
-    // Запитуємо реальні бронювання користувача. Якщо бекенд ще не підтримує - буде пустий масив
-    const { data: bookings = [], isLoading: isBookingsLoading } = useAuthData('my-bookings', '/api/bookings/me/');
+    // ВИПРАВЛЕНО: Правильний ендпоінт /api/my-bookings/
+    const { data: bookings = [], isLoading: isBookingsLoading } = useAuthData('my-bookings', '/api/my-bookings/');
 
     // --- 5. КАЛЕНДАР ТА НОТАТКИ ---
     const [userNotes, setUserNotes] = useState(() => JSON.parse(localStorage.getItem('gym_notes')) || {});
@@ -98,6 +97,17 @@ export default function Cabinet() {
         return days;
     };
 
+    // Трансляція статусів з бекенду
+    const getStatusLabel = (status) => {
+        switch(status) {
+            case 'booked': return 'ЗАПЛАНОВАНО';
+            case 'attended': return 'ВІДВІДАНО';
+            case 'missed': return 'ПРОПУЩЕНО';
+            case 'cancelled': return 'СКАСОВАНО';
+            default: return status.toUpperCase();
+        }
+    };
+
     return (
         <section className={`cab-root ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
             <div className="cab-bg-layer"></div>
@@ -159,8 +169,8 @@ export default function Cabinet() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                                 {isBookingsLoading ? (
                                     <>
-                                        <div className="skeleton-box" style={{height: '70px', borderRadius: '12px'}}></div>
-                                        <div className="skeleton-box" style={{height: '70px', borderRadius: '12px'}}></div>
+                                        <div className="skeleton-box" style={{height: '70px', borderRadius: '12px', background: 'var(--c-input)'}}></div>
+                                        <div className="skeleton-box" style={{height: '70px', borderRadius: '12px', background: 'var(--c-input)'}}></div>
                                     </>
                                 ) : bookings.length === 0 ? (
                                     <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px dashed var(--c-border)', textAlign: 'center', color: 'var(--c-text)', opacity: 0.6 }}>
@@ -171,10 +181,10 @@ export default function Cabinet() {
                                         <div key={b.id} style={{ padding: '15px 20px', background: 'var(--c-input)', borderRadius: '12px', borderLeft: '4px solid #ff0000', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <div>
                                                 <strong style={{ display: 'block', fontSize: '1.1rem', color: 'var(--c-text)' }}>{b.session?.class_name || 'Групове заняття'}</strong>
-                                                <span style={{ fontSize: '0.85rem', color: '#888' }}>{new Date(b.session?.start_at).toLocaleString('uk-UA')}</span>
+                                                <span style={{ fontSize: '0.85rem', color: '#888' }}>{new Date(b.session?.start_at).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' })}</span>
                                             </div>
-                                            <div style={{ color: '#ff0000', fontWeight: '900', fontSize: '0.8rem', letterSpacing: '1px' }}>
-                                                ПІДТВЕРДЖЕНО
+                                            <div style={{ color: b.status === 'cancelled' ? '#888' : '#ff0000', fontWeight: '900', fontSize: '0.8rem', letterSpacing: '1px' }}>
+                                                {getStatusLabel(b.status)}
                                             </div>
                                         </div>
                                     ))
