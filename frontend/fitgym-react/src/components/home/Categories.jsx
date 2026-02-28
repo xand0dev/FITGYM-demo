@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom'; // Додано імпорт порталу
 
 const CategoryCard = ({ title, img, isLarge, isTall, onClick }) => (
     <div 
@@ -89,8 +90,8 @@ export default function Categories() {
                 </div>
             </div>
 
-            {/* ПОВНОЕКРАННЕ ВІКНО З ФОТОМ */}
-            {current && (
+            {/* ПОВНОЕКРАННЕ ВІКНО З ФОТОМ ВИВОДИТЬСЯ ЧЕРЕЗ PORTAL */}
+            {current && createPortal(
                 <div className="modal-photo-overlay" onClick={() => setSelectedId(null)}>
                     {/* Фонове зображення */}
                     <div className="modal-bg-image" style={{ backgroundImage: `url(${current.img})` }}></div>
@@ -109,7 +110,8 @@ export default function Categories() {
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             <style>{`
@@ -117,9 +119,10 @@ export default function Categories() {
                 .category-card:hover .cat-overlay { background: rgba(255, 0, 0, 0.3) !important; }
                 .category-card:hover .cat-line { width: 60% !important; }
 
+                /* ВИПРАВЛЕНО розміри на vw/vh для надійності */
                 .modal-photo-overlay {
                     position: fixed;
-                    top: 0; left: 0; width: 100%; height: 100%;
+                    top: 0; left: 0; width: 100vw; height: 100vh;
                     z-index: 100000;
                     display: flex; align-items: center; justify-content: center;
                     background: #000;
