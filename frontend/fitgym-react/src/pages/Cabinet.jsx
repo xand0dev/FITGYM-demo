@@ -1,14 +1,20 @@
 import { useEffect, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
-import { useAuthData } from '../hooks/useFitQuery'; 
+import { useAuthData, useFitMutation } from '../hooks/useFitQuery'; 
+import { useQueryClient } from '@tanstack/react-query';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 
 export default function Cabinet() {
     const { user, logout } = useAuth();
-    const { addToast } = useUI();
+    const { addToast, confirmAction } = useUI();
+    const queryClient = useQueryClient();
     
+    // Мутація для скасування запису
+    const cancelMutation = useFitMutation('DELETE');
+
     // --- 1. ЛОГІКА ТЕМИ ---
     const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('gym_theme') !== 'light');
     useEffect(() => {
@@ -29,8 +35,29 @@ export default function Cabinet() {
     const progressToGoal = Math.min(100, Math.round((weight / goal) * 100));
 
     // --- 4. РАДАР ЗАПИСІВ (REACT QUERY) ---
-    // ВИПРАВЛЕНО: Правильний ендпоінт /api/my-bookings/
     const { data: bookings = [], isLoading: isBookingsLoading } = useAuthData('my-bookings', '/api/my-bookings/');
+
+    // Логіка скасування запису
+    const handleCancelBooking = (bookingId) => {
+        confirmAction(
+            "Ви впевнені, що хочете скасувати цей запис на тренування?",
+            () => {
+                cancelMutation.mutate(
+                    { endpoint: `/api/my-bookings/${bookingId}/` },
+                    {
+                        onSuccess: () => {
+                            if (addToast) addToast('Запис успішно скасовано!', 'success');
+                            // Оновлюємо кеш, щоб запис зник або змінив статус
+                            queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+                        },
+                        onError: (error) => {
+                            if (addToast) addToast(error.message || 'Помилка при скасуванні', 'error');
+                        }
+                    }
+                );
+            }
+        );
+    };
 
     // --- 5. КАЛЕНДАР ТА НОТАТКИ ---
     const [userNotes, setUserNotes] = useState(() => JSON.parse(localStorage.getItem('gym_notes')) || {});
@@ -97,7 +124,6 @@ export default function Cabinet() {
         return days;
     };
 
-    // Трансляція статусів з бекенду
     const getStatusLabel = (status) => {
         switch(status) {
             case 'booked': return 'ЗАПЛАНОВАНО';
@@ -178,13 +204,28 @@ export default function Cabinet() {
                                     </div>
                                 ) : (
                                     bookings.map(b => (
-                                        <div key={b.id} style={{ padding: '15px 20px', background: 'var(--c-input)', borderRadius: '12px', borderLeft: '4px solid #ff0000', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div key={b.id} style={{ padding: '15px 20px', background: 'var(--c-input)', borderRadius: '12px', borderLeft: `4px solid ${b.status === 'cancelled' ? '#888' : '#ff0000'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <div>
                                                 <strong style={{ display: 'block', fontSize: '1.1rem', color: 'var(--c-text)' }}>{b.session?.class_name || 'Групове заняття'}</strong>
                                                 <span style={{ fontSize: '0.85rem', color: '#888' }}>{new Date(b.session?.start_at).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' })}</span>
                                             </div>
-                                            <div style={{ color: b.status === 'cancelled' ? '#888' : '#ff0000', fontWeight: '900', fontSize: '0.8rem', letterSpacing: '1px' }}>
-                                                {getStatusLabel(b.status)}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                                <div style={{ color: b.status === 'cancelled' ? '#888' : '#ff0000', fontWeight: '900', fontSize: '0.8rem', letterSpacing: '1px' }}>
+                                                    {getStatusLabel(b.status)}
+                                                </div>
+                                                
+                                                {/* Кнопка скасування показується тільки для активних записів */}
+                                                {b.status === 'booked' && (
+                                                    <button 
+                                                        onClick={() => handleCancelBooking(b.id)}
+                                                        className="btn-cancel"
+                                                        disabled={cancelMutation.isPending}
+                                                        title="Скасувати запис"
+                                                        style={{ width: '30px', height: '30px', fontSize: '1.2rem', padding: 0 }}
+                                                    >
+                                                        ×
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     ))
@@ -234,14 +275,16 @@ export default function Cabinet() {
                 </div>
             </div>
 
-            {activeDayKey && (
-                <div className="cab-modal-overlay" onClick={() => setActiveDayKey(null)}>
+            {/* Портал для модалки нотаток, щоб вона теж не ламалася від Framer Motion */}
+            {activeDayKey && createPortal(
+                <div className="cab-modal-overlay" onClick={() => setActiveDayKey(null)} style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 100000, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)' }}>
                     <div className="cab-modal-content" onClick={e => e.stopPropagation()}>
                         <h5>ПЛАН: {activeDayKey.split('-').reverse().join('.')}</h5>
                         <input type="text" value={tempNote} onChange={e => setTempNote(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSaveNote()} placeholder="Назва тренування..." autoFocus />
                         <button className="cab-btn-save" onClick={handleSaveNote}>ЗБЕРЕГТИ ДАНІ</button>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             <style>{`
@@ -294,7 +337,6 @@ export default function Cabinet() {
                 .cab-cal-day.cab-active { border-color: #ff0000; background: rgba(255,0,0,0.05); }
                 .cab-dot { width: 6px; height: 6px; background: #ff0000; border-radius: 50%; margin-top: 4px; box-shadow: 0 0 10px #ff0000; }
 
-                .cab-modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
                 .cab-modal-content { background: var(--c-card); border: 1px solid #ff0000; padding: 40px; border-radius: 30px; width: 350px; text-align: center; }
                 .cab-modal-content h5 { color: #ff0000; font-weight: 900; margin-bottom: 20px; }
                 .cab-modal-content input { width: 100%; background: var(--c-input); border: 1px solid var(--c-border); padding: 15px; color: var(--c-text); border-radius: 12px; margin-bottom: 20px; outline: none; }
