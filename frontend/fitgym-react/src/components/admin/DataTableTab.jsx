@@ -1,30 +1,24 @@
 import { useState } from 'react';
 import AdminModal from './AdminModal';
-import { useFitMutation } from '../../hooks/useFitQuery'; // Підключаємо наш бойовий арсенал
+import { useFitMutation } from '../../hooks/useFitQuery'; 
 
 export default function DataTableTab({ data, tabType, onRefresh }) {
-    // Стан модалки та форми
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalMode, setModalMode] = useState('create'); // 'create' або 'edit'
+    const [modalMode, setModalMode] = useState('create'); 
     const [formData, setFormData] = useState({});
 
-    // Визначаємо, в якій вкладці знаходимось
     const isTrainer = tabType === 'trainers';
     const title = isTrainer ? 'Тренери' : 'Клієнти';
 
-    // --- ЗАРЯДЖАЄМО МУТАЦІЇ (REACT QUERY) ---
     const createMutation = useFitMutation('POST');
     const updateMutation = useFitMutation('PUT');
     const deleteMutation = useFitMutation('DELETE');
 
-    // Перевірка активних запитів (блокує кнопки від подвійних кліків)
     const isSubmitting = createMutation.isPending || updateMutation.isPending;
     const isDeleting = deleteMutation.isPending;
 
-    // --- ОБРОБНИКИ ДІЙ ---
     const handleAddNew = () => {
         setModalMode('create');
-        // Ініціалізація пустих полів залежно від типу
         setFormData(
             isTrainer 
                 ? { username: '', password: '', first_name: '', last_name: '', specialties: '', contact: '' } 
@@ -44,13 +38,10 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
         
         const endpoint = isTrainer ? `/api/admin/instructors/${id}/` : `/api/admin/members/${id}/`;
         
-        // Тактичний удар
         deleteMutation.mutate(
             { endpoint, data: null },
             {
-                onSuccess: () => {
-                    if (onRefresh) onRefresh(); // Синхронізація з батьківським компонентом
-                },
+                onSuccess: () => { if (onRefresh) onRefresh(); },
                 onError: (e) => alert('Не вдалося видалити: ' + e.message)
             }
         );
@@ -61,8 +52,6 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
         
         const endpoint = isTrainer ? '/api/admin/instructors/' : '/api/admin/members/';
         const url = modalMode === 'create' ? endpoint : `${endpoint}${formData.id}/`;
-        
-        // Обираємо зброю залежно від режиму
         const mutation = modalMode === 'create' ? createMutation : updateMutation;
 
         mutation.mutate(
@@ -81,71 +70,77 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    // Отримання гарного імені для відображення
     const getDisplayName = (item) => {
         if (item.full_name) return item.full_name;
         const firstLast = `${item.first_name || ''} ${item.last_name || ''}`.trim();
         return firstLast || item.username || 'Невідомий';
     };
 
+    const inputClasses = "w-full p-[14px] bg-[#1a1a1a] border border-[#333] rounded-lg text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors disabled:opacity-50";
+    const labelClasses = "block mb-2 text-[0.8rem] font-bold text-[#888] uppercase tracking-wide";
+
     return (
-        <div className="fade-in">
+        <div className="animate-fadeIn">
             {/* ШАПКА ТАБЛИЦІ З КНОПКОЮ "ДОДАТИ" */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-                <h3 style={{ margin: 0, color: '#fff', fontSize: '1.2rem', textTransform: 'uppercase', fontWeight: '800' }}>
-                    Довідник: <span style={{ color: '#e60000' }}>{title}</span>
+            <div className="flex justify-between items-center mb-[25px]">
+                <h3 className="m-0 color-white text-[1.2rem] uppercase font-extrabold tracking-wide">
+                    Довідник: <span className="text-primary">{title}</span>
                 </h3>
-                <button onClick={handleAddNew} className="btn-save" style={{ padding: '10px 20px', borderRadius: '8px' }}>
-                    <i className="fas fa-plus"></i> Додати запис
+                <button 
+                    onClick={handleAddNew} 
+                    className="px-[20px] py-[10px] rounded-lg bg-primary text-white font-bold text-[0.9rem] flex items-center gap-2 uppercase tracking-wide shadow-[0_4px_15px_rgba(255,0,0,0.3)] transition-all duration-300 hover:bg-[#cc0000] hover:-translate-y-0.5"
+                >
+                    <i className="fas fa-plus"></i> <span className="hidden sm:inline">Додати запис</span>
                 </button>
             </div>
 
             {/* ТАБЛИЦЯ */}
-            <div className="table-wrap">
-                <table className="admin-table">
+            <div className="w-full overflow-x-auto bg-[#141414]/60 backdrop-blur-[20px] border border-[#222] rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.6)] custom-scrollbar">
+                <table className="w-full text-left border-collapse whitespace-nowrap min-w-[600px]">
                     <thead>
-                        <tr>
-                            <th>Користувач</th>
-                            <th>{isTrainer ? 'Спеціалізація' : 'Контакти (Email)'}</th>
-                            <th>Роль</th>
-                            <th style={{ textAlign: 'right' }}>Дії</th>
+                        <tr className="border-b border-[#333] bg-white/5">
+                            <th className="p-[15px_20px] text-[0.85rem] font-bold text-[#888] uppercase tracking-wide">Користувач</th>
+                            <th className="p-[15px_20px] text-[0.85rem] font-bold text-[#888] uppercase tracking-wide">{isTrainer ? 'Спеціалізація' : 'Контакти (Email)'}</th>
+                            <th className="p-[15px_20px] text-[0.85rem] font-bold text-[#888] uppercase tracking-wide">Роль</th>
+                            <th className="p-[15px_20px] text-[0.85rem] font-bold text-[#888] uppercase tracking-wide text-right">Дії</th>
                         </tr>
                     </thead>
                     <tbody>
                         {data && data.length > 0 ? data.map(item => (
-                            <tr key={item.id}>
-                                <td>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                        <div className="avatar" style={{ width: '36px', height: '36px', fontSize: '1rem', borderRadius: '8px' }}>
+                            <tr key={item.id} className="border-b border-[#222] transition-colors duration-200 hover:bg-white/5 last:border-none">
+                                <td className="p-[15px_20px]">
+                                    <div className="flex items-center gap-[15px]">
+                                        <div className="w-[36px] h-[36px] bg-primary/20 text-primary flex items-center justify-center rounded-lg font-bold text-[1rem]">
                                             {getDisplayName(item).charAt(0).toUpperCase()}
                                         </div>
-                                        <strong>{getDisplayName(item)}</strong>
+                                        <strong className="text-white text-[1rem]">{getDisplayName(item)}</strong>
                                     </div>
                                 </td>
-                                <td>
-                                    <span style={{ color: '#aaa', fontSize: '0.9rem' }}>
+                                <td className="p-[15px_20px]">
+                                    <span className="text-[#aaa] text-[0.9rem]">
                                         {isTrainer ? (item.specialties || '—') : (item.email || '—')}
                                     </span>
                                 </td>
-                                <td>
-                                    <span className="badge-red" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid #333' }}>
+                                <td className="p-[15px_20px]">
+                                    <span className="inline-block bg-white/5 text-white border border-[#333] px-2.5 py-1 rounded-md text-[0.8rem] font-semibold tracking-wide">
                                         {isTrainer ? 'Тренер' : 'Клієнт'}
                                     </span>
                                 </td>
-                                <td>
-                                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                <td className="p-[15px_20px]">
+                                    <div className="flex gap-[12px] justify-end">
                                         <button 
                                             title="Редагувати" 
                                             onClick={() => handleEdit(item)}
                                             disabled={isDeleting}
+                                            className="w-[32px] h-[32px] rounded-md bg-[#222] text-[#aaa] flex items-center justify-center transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
                                         >
                                             <i className="fas fa-pen"></i>
                                         </button>
                                         <button 
                                             title="Видалити" 
                                             onClick={() => handleDelete(item.id)} 
-                                            style={{ color: '#ff4d4d', borderColor: 'rgba(255,0,0,0.3)', opacity: isDeleting ? 0.5 : 1 }}
                                             disabled={isDeleting}
+                                            className="w-[32px] h-[32px] rounded-md bg-primary/10 border border-primary/20 text-primary flex items-center justify-center transition-colors hover:bg-primary/20 hover:text-[#ff1a1a] disabled:opacity-50"
                                         >
                                             <i className="fas fa-trash"></i>
                                         </button>
@@ -154,7 +149,7 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
                             </tr>
                         )) : (
                             <tr>
-                                <td colSpan="4" style={{ textAlign: 'center', color: '#666', padding: '40px' }}>
+                                <td colSpan="4" className="text-center text-[#666] p-[40px] font-medium">
                                     Дані відсутні. Натисніть "Додати запис".
                                 </td>
                             </tr>
@@ -163,103 +158,94 @@ export default function DataTableTab({ data, tabType, onRefresh }) {
                 </table>
             </div>
 
-            {/* УНІВЕРСАЛЬНА МОДАЛКА (Створення / Редагування) */}
+            {/* УНІВЕРСАЛЬНА МОДАЛКА */}
             <AdminModal 
                 isOpen={isModalOpen} 
                 onClose={() => !isSubmitting && setIsModalOpen(false)} 
                 title={modalMode === 'create' ? `Новий ${isTrainer ? 'тренер' : 'клієнт'}` : `Редагування`}
             >
-                <form className="admin-form" onSubmit={handleSave}>
+                <form className="flex flex-col gap-5" onSubmit={handleSave}>
                     
-                    {/* ФОРМА ДЛЯ ТРЕНЕРА */}
                     {isTrainer ? (
                         <>
-                            <div className="form-group">
-                                <label>Username (Логін)</label>
-                                <input 
-                                    type="text" 
-                                    name="username" 
-                                    value={formData.username || ''} 
-                                    onChange={handleChange} 
-                                    required 
-                                    disabled={modalMode === 'edit' || isSubmitting} 
-                                />
+                            <div>
+                                <label className={labelClasses}>Username (Логін)</label>
+                                <input type="text" name="username" value={formData.username || ''} onChange={handleChange} required disabled={modalMode === 'edit' || isSubmitting} className={inputClasses} />
                             </div>
                             
                             {modalMode === 'create' && (
-                                <div className="form-group">
-                                    <label>Пароль</label>
-                                    <input type="password" name="password" value={formData.password || ''} onChange={handleChange} required minLength="6" disabled={isSubmitting} />
+                                <div>
+                                    <label className={labelClasses}>Пароль</label>
+                                    <input type="password" name="password" value={formData.password || ''} onChange={handleChange} required minLength="6" disabled={isSubmitting} className={inputClasses} />
                                 </div>
                             )}
 
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label>Ім'я</label>
-                                    <input type="text" name="first_name" value={formData.first_name || ''} onChange={handleChange} required disabled={isSubmitting} />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                <div>
+                                    <label className={labelClasses}>Ім'я</label>
+                                    <input type="text" name="first_name" value={formData.first_name || ''} onChange={handleChange} required disabled={isSubmitting} className={inputClasses} />
                                 </div>
-                                <div className="form-group">
-                                    <label>Прізвище</label>
-                                    <input type="text" name="last_name" value={formData.last_name || ''} onChange={handleChange} required disabled={isSubmitting} />
+                                <div>
+                                    <label className={labelClasses}>Прізвище</label>
+                                    <input type="text" name="last_name" value={formData.last_name || ''} onChange={handleChange} required disabled={isSubmitting} className={inputClasses} />
                                 </div>
                             </div>
-                            <div className="form-group">
-                                <label>Спеціалізація</label>
-                                <input type="text" name="specialties" value={formData.specialties || ''} onChange={handleChange} placeholder="Crossfit, Yoga, Boxing..." required disabled={isSubmitting} />
+                            <div>
+                                <label className={labelClasses}>Спеціалізація</label>
+                                <input type="text" name="specialties" value={formData.specialties || ''} onChange={handleChange} placeholder="Crossfit, Yoga, Boxing..." required disabled={isSubmitting} className={inputClasses} />
                             </div>
-                            <div className="form-group">
-                                <label>Контакт (Телефон)</label>
-                                <input type="text" name="contact" value={formData.contact || ''} onChange={handleChange} placeholder="+380..." disabled={isSubmitting} />
+                            <div>
+                                <label className={labelClasses}>Контакт (Телефон)</label>
+                                <input type="text" name="contact" value={formData.contact || ''} onChange={handleChange} placeholder="+380..." disabled={isSubmitting} className={inputClasses} />
                             </div>
                         </>
                     ) : (
-                        /* ФОРМА ДЛЯ КЛІЄНТА (Користувача) */
                         <>
-                            <div className="form-group">
-                                <label>Username (Логін)</label>
-                                <input 
-                                    type="text" 
-                                    name="username" 
-                                    value={formData.username || ''} 
-                                    onChange={handleChange} 
-                                    required 
-                                    disabled={modalMode === 'edit' || isSubmitting} 
-                                />
+                            <div>
+                                <label className={labelClasses}>Username (Логін)</label>
+                                <input type="text" name="username" value={formData.username || ''} onChange={handleChange} required disabled={modalMode === 'edit' || isSubmitting} className={inputClasses} />
                             </div>
-                            <div className="form-group">
-                                <label>Email адрес</label>
-                                <input type="email" name="email" value={formData.email || ''} onChange={handleChange} required disabled={isSubmitting} />
+                            <div>
+                                <label className={labelClasses}>Email адрес</label>
+                                <input type="email" name="email" value={formData.email || ''} onChange={handleChange} required disabled={isSubmitting} className={inputClasses} />
                             </div>
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label>Ім'я</label>
-                                    <input type="text" name="first_name" value={formData.first_name || ''} onChange={handleChange} required disabled={isSubmitting} />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                <div>
+                                    <label className={labelClasses}>Ім'я</label>
+                                    <input type="text" name="first_name" value={formData.first_name || ''} onChange={handleChange} required disabled={isSubmitting} className={inputClasses} />
                                 </div>
-                                <div className="form-group">
-                                    <label>Прізвище</label>
-                                    <input type="text" name="last_name" value={formData.last_name || ''} onChange={handleChange} required disabled={isSubmitting} />
+                                <div>
+                                    <label className={labelClasses}>Прізвище</label>
+                                    <input type="text" name="last_name" value={formData.last_name || ''} onChange={handleChange} required disabled={isSubmitting} className={inputClasses} />
                                 </div>
                             </div>
                             {modalMode === 'create' && (
-                                <div className="form-group">
-                                    <label>Пароль</label>
-                                    <input type="password" name="password" value={formData.password || ''} onChange={handleChange} required minLength="6" disabled={isSubmitting} />
+                                <div>
+                                    <label className={labelClasses}>Пароль</label>
+                                    <input type="password" name="password" value={formData.password || ''} onChange={handleChange} required minLength="6" disabled={isSubmitting} className={inputClasses} />
                                 </div>
                             )}
                         </>
                     )}
                     
-                    <div className="modal-actions">
-                        <div className="action-right" style={{ width: '100%' }}>
-                            <button type="button" className="btn-cancel" onClick={() => setIsModalOpen(false)} disabled={isSubmitting}>Скасувати</button>
-                            <button type="submit" className="btn-save" disabled={isSubmitting}>
-                                <i className={isSubmitting ? "fas fa-spinner fa-spin" : "fas fa-check"} style={{marginRight: '8px'}}></i> 
-                                {isSubmitting ? 'ОБРОБКА...' : 'ЗБЕРЕГТИ'}
-                            </button>
-                        </div>
+                    <div className="mt-4 flex flex-col sm:flex-row justify-end gap-3">
+                        <button type="button" onClick={() => setIsModalOpen(false)} disabled={isSubmitting} className="w-full sm:w-auto px-[25px] py-[14px] bg-transparent border border-[#444] text-[#aaa] rounded-lg font-bold uppercase tracking-wide transition-colors hover:border-white hover:text-white disabled:opacity-50">
+                            Скасувати
+                        </button>
+                        <button type="submit" disabled={isSubmitting} className="w-full sm:w-auto px-[25px] py-[14px] bg-primary text-white rounded-lg font-extrabold uppercase tracking-wide shadow-[0_4px_15px_rgba(255,0,0,0.3)] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(255,0,0,0.5)] hover:bg-[#cc0000] disabled:opacity-50 disabled:hover:translate-y-0 flex items-center justify-center gap-2">
+                            <i className={isSubmitting ? "fas fa-spinner fa-spin" : "fas fa-check"}></i> 
+                            {isSubmitting ? 'ОБРОБКА...' : 'ЗБЕРЕГТИ'}
+                        </button>
                     </div>
                 </form>
             </AdminModal>
+            
+            <style>{`
+                @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+                .animate-fadeIn { animation: fadeIn 0.4s ease forwards; }
+                .custom-scrollbar::-webkit-scrollbar { height: 6px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 6px; }
+            `}</style>
         </div>
     );
 }
