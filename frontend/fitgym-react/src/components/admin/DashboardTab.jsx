@@ -4,7 +4,7 @@ import {
   BarChart, Bar, LineChart, Line
 } from 'recharts';
 
-// ДЕМО ДАНІ (Винесені з AdminPanel)
+// ДЕМО ДАНІ
 const dataAttendance = [
   { day: 'Пн', visits: 45 }, { day: 'Вт', visits: 52 }, { day: 'Ср', visits: 48 },
   { day: 'Чт', visits: 85 }, { day: 'Пт', visits: 61 }, { day: 'Сб', visits: 38 }, { day: 'Нд', visits: 20 }
@@ -36,13 +36,14 @@ const recentActivities = [
 
 const COLORS = ['#ff0000', '#cc0000', '#990000', '#4d0000'];
 
+// Tailwind версія PremiumTooltip
 const PremiumTooltip = ({ active, payload, label, prefix = '', suffix = '' }) => {
     if (active && payload && payload.length) {
         return (
-            <div className="premium-tooltip">
-                <p className="tooltip-label">{label}</p>
-                <p className="tooltip-value">
-                    <span className="dot"></span>
+            <div className="bg-[#0f0f0f]/95 backdrop-blur-[10px] border border-[#333] px-4 py-3 rounded-lg text-white shadow-xl">
+                <p className="m-0 mb-2 text-[#888] text-[0.8rem] font-bold uppercase">{label}</p>
+                <p className="m-0 text-[1.1rem] flex items-center gap-2 font-black">
+                    <span className="w-2 h-2 bg-primary rounded-full inline-block shadow-[0_0_8px_#ff0000]"></span>
                     {prefix}{payload[0].value}{suffix}
                 </p>
             </div>
@@ -53,55 +54,58 @@ const PremiumTooltip = ({ active, payload, label, prefix = '', suffix = '' }) =>
 
 export default function DashboardTab({ clientsCount, trainersCount }) {
     return (
-        <div className="dashboard-layout fade-in">
+        <div className="flex flex-col gap-[30px] animate-fadeIn">
+            
             {/* РЯД 1: СТАТИСТИКА */}
-            <div className="admin-grid">
-                <div className="admin-card">
-                    <div className="card-icon"><i className="fas fa-users"></i></div>
-                    <div className="card-data">
-                        <h3>Активні клієнти</h3>
-                        <div className="val">{clientsCount || 124}</div>
-                        <span className="trend positive"><i className="fas fa-arrow-up"></i> 12% за місяць</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-[25px]">
+                <div className="group relative overflow-hidden bg-gradient-to-br from-[#161616] to-[#0d0d0d] border border-[#222] p-[25px] rounded-2xl flex items-start gap-5 transition-all duration-400 shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:border-primary hover:-translate-y-1.5">
+                    <div className="bg-primary/10 text-primary w-[50px] h-[50px] rounded-xl flex items-center justify-center text-[1.4rem] shrink-0 relative z-10"><i className="fas fa-users"></i></div>
+                    <div className="relative z-10">
+                        <h3 className="text-[0.8rem] text-[#888] uppercase m-0 mb-2 font-bold tracking-wide">Активні клієнти</h3>
+                        <div className="text-[2rem] font-black text-white leading-none mb-2.5">{clientsCount || 124}</div>
+                        <span className="text-[0.8rem] font-bold inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[#ff4d4d] bg-primary/10"><i className="fas fa-arrow-up"></i> 12% за місяць</span>
                     </div>
-                    <div className="card-glow"></div>
+                    <div className="absolute -top-1/2 -right-1/2 w-[150px] h-[150px] bg-[radial-gradient(circle,rgba(255,0,0,0.1)_0%,transparent_70%)] rounded-full blur-[20px] transition-all duration-500 z-0 group-hover:scale-150 group-hover:bg-[radial-gradient(circle,rgba(255,0,0,0.2)_0%,transparent_70%)]"></div>
                 </div>
-                <div className="admin-card">
-                    <div className="card-icon"><i className="fas fa-wallet"></i></div>
-                    <div className="card-data">
-                        <h3>Виручка (Місяць)</h3>
-                        <div className="val">₴ 142.5K</div>
-                        <span className="trend positive"><i className="fas fa-arrow-up"></i> 8% за місяць</span>
+
+                <div className="group relative overflow-hidden bg-gradient-to-br from-[#161616] to-[#0d0d0d] border border-[#222] p-[25px] rounded-2xl flex items-start gap-5 transition-all duration-400 shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:border-primary hover:-translate-y-1.5">
+                    <div className="bg-primary/10 text-primary w-[50px] h-[50px] rounded-xl flex items-center justify-center text-[1.4rem] shrink-0 relative z-10"><i className="fas fa-wallet"></i></div>
+                    <div className="relative z-10">
+                        <h3 className="text-[0.8rem] text-[#888] uppercase m-0 mb-2 font-bold tracking-wide">Виручка (Місяць)</h3>
+                        <div className="text-[2rem] font-black text-white leading-none mb-2.5">₴ 142.5K</div>
+                        <span className="text-[0.8rem] font-bold inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[#ff4d4d] bg-primary/10"><i className="fas fa-arrow-up"></i> 8% за місяць</span>
                     </div>
-                    <div className="card-glow"></div>
+                    <div className="absolute -top-1/2 -right-1/2 w-[150px] h-[150px] bg-[radial-gradient(circle,rgba(255,0,0,0.1)_0%,transparent_70%)] rounded-full blur-[20px] transition-all duration-500 z-0 group-hover:scale-150 group-hover:bg-[radial-gradient(circle,rgba(255,0,0,0.2)_0%,transparent_70%)]"></div>
                 </div>
-                <div className="admin-card">
-                    <div className="card-icon" style={{color: '#fff'}}><i className="fas fa-user-plus"></i></div>
-                    <div className="card-data">
-                        <h3>Нові підписки (Тиждень)</h3>
-                        <div className="val">28</div>
-                        <span className="trend positive"><i className="fas fa-arrow-up"></i> 5% за тиждень</span>
+
+                <div className="group relative overflow-hidden bg-gradient-to-br from-[#161616] to-[#0d0d0d] border border-[#222] p-[25px] rounded-2xl flex items-start gap-5 transition-all duration-400 shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:border-white/50 hover:-translate-y-1.5">
+                    <div className="bg-white/10 text-white w-[50px] h-[50px] rounded-xl flex items-center justify-center text-[1.4rem] shrink-0 relative z-10"><i className="fas fa-user-plus"></i></div>
+                    <div className="relative z-10">
+                        <h3 className="text-[0.8rem] text-[#888] uppercase m-0 mb-2 font-bold tracking-wide">Нові підписки</h3>
+                        <div className="text-[2rem] font-black text-white leading-none mb-2.5">28</div>
+                        <span className="text-[0.8rem] font-bold inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[#ff4d4d] bg-primary/10"><i className="fas fa-arrow-up"></i> 5% за тиждень</span>
                     </div>
-                    <div className="card-glow" style={{background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0) 70%)'}}></div>
+                    <div className="absolute -top-1/2 -right-1/2 w-[150px] h-[150px] bg-[radial-gradient(circle,rgba(255,255,255,0.05)_0%,transparent_70%)] rounded-full blur-[20px] transition-all duration-500 z-0 group-hover:scale-150 group-hover:bg-[radial-gradient(circle,rgba(255,255,255,0.1)_0%,transparent_70%)]"></div>
                 </div>
-                <div className="admin-card">
-                    <div className="card-icon"><i className="fas fa-dumbbell"></i></div>
-                    <div className="card-data">
-                        <h3>Тренери в залі</h3>
-                        <div className="val">{trainersCount || 12}</div>
-                        <span className="trend neutral">Без змін</span>
+
+                <div className="group relative overflow-hidden bg-gradient-to-br from-[#161616] to-[#0d0d0d] border border-[#222] p-[25px] rounded-2xl flex items-start gap-5 transition-all duration-400 shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:border-[#888] hover:-translate-y-1.5">
+                    <div className="bg-white/5 text-[#888] w-[50px] h-[50px] rounded-xl flex items-center justify-center text-[1.4rem] shrink-0 relative z-10"><i className="fas fa-dumbbell"></i></div>
+                    <div className="relative z-10">
+                        <h3 className="text-[0.8rem] text-[#888] uppercase m-0 mb-2 font-bold tracking-wide">Тренери в залі</h3>
+                        <div className="text-[2rem] font-black text-white leading-none mb-2.5">{trainersCount || 12}</div>
+                        <span className="text-[0.8rem] font-bold inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[#888] bg-white/5">Без змін</span>
                     </div>
-                    <div className="card-glow"></div>
                 </div>
             </div>
 
             {/* РЯД 2: ГОЛОВНІ ГРАФІКИ */}
-            <div className="charts-row">
-                <div className="chart-container">
-                    <div className="chart-header">
-                        <h3>Динаміка відвідуваності</h3>
-                        <span className="badge-red">Останні 7 днів</span>
+            <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-[25px]">
+                <div className="bg-[#141414]/60 backdrop-blur-[20px] border border-[#222] rounded-2xl p-[25px] shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
+                    <div className="flex justify-between items-center mb-[25px]">
+                        <h3 className="text-[1rem] text-[#eee] m-0 font-extrabold uppercase tracking-wide">Динаміка відвідуваності</h3>
+                        <span className="bg-primary/10 text-[#ff4d4d] text-[0.75rem] font-bold px-2.5 py-1 rounded-md border border-primary/20">Останні 7 днів</span>
                     </div>
-                    <div className="recharts-wrapper">
+                    <div className="w-full h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={dataAttendance} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                 <defs>
@@ -120,11 +124,11 @@ export default function DashboardTab({ clientsCount, trainersCount }) {
                     </div>
                 </div>
 
-                <div className="chart-container">
-                    <div className="chart-header">
-                        <h3>Напрямки</h3>
+                <div className="bg-[#141414]/60 backdrop-blur-[20px] border border-[#222] rounded-2xl p-[25px] shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
+                    <div className="flex justify-between items-center mb-[25px]">
+                        <h3 className="text-[1rem] text-[#eee] m-0 font-extrabold uppercase tracking-wide">Напрямки</h3>
                     </div>
-                    <div className="recharts-wrapper">
+                    <div className="w-full h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie data={dataClasses} innerRadius={70} outerRadius={90} paddingAngle={8} dataKey="value" stroke="none">
@@ -141,12 +145,12 @@ export default function DashboardTab({ clientsCount, trainersCount }) {
             </div>
 
             {/* РЯД 3: ДОДАТКОВА АНАЛІТИКА ТА ДІЇ */}
-            <div className="charts-row three-cols">
-                <div className="chart-container span-2">
-                    <div className="chart-header">
-                        <h3>Завантаженість за годинами (Сьогодні)</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-[2fr_1.2fr] gap-[25px]">
+                <div className="bg-[#141414]/60 backdrop-blur-[20px] border border-[#222] rounded-2xl p-[25px] shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
+                    <div className="flex justify-between items-center mb-[25px]">
+                        <h3 className="text-[1rem] text-[#eee] m-0 font-extrabold uppercase tracking-wide">Завантаженість за годинами (Сьогодні)</h3>
                     </div>
-                    <div className="recharts-wrapper" style={{height: '250px'}}>
+                    <div className="w-full h-[250px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={dataPeakHours} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
@@ -163,19 +167,19 @@ export default function DashboardTab({ clientsCount, trainersCount }) {
                     </div>
                 </div>
 
-                <div className="chart-container">
-                    <div className="chart-header">
-                        <h3>Останні події</h3>
+                <div className="bg-[#141414]/60 backdrop-blur-[20px] border border-[#222] rounded-2xl p-[25px] shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
+                    <div className="flex justify-between items-center mb-[25px]">
+                        <h3 className="text-[1rem] text-[#eee] m-0 font-extrabold uppercase tracking-wide">Останні події</h3>
                     </div>
-                    <div className="activity-list">
+                    <div className="flex flex-col gap-4 h-[250px] overflow-y-auto pr-1 custom-scrollbar">
                         {recentActivities.map(item => (
-                            <div key={item.id} className="activity-item">
-                                <div className="activity-icon" style={{color: item.color, background: `${item.color}20`}}>
+                            <div key={item.id} className="flex items-center gap-4 p-3 bg-white/5 border border-white/5 rounded-xl transition-colors duration-200 hover:bg-white/10 cursor-default">
+                                <div className="w-[36px] h-[36px] rounded-full flex items-center justify-center text-[1rem] shrink-0" style={{color: item.color, background: `${item.color}20`}}>
                                     <i className={`fas ${item.icon}`}></i>
                                 </div>
-                                <div className="activity-info">
-                                    <p className="activity-text">{item.text}</p>
-                                    <span className="activity-time">{item.time}</span>
+                                <div>
+                                    <p className="m-0 text-[0.85rem] text-[#eee] font-semibold">{item.text}</p>
+                                    <span className="text-[0.75rem] text-[#666]">{item.time}</span>
                                 </div>
                             </div>
                         ))}
@@ -184,13 +188,13 @@ export default function DashboardTab({ clientsCount, trainersCount }) {
             </div>
 
             {/* РЯД 4: ФІНАНСИ */}
-            <div className="charts-row">
-                <div className="chart-container" style={{gridColumn: '1 / -1'}}>
-                    <div className="chart-header">
-                        <h3>Динаміка виручки (Півріччя, тис. ₴)</h3>
-                        <span className="trend positive" style={{margin: 0}}><i className="fas fa-chart-line"></i> +29%</span>
+            <div className="grid grid-cols-1 gap-[25px]">
+                <div className="bg-[#141414]/60 backdrop-blur-[20px] border border-[#222] rounded-2xl p-[25px] shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
+                    <div className="flex justify-between items-center mb-[25px]">
+                        <h3 className="text-[1rem] text-[#eee] m-0 font-extrabold uppercase tracking-wide">Динаміка виручки (Півріччя, тис. ₴)</h3>
+                        <span className="text-[0.8rem] font-bold inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[#ff4d4d] bg-primary/10"><i className="fas fa-chart-line"></i> +29%</span>
                     </div>
-                    <div className="recharts-wrapper" style={{height: '250px'}}>
+                    <div className="w-full h-[250px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={dataRevenue} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
@@ -203,6 +207,13 @@ export default function DashboardTab({ clientsCount, trainersCount }) {
                     </div>
                 </div>
             </div>
+
+            <style>{`
+                @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+                .animate-fadeIn { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+            `}</style>
         </div>
     );
 }
