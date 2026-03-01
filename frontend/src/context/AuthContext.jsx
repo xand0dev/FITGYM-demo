@@ -1,11 +1,5 @@
 // src/context/AuthContext.jsx
 
-/**
- * Провайдер авторизації.
- * Перевіряє токен при завантаженні, зберігає дані юзера.
- * Надає: user, login, logout, loading.
- */
-
 import { createContext, useState, useEffect, useContext } from 'react';
 import { authRequest, getToken } from '../utils/api';
 
@@ -22,12 +16,11 @@ export function AuthProvider({ children }) {
 
     const checkAuth = async () => {
         const token = getToken();
+        
         if (token) {
             try {
-                // Отримуємо профіль
-                const data = await authRequest('/api/me/');
-                // Бекенд іноді повертає масив
-                const profile = Array.isArray(data) ? data[0] : data;
+                // Отримуємо універсальний профіль (Клієнт, Тренер або Адмін)
+                const profile = await authRequest('/api/me/');
                 setUser(profile);
             } catch (e) {
                 console.error("Auth Failed", e);
@@ -41,7 +34,7 @@ export function AuthProvider({ children }) {
     const login = (token, username) => {
         localStorage.setItem('fp_token', JSON.stringify(token));
         localStorage.setItem('fp_user_name', JSON.stringify(username));
-        checkAuth(); // Оновлюємо дані користувача
+        checkAuth(); // Оновлюємо дані користувача після логіну
     };
 
     const logout = () => {
