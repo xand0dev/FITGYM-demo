@@ -1,16 +1,101 @@
-# React + Vite
+# 🏋️‍♂️ FITGYM | Berdychiv Fitness Center
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
+![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white)
+![React Query](https://img.shields.io/badge/-React%20Query-FF4154?style=for-the-badge&logo=react%20query&logoColor=white)
 
-Currently, two official plugins are available:
+Преміальний веб-додаток для сучасного фітнес-центру. Включає публічний лендінг, багатофункціональний особистий кабінет клієнта та потужну панель адміністратора (CRM) для управління бізнес-процесами.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## ✨ Головний функціонал
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 🌐 Публічна частина
 
-## Expanding the ESLint configuration
+- **Сучасний дизайн:** Брутальна стилістика, Bento-grid категорії, плавні AOS-анімації.
+- **Інтерактивний розклад:** Інтеграція з FullCalendar для перегляду групових занять.
+- **Біохакінг:** Вбудований калькулятор ІМТ (BMI) з динамічними результатами.
+- **Адаптивність:** Mobile-first підхід, ідеальне відображення на будь-яких пристроях (Tailwind CSS).
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 👤 Кабінет клієнта (`/cabinet`)
+
+- **Тематизація:** Динамічне перемикання Світлої/Темної теми.
+- **Біометрія:** Відстеження ваги, зросту та прогресу до заданої цілі.
+- **Управління записами:** Перегляд запланованих тренувань та можливість їх скасування.
+- **Щоденник активності:** Календар-трекер з візуалізацією інтенсивності тренувань.
+
+### 🛡️ Панель адміністратора (`/admin`)
+
+- **Дашборд (Аналітика):** Графіки відвідуваності, виручки та пікових годин на базі `Recharts`.
+- **CRM:** Управління клієнтами та тренерами (CRUD операції).
+- **Менеджер розкладу:** Створення, редагування та видалення тренувань у зручному форматі календаря.
+
+---
+
+## 🛠 Технологічний стек
+
+- **Frontend Framework:** React 18
+- **Збірка:** Vite
+- **Стилізація:** Tailwind CSS (Utility-first)
+- **Роутинг:** React Router DOM
+- **Управління станом та кешування:** TanStack Query (React Query)
+- **Календар:** FullCalendar
+- **Графіки:** Recharts
+- **Анімації:** AOS (Animate On Scroll)
+
+---
+
+## 📂 Архітектура проєкту
+
+Проєкт побудований за модульною архітектурою, що забезпечує легке масштабування:
+
+```text
+src/
+├── assets/          # Зображення, іконки, шрифти
+├── components/      # Перевикористовувані UI компоненти
+│   ├── admin/       # Модулі панелі адміністратора (Таблиці, Графіки)
+│   ├── auth/        # Модальні вікна входу та реєстрації
+│   ├── cabinet/     # Модулі особистого кабінету (Біометрія, Трекер)
+│   ├── home/        # Секції головної сторінки (Hero, Stats, Plans)
+│   ├── layout/      # Глобальні компоненти (Header, Footer, Layout)
+│   └── ui/          # Базові елементи (Toasts, ConfirmModals)
+├── context/         # React Context (AuthContext, UIContext)
+├── hooks/           # Кастомні хуки (useFitQuery для запитів)
+├── pages/           # Головні сторінки (Home, Cabinet, AdminPanel)
+└── utils/           # Допоміжні функції (api.js)
+```
+
+## 🚀 Запуск проєкту локально
+
+### 1. Клонування репозиторію
+
+```bash
+git clone https://github.com/p24user23-dot/FITGYM-frontend.git
+cd fitgym-frontend
+```
+
+### 2. Встановлення залежностей
+
+```bash
+npm install
+```
+
+### 3. Налаштування середовища
+
+Створіть файл .env у кореневій папці проєкту та додайте URL вашого бекенду:
+
+```bash
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+### 4. Запуск сервера розробки
+
+```bash
+npm run dev
+```
+
+Відкрийте http://localhost:5173 у вашому браузері.
+
+🤝 Контриб'юція
+Розроблено як дипломний проєкт. Всі права належать автору.
