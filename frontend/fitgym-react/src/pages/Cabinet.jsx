@@ -21,6 +21,15 @@ export default function Cabinet() {
         localStorage.setItem('gym_theme', isDarkMode ? 'dark' : 'light');
     }, [isDarkMode]);
 
+    // Tailwind стилі для світлої/темної теми
+    const theme = {
+        bg: isDarkMode ? 'bg-[#080808]' : 'bg-[#f5f5f7]',
+        card: isDarkMode ? 'bg-[#121212]' : 'bg-[#ffffff]',
+        input: isDarkMode ? 'bg-[#1a1a1a]' : 'bg-[#f0f0f2]',
+        text: isDarkMode ? 'text-[#ffffff]' : 'text-[#1d1d1f]',
+        border: isDarkMode ? 'border-[#222222]' : 'border-[#d2d2d7]',
+    };
+
     // --- 2. ДАНІ ПРОФІЛЮ З БЕКЕНДУ ---
     const firstName = user?.first_name || user?.username || 'Невідомий';
     const lastName = user?.last_name || 'Атлет';
@@ -47,7 +56,6 @@ export default function Cabinet() {
                     {
                         onSuccess: () => {
                             if (addToast) addToast('Запис успішно скасовано!', 'success');
-                            // Оновлюємо кеш, щоб запис зник або змінив статус
                             queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
                         },
                         onError: (error) => {
@@ -135,93 +143,109 @@ export default function Cabinet() {
     };
 
     return (
-        <section className={`cab-root ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
-            <div className="cab-bg-layer"></div>
+        <section className={`min-h-screen py-[100px] relative font-sans transition-colors duration-300 ${theme.bg} ${theme.text}`}>
             
-            <div className="container cab-relative">
-                <button className="cab-theme-toggle" onClick={() => setIsDarkMode(!isDarkMode)}>
+            <div className="container mx-auto px-5 lg:px-8 relative z-10">
+                <button 
+                    className={`fixed top-[80px] lg:top-[100px] right-[20px] z-[1000] px-5 py-2.5 rounded-xl border border-primary text-primary font-black uppercase transition-colors duration-300 hover:bg-primary hover:text-white ${theme.card}`}
+                    onClick={() => setIsDarkMode(!isDarkMode)}
+                >
                     {isDarkMode ? '🌙 DARK' : '☀️ LIGHT'}
                 </button>
 
-                <div className="cab-grid">
+                <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-[30px]">
+                    
                     {/* --- САЙДБАР --- */}
-                    <aside className="cab-sidebar" data-aos="fade-right">
-                        <div className="cab-profile-top">
-                            <div className="cab-avatar"></div>
-                            <h2 className="cab-user-name">{firstName} <br/> {lastName}</h2>
-                            <div className="cab-badge">{user?.is_superuser ? 'АДМІНІСТРАТОР' : (user?.is_staff ? 'ТРЕНЕР' : 'PRO MEMBER')}</div>
+                    <aside className={`p-[30px] rounded-[24px] border shadow-[0_10px_30px_rgba(0,0,0,0.1)] transition-colors duration-300 ${theme.card} ${theme.border}`} data-aos="fade-right">
+                        <div className="text-center mb-[20px]">
+                            <div className="w-[120px] h-[120px] rounded-full border-[3px] border-primary mx-auto mb-[15px] bg-[url('https://img.freepik.com/free-photo/muscular-man-doing-exercises-with-dumbbells_155003-1849.jpg')] bg-center bg-cover shadow-[0_0_20px_rgba(255,0,0,0.3)]"></div>
+                            <h2 className="text-primary font-black uppercase text-[1.4rem] leading-[1.2]">{firstName} <br/> {lastName}</h2>
+                            <div className="inline-block mt-2.5 px-3 py-1 bg-primary/10 text-primary border border-primary rounded-full text-[0.7rem] font-extrabold">
+                                {user?.is_superuser ? 'АДМІНІСТРАТОР' : (user?.is_staff ? 'ТРЕНЕР' : 'PRO MEMBER')}
+                            </div>
                         </div>
 
-                        <div className="cab-form">
-                            <div className="cab-input-box"><label>USERNAME</label><input type="text" value={user?.username || ''} readOnly style={{opacity: 0.7}} /></div>
-                            <div className="cab-input-box"><label>EMAIL</label><input type="email" value={email} readOnly style={{opacity: 0.7}} /></div>
+                        <div>
+                            <div className="mb-[15px]">
+                                <label className="block text-[0.65rem] text-primary font-black mb-1.5 uppercase">USERNAME</label>
+                                <input type="text" value={user?.username || ''} readOnly className={`w-full p-2.5 rounded-[10px] border outline-none opacity-70 transition-colors duration-300 ${theme.input} ${theme.border} ${theme.text}`} />
+                            </div>
+                            <div className="mb-[15px]">
+                                <label className="block text-[0.65rem] text-primary font-black mb-1.5 uppercase">EMAIL</label>
+                                <input type="email" value={email} readOnly className={`w-full p-2.5 rounded-[10px] border outline-none opacity-70 transition-colors duration-300 ${theme.input} ${theme.border} ${theme.text}`} />
+                            </div>
                         </div>
                         
-                        <button onClick={logout} className="cab-logout-btn">ВИЙТИ З СИСТЕМИ</button>
+                        <button 
+                            onClick={logout} 
+                            className="w-full mt-[25px] p-3 rounded-xl border border-primary text-primary bg-transparent font-black transition-colors duration-300 hover:bg-primary hover:text-white"
+                        >
+                            ВИЙТИ З СИСТЕМИ
+                        </button>
                     </aside>
 
                     {/* --- ГОЛОВНА ПАНЕЛЬ --- */}
-                    <main className="cab-main">
+                    <main>
                         
                         {/* 1. Блок: Біометрія */}
-                        <div className="cab-card" data-aos="fade-up" style={{marginBottom: '30px'}}>
-                            <div className="cab-card-header">
-                                <h4 className="cab-title">БІОМЕТРІЯ</h4>
-                                <div className="cab-bmi">BMI: {bmi}</div>
+                        <div className={`p-[30px] rounded-[24px] border shadow-[0_10px_30px_rgba(0,0,0,0.1)] transition-colors duration-300 mb-[30px] ${theme.card} ${theme.border}`} data-aos="fade-up">
+                            <div className="flex justify-between items-center mb-[20px]">
+                                <h4 className="text-primary font-black tracking-[1px] m-0">БІОМЕТРІЯ</h4>
+                                <div className="bg-primary text-white px-3 py-1 rounded-lg font-black text-[0.8rem]">BMI: {bmi}</div>
                             </div>
                             
-                            <div className="cab-params-grid">
-                                <div className="cab-param-item">
-                                    <label>ВАГА (КГ)</label>
-                                    <div className="cab-param-val">{weight}</div>
-                                    <input type="range" min="40" max="150" value={weight} onChange={(e)=>setWeight(Number(e.target.value))} className="cab-slider" />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-[20px] mb-[20px]">
+                                <div className={`p-[20px] rounded-[20px] border transition-colors duration-300 ${theme.input} ${theme.border}`}>
+                                    <label className="block text-[0.75rem] font-bold text-[#888]">ВАГА (КГ)</label>
+                                    <div className="text-[2.5rem] font-black">{weight}</div>
+                                    <input type="range" min="40" max="150" value={weight} onChange={(e)=>setWeight(Number(e.target.value))} className="w-full cursor-pointer accent-primary" />
                                 </div>
-                                <div className="cab-param-item cab-accent">
-                                    <label>ЦІЛЬ (КГ)</label>
-                                    <input type="number" value={goal} onChange={(e)=>setGoal(Number(e.target.value))} className="cab-goal-input" />
-                                    <div className="cab-progress-track"><div className="cab-progress-fill" style={{width: `${progressToGoal}%`}}></div></div>
+                                <div className={`p-[20px] rounded-[20px] border transition-colors duration-300 ${theme.input} ${theme.border}`}>
+                                    <label className="block text-[0.75rem] font-bold text-[#888]">ЦІЛЬ (КГ)</label>
+                                    <input type="number" value={goal} onChange={(e)=>setGoal(Number(e.target.value))} className={`w-[100px] text-[2.5rem] font-black bg-transparent border-none outline-none ${theme.text}`} />
+                                    <div className="h-[8px] mt-[15px] bg-black/10 rounded-[10px] overflow-hidden">
+                                        <div className="h-full bg-primary shadow-[0_0_10px_#ff0000] transition-all duration-500" style={{width: `${progressToGoal}%`}}></div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="cab-height-row">
-                                <label>ЗРІСТ (CM): </label>
-                                <input type="number" value={height} onChange={(e)=>setHeight(Number(e.target.value))} className="cab-height-input" />
+                            <div className="flex items-center">
+                                <label className="font-bold text-[#888] mr-2.5">ЗРІСТ (CM): </label>
+                                <input type="number" value={height} onChange={(e)=>setHeight(Number(e.target.value))} className={`w-[80px] text-center font-black p-2.5 rounded-[10px] border outline-none transition-colors duration-300 focus:border-primary focus:shadow-[0_0_10px_rgba(255,0,0,0.2)] ${theme.input} ${theme.border} ${theme.text}`} />
                             </div>
                         </div>
 
-                        {/* 2. Блок: Мої записи (РЕАЛЬНІ ДАНІ) */}
-                        <div className="cab-card" data-aos="fade-up" style={{marginBottom: '30px'}}>
-                            <h4 className="cab-title" style={{marginBottom: '20px'}}>МОЇ ТРЕНУВАННЯ</h4>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        {/* 2. Блок: Мої записи */}
+                        <div className={`p-[30px] rounded-[24px] border shadow-[0_10px_30px_rgba(0,0,0,0.1)] transition-colors duration-300 mb-[30px] ${theme.card} ${theme.border}`} data-aos="fade-up">
+                            <h4 className="text-primary font-black tracking-[1px] mb-[20px]">МОЇ ТРЕНУВАННЯ</h4>
+                            <div className="flex flex-col gap-[15px]">
                                 {isBookingsLoading ? (
                                     <>
-                                        <div className="skeleton-box" style={{height: '70px', borderRadius: '12px', background: 'var(--c-input)'}}></div>
-                                        <div className="skeleton-box" style={{height: '70px', borderRadius: '12px', background: 'var(--c-input)'}}></div>
+                                        <div className={`h-[70px] rounded-xl animate-pulse ${theme.input}`}></div>
+                                        <div className={`h-[70px] rounded-xl animate-pulse ${theme.input}`}></div>
                                     </>
                                 ) : bookings.length === 0 ? (
-                                    <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px dashed var(--c-border)', textAlign: 'center', color: 'var(--c-text)', opacity: 0.6 }}>
+                                    <div className={`p-[20px] rounded-xl border border-dashed text-center opacity-60 ${theme.input} ${theme.border}`}>
                                         Ви ще не записані на жодне тренування. Перейдіть до Розкладу.
                                     </div>
                                 ) : (
                                     bookings.map(b => (
-                                        <div key={b.id} style={{ padding: '15px 20px', background: 'var(--c-input)', borderRadius: '12px', borderLeft: `4px solid ${b.status === 'cancelled' ? '#888' : '#ff0000'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div key={b.id} className={`p-[15px_20px] rounded-xl border-l-[4px] flex justify-between items-center transition-colors duration-300 ${b.status === 'cancelled' ? 'border-l-[#888]' : 'border-l-primary'} ${theme.input}`}>
                                             <div>
-                                                <strong style={{ display: 'block', fontSize: '1.1rem', color: 'var(--c-text)' }}>{b.session?.class_name || 'Групове заняття'}</strong>
-                                                <span style={{ fontSize: '0.85rem', color: '#888' }}>{new Date(b.session?.start_at).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                                                <strong className="block text-[1.1rem]">{b.session?.class_name || 'Групове заняття'}</strong>
+                                                <span className="text-[0.85rem] text-[#888]">{new Date(b.session?.start_at).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' })}</span>
                                             </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                                <div style={{ color: b.status === 'cancelled' ? '#888' : '#ff0000', fontWeight: '900', fontSize: '0.8rem', letterSpacing: '1px' }}>
+                                            <div className="flex items-center gap-[15px]">
+                                                <div className={`font-black text-[0.8rem] tracking-[1px] ${b.status === 'cancelled' ? 'text-[#888]' : 'text-primary'}`}>
                                                     {getStatusLabel(b.status)}
                                                 </div>
                                                 
-                                                {/* Кнопка скасування показується тільки для активних записів */}
                                                 {b.status === 'booked' && (
                                                     <button 
                                                         onClick={() => handleCancelBooking(b.id)}
-                                                        className="btn-cancel"
                                                         disabled={cancelMutation.isPending}
                                                         title="Скасувати запис"
-                                                        style={{ width: '30px', height: '30px', fontSize: '1.2rem', padding: 0 }}
+                                                        className="w-[30px] h-[30px] flex items-center justify-center text-[1.2rem] text-[#888] rounded-full hover:bg-black/10 hover:text-primary transition-colors disabled:opacity-50"
                                                     >
                                                         ×
                                                     </button>
@@ -234,38 +258,40 @@ export default function Cabinet() {
                         </div>
 
                         {/* 3. Блок: Активність */}
-                        <div className="cab-card" data-aos="fade-up" style={{marginBottom: '30px'}}>
-                            <h4 className="cab-title">ЩОДЕННИК АКТИВНОСТІ</h4>
-                            <div className="cab-chart">
+                        <div className={`p-[30px] rounded-[24px] border shadow-[0_10px_30px_rgba(0,0,0,0.1)] transition-colors duration-300 mb-[30px] ${theme.card} ${theme.border}`} data-aos="fade-up">
+                            <h4 className="text-primary font-black tracking-[1px] mb-[20px]">ЩОДЕННИК АКТИВНОСТІ</h4>
+                            <div className="flex justify-between items-end h-[150px] py-[10px]">
                                 {activity.map((h, i) => (
-                                    <div key={i} className="cab-chart-col">
-                                        <div className="cab-bar-track">
-                                            <div className="cab-bar-fill" style={{height: `${h}%`}}></div>
+                                    <div key={i} className="w-[12%] text-center">
+                                        <div className={`h-[120px] rounded-[10px] relative overflow-hidden ${theme.input}`}>
+                                            <div className="absolute bottom-0 left-0 w-full bg-primary shadow-[0_0_8px_#ff0000] transition-all duration-600" style={{height: `${h}%`}}></div>
                                         </div>
-                                        <span className="cab-label">{['Пн','Вт','Ср','Чт','Пт','Сб','Нд'][i]}</span>
+                                        <span className="block text-[0.7rem] text-[#888] font-extrabold mt-2.5">{['Пн','Вт','Ср','Чт','Пт','Сб','Нд'][i]}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
                         {/* 4. Блок: Календар */}
-                        <div className="cab-card" data-aos="fade-up">
-                            <div className="cab-cal-nav">
-                                <button onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1))} className="cab-arrow">←</button>
-                                <h4>{viewDate.toLocaleString('uk-UA', { month: 'long', year: 'numeric' }).toUpperCase()}</h4>
-                                <button onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1))} className="cab-arrow">→</button>
+                        <div className={`p-[30px] rounded-[24px] border shadow-[0_10px_30px_rgba(0,0,0,0.1)] transition-colors duration-300 ${theme.card} ${theme.border}`} data-aos="fade-up">
+                            <div className="flex justify-between items-center mb-[25px]">
+                                <button onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1))} className={`w-[45px] h-[45px] rounded-xl border flex items-center justify-center cursor-pointer transition-colors duration-300 hover:bg-primary hover:text-white hover:border-primary ${theme.input} ${theme.border}`}>←</button>
+                                <h4 className="font-bold m-0">{viewDate.toLocaleString('uk-UA', { month: 'long', year: 'numeric' }).toUpperCase()}</h4>
+                                <button onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1))} className={`w-[45px] h-[45px] rounded-xl border flex items-center justify-center cursor-pointer transition-colors duration-300 hover:bg-primary hover:text-white hover:border-primary ${theme.input} ${theme.border}`}>→</button>
                             </div>
-                            <div className="cab-cal-grid">
-                                {['Пн','Вт','Ср','Чт','Пт','Сб','Нд'].map(d => <div key={d} className="cab-cal-head">{d}</div>)}
+                            <div className="grid grid-cols-7 gap-2.5">
+                                {['Пн','Вт','Ср','Чт','Пт','Сб','Нд'].map(d => <div key={d} className="text-center text-[0.75rem] text-primary font-black pb-2.5">{d}</div>)}
                                 {getDaysArray().map((date, i) => {
                                     if (!date) return <div key={`empty-${i}`}></div>;
                                     const key = formatDateKey(date);
                                     const hasNote = userNotes[key];
                                     return (
-                                        <div key={key} className={`cab-cal-day ${hasNote ? 'cab-active' : ''}`}
-                                            onClick={() => { setActiveDayKey(key); setTempNote(userNotes[key] || ''); }}>
-                                            <span>{date.getDate()}</span>
-                                            {hasNote && <div className="cab-dot"></div>}
+                                        <div key={key} 
+                                            className={`aspect-square rounded-xl flex flex-col items-center justify-center cursor-pointer border border-transparent transition-all duration-200 hover:-translate-y-0.5 hover:border-primary ${theme.input} ${hasNote ? 'border-primary bg-primary/5' : ''}`}
+                                            onClick={() => { setActiveDayKey(key); setTempNote(userNotes[key] || ''); }}
+                                        >
+                                            <span className="font-semibold">{date.getDate()}</span>
+                                            {hasNote && <div className="w-1.5 h-1.5 bg-primary rounded-full mt-1 shadow-[0_0_10px_#ff0000]"></div>}
                                         </div>
                                     );
                                 })}
@@ -275,83 +301,30 @@ export default function Cabinet() {
                 </div>
             </div>
 
-            {/* Портал для модалки нотаток, щоб вона теж не ламалася від Framer Motion */}
+            {/* Портал для модалки нотаток */}
             {activeDayKey && createPortal(
-                <div className="cab-modal-overlay" onClick={() => setActiveDayKey(null)} style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 100000, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)' }}>
-                    <div className="cab-modal-content" onClick={e => e.stopPropagation()}>
-                        <h5>ПЛАН: {activeDayKey.split('-').reverse().join('.')}</h5>
-                        <input type="text" value={tempNote} onChange={e => setTempNote(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSaveNote()} placeholder="Назва тренування..." autoFocus />
-                        <button className="cab-btn-save" onClick={handleSaveNote}>ЗБЕРЕГТИ ДАНІ</button>
+                <div className="fixed inset-0 w-screen h-screen z-[100000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setActiveDayKey(null)}>
+                    <div className={`p-[40px] rounded-[30px] border border-primary w-full max-w-[350px] text-center ${theme.card}`} onClick={e => e.stopPropagation()}>
+                        <h5 className="text-primary font-black mb-[20px] text-[1.2rem]">ПЛАН: {activeDayKey.split('-').reverse().join('.')}</h5>
+                        <input 
+                            type="text" 
+                            value={tempNote} 
+                            onChange={e => setTempNote(e.target.value)} 
+                            onKeyDown={e => e.key === 'Enter' && handleSaveNote()} 
+                            placeholder="Назва тренування..." 
+                            autoFocus 
+                            className={`w-full p-[15px] rounded-xl border mb-[20px] outline-none transition-colors focus:border-primary ${theme.input} ${theme.border} ${theme.text}`}
+                        />
+                        <button 
+                            className="w-full p-[12px_30px] bg-primary text-white rounded-xl font-black cursor-pointer shadow-[0_5px_15px_rgba(255,0,0,0.3)] hover:-translate-y-1 transition-all" 
+                            onClick={handleSaveNote}
+                        >
+                            ЗБЕРЕГТИ ДАНІ
+                        </button>
                     </div>
                 </div>,
                 document.body
             )}
-
-            <style>{`
-                .cab-root.dark-mode {
-                    --c-bg: #080808; --c-card: #121212; --c-input: #1a1a1a; --c-text: #ffffff; --c-border: #222;
-                }
-                .cab-root.light-mode {
-                    --c-bg: #f5f5f7; --c-card: #ffffff; --c-input: #f0f0f2; --c-text: #1d1d1f; --c-border: #d2d2d7;
-                }
-                .cab-root { min-height: 100vh; padding: 100px 0; color: var(--c-text); position: relative; font-family: 'Inter', sans-serif; transition: 0.3s; }
-                .cab-bg-layer { position: absolute; top:0; left:0; width:100%; height:100%; background: var(--c-bg); z-index: 1; transition: 0.3s; }
-                .cab-relative { position: relative; z-index: 10; }
-                .cab-grid { display: grid; grid-template-columns: 320px 1fr; gap: 30px; }
-                .cab-sidebar, .cab-card { background: var(--c-card); border: 1px solid var(--c-border); border-radius: 24px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); transition: 0.3s; }
-                
-                .cab-avatar { width: 120px; height: 120px; border-radius: 50%; border: 3px solid #ff0000; margin: 0 auto 15px; background: url('https://img.freepik.com/free-photo/muscular-man-doing-exercises-with-dumbbells_155003-1849.jpg') center/cover; box-shadow: 0 0 20px rgba(255,0,0,0.3); }
-                .cab-user-name { color: #ff0000; font-weight: 900; text-transform: uppercase; text-align: center; font-size: 1.4rem; line-height: 1.2;}
-                .cab-badge { width: fit-content; margin: 10px auto; background: rgba(255,0,0,0.1); color: #ff0000; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; border: 1px solid #ff0000; }
-                
-                .cab-input-box label { display: block; font-size: 0.65rem; color: #ff0000; font-weight: 900; margin-top: 15px; margin-bottom: 5px; }
-                .cab-input-box input, .cab-height-input { background: var(--c-input); border: 1px solid var(--c-border); padding: 10px; color: var(--c-text); border-radius: 10px; outline: none; transition: 0.3s; width: 100%;}
-                .cab-input-box input:focus, .cab-height-input:focus { border-color: #ff0000; box-shadow: 0 0 10px rgba(255,0,0,0.2); }
-                .cab-height-input { width: 80px; text-align: center; font-weight: 900; margin-left: 10px; }
-
-                .cab-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-                .cab-title { color: #ff0000; font-weight: 900; letter-spacing: 1px; margin: 0; }
-                .cab-bmi { background: #ff0000; color: #fff; padding: 4px 12px; border-radius: 8px; font-weight: 900; font-size: 0.8rem; }
-                
-                .cab-params-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
-                .cab-param-item { background: var(--c-input); padding: 20px; border-radius: 20px; border: 1px solid var(--c-border); }
-                .cab-param-val { font-size: 2.5rem; font-weight: 900; }
-                .cab-goal-input { background: transparent; border: none; font-size: 2.5rem; font-weight: 900; color: var(--c-text); width: 100px; outline: none; }
-                .cab-slider { width: 100%; accent-color: #ff0000; cursor: pointer; }
-                .cab-progress-track { height: 8px; background: rgba(0,0,0,0.1); border-radius: 10px; overflow: hidden; margin-top: 15px; }
-                .cab-progress-fill { height: 100%; background: #ff0000; box-shadow: 0 0 10px #ff0000; transition: 0.5s; }
-
-                .cab-chart { display: flex; justify-content: space-between; align-items: flex-end; height: 150px; padding: 10px 0; }
-                .cab-chart-col { width: 12%; text-align: center; }
-                .cab-bar-track { height: 120px; background: var(--c-input); border-radius: 10px; position: relative; overflow: hidden; }
-                .cab-bar-fill { position: absolute; bottom: 0; width: 100%; background: #ff0000; filter: drop-shadow(0 0 8px #ff0000); transition: height 0.6s ease; }
-                .cab-label { font-size: 0.7rem; color: #888; margin-top: 10px; display: block; font-weight: 800; }
-
-                .cab-cal-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-                .cab-arrow { background: var(--c-input); border: 1px solid var(--c-border); color: var(--c-text); width: 45px; height: 45px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
-                .cab-arrow:hover { background: #ff0000; border-color: #ff0000; color: #fff; }
-                .cab-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
-                .cab-cal-head { text-align: center; font-size: 0.75rem; color: #ff0000; font-weight: 900; padding-bottom: 10px; }
-                .cab-cal-day { aspect-ratio: 1; background: var(--c-input); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 1px solid transparent; transition: 0.2s; }
-                .cab-cal-day:hover { border-color: #ff0000; transform: translateY(-2px); }
-                .cab-cal-day.cab-active { border-color: #ff0000; background: rgba(255,0,0,0.05); }
-                .cab-dot { width: 6px; height: 6px; background: #ff0000; border-radius: 50%; margin-top: 4px; box-shadow: 0 0 10px #ff0000; }
-
-                .cab-modal-content { background: var(--c-card); border: 1px solid #ff0000; padding: 40px; border-radius: 30px; width: 350px; text-align: center; }
-                .cab-modal-content h5 { color: #ff0000; font-weight: 900; margin-bottom: 20px; }
-                .cab-modal-content input { width: 100%; background: var(--c-input); border: 1px solid var(--c-border); padding: 15px; color: var(--c-text); border-radius: 12px; margin-bottom: 20px; outline: none; }
-                .cab-btn-save { background: #ff0000; color: #fff; border: none; padding: 12px 30px; border-radius: 10px; font-weight: 900; cursor: pointer; width: 100%; }
-
-                .cab-theme-toggle { position: fixed; top: 100px; right: 20px; z-index: 1000; background: var(--c-card); border: 1px solid #ff0000; color: #ff0000; padding: 10px 20px; border-radius: 12px; font-weight: 900; cursor: pointer; transition: 0.3s; }
-                .cab-theme-toggle:hover { background: #ff0000; color: #fff; }
-                .cab-logout-btn { width: 100%; background: transparent; border: 1px solid #ff0000; color: #ff0000; padding: 12px; border-radius: 12px; margin-top: 25px; font-weight: 900; cursor: pointer; transition: 0.3s; }
-                .cab-logout-btn:hover { background: #ff0000; color: #fff; }
-
-                @media (max-width: 992px) {
-                    .cab-grid { grid-template-columns: 1fr; }
-                    .cab-theme-toggle { top: 80px; }
-                }
-            `}</style>
         </section>
     );
 }
