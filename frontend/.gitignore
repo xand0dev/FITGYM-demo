@@ -7,9 +7,19 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Dependencies
+node_modules/
+
+# Build and Caches
+dist/
+dist-ssr/
+.eslintcache
+coverage/
+
+# Environment variables (КРИТИЧНО ВАЖЛИВО)
+.env
+.env.*
+!.env.example
 *.local
 
 # Editor directories and files
