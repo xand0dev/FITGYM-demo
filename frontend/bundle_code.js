@@ -6,7 +6,7 @@ const DIRECTORIES = ['./src', './public/css'];
 // Розширення файлів, які нам потрібні
 const EXTENSIONS = ['.jsx', '.js', '.css'];
 // Файл, куди все збережеться
-const OUTPUT_FILE = 'full_project_code.txt';
+const OUTPUT_FILE = 'frontend_code_context.txt';
 
 let outputContent = '';
 
