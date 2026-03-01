@@ -1,88 +1,70 @@
 # crm/views.py
 
 from rest_framework import viewsets, permissions, generics, mixins
+from rest_framework.views import APIView
 from rest_framework import serializers
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 from .permissions import IsAdminUser
 
 from .models import (
-    Workout,
-    Instructor,
-    ClassSession,
-    MembershipType,
-    Member,
-    Booking,
-    MembershipHistory,
-    Class,
-    MembershipApplication
+    Workout, Instructor, ClassSession, MembershipType,
+    Member, Booking, MembershipHistory, Class, MembershipApplication
 )
 from .serializers import (
-    WorkoutSerializer,
-    InstructorSerializer,
-    ClassSessionSerializer,
-    MembershipTypeSerializer,
-    RegisterSerializer,
-    MemberSerializer,
-    BookingSerializer,
-    BookingCreateSerializer,
-    AdminClassSessionSerializer,
-    ClassSerializer,
-    AdminInstructorSerializer,
-    AdminMemberSerializer,
-    MembershipApplicationSerializer,
-    AdminMembershipApplicationSerializer
+    WorkoutSerializer, InstructorSerializer, ClassSessionSerializer,
+    MembershipTypeSerializer, RegisterSerializer, MemberSerializer,
+    BookingSerializer, BookingCreateSerializer, AdminClassSessionSerializer,
+    ClassSerializer, AdminInstructorSerializer, AdminMemberSerializer,
+    MembershipApplicationSerializer, AdminMembershipApplicationSerializer
 )
 
 
 # --- ПУБЛІЧНІ VIEWS ---
 
 class WorkoutViewSet(viewsets.ReadOnlyModelViewSet):
-    """(GET) /api/workouts/"""
     queryset = Workout.objects.all()
     serializer_class = WorkoutSerializer
     permission_classes = [permissions.AllowAny]
 
 
-class ClassViewSet(viewsets.ReadOnlyModelViewSet):  # <-- НОВИЙ VIEWSET
-    """(GET) /api/classes/ - Список типів занять (Yoga, Boxing...)"""
+class ClassViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Class.objects.all()
     serializer_class = ClassSerializer
     permission_classes = [permissions.AllowAny]
 
 
 class InstructorViewSet(viewsets.ReadOnlyModelViewSet):
-    """(GET) /api/instructors/"""
     queryset = Instructor.objects.all()
     serializer_class = InstructorSerializer
     permission_classes = [permissions.AllowAny]
 
 
 class MembershipTypeViewSet(viewsets.ReadOnlyModelViewSet):
-    """(GET) /api/membership-types/"""
     queryset = MembershipType.objects.all()
     serializer_class = MembershipTypeSerializer
     permission_classes = [permissions.AllowAny]
 
 
 class ClassSessionViewSet(viewsets.ReadOnlyModelViewSet):
-    """(GET) /api/schedule/"""
     queryset = ClassSession.objects.all().order_by('start_at')
     serializer_class = ClassSessionSerializer
     permission_classes = [permissions.AllowAny]
+
 
 class MembershipApplicationCreateView(generics.CreateAPIView):
     """(POST) /api/apply/ - Відправка заявки на абонемент з лендінгу"""
     queryset = MembershipApplication.objects.all()
     serializer_class = MembershipApplicationSerializer
-    permission_classes = [permissions.AllowAny]  # Дозволяємо доступ без авторизації
+    permission_classes = [permissions.AllowAny]
+
 
 # --- AUTH VIEWS ---
 
 class RegisterView(generics.CreateAPIView):
-    """(POST) /api/register/"""
     queryset = User.objects.all()
     permission_classes = (permissions.AllowAny,)
     serializer_class = RegisterSerializer
@@ -99,23 +81,59 @@ class RegisterView(generics.CreateAPIView):
         }, status=201)
 
 
-class MeViewSet(viewsets.ReadOnlyModelViewSet):
-    """(GET) /api/me/"""
-    serializer_class = MemberSerializer
+class MeView(APIView):
+    """(GET) /api/me/ - Універсальний профіль для ВСІХ типів користувачів"""
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        return Member.objects.filter(user=self.request.user)
+    def get(self, request):
+        user = request.user
+
+        data = {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'full_name': user.get_full_name() or user.username,
+            'is_staff': user.is_staff,
+            'is_superuser': user.is_superuser,
+            'active_membership': None,
+        }
+
+        if hasattr(user, 'member'):
+            member = user.member
+            data.update({
+                'contact': member.contact,
+                'gender': member.gender,
+                'birth_date': member.birth_date,
+                'status': member.status,
+            })
+
+            today = timezone.now().date()
+            active = member.membershiphistory_set.filter(
+                status='active',
+                start_date__lte=today,
+                end_date__gte=today
+            ).order_by('-end_date').first()
+
+            if active:
+                data['active_membership'] = {
+                    "name": active.membership_type.name,
+                    "end_date": active.end_date.strftime("%d.%m.%Y")
+                }
+
+        elif hasattr(user, 'instructor'):
+            instructor = user.instructor
+            data.update({
+                'contact': instructor.contact,
+                'specialties': instructor.specialties,
+            })
+
+        return Response(data)
 
 
-class MyBookingsViewSet(mixins.ListModelMixin,
-                        mixins.RetrieveModelMixin,
-                        mixins.DestroyModelMixin,
+class MyBookingsViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.DestroyModelMixin,
                         viewsets.GenericViewSet):
-    """
-    (GET) /api/my-bookings/
-    (DELETE) /api/my-bookings/{id}/
-    """
     serializer_class = BookingSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -124,13 +142,11 @@ class MyBookingsViewSet(mixins.ListModelMixin,
 
 
 class BookingCreateView(generics.CreateAPIView):
-    """(POST) /api/book/"""
     serializer_class = BookingCreateSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
         session = serializer.validated_data.get('session')
-
         try:
             member = Member.objects.get(user=self.request.user)
         except Member.DoesNotExist:
@@ -139,65 +155,38 @@ class BookingCreateView(generics.CreateAPIView):
         if Booking.objects.filter(member=member, session=session).exists():
             raise serializers.ValidationError("Ви вже записані на це заняття.")
 
-        current_bookings_count = Booking.objects.filter(session=session).count()
-        if current_bookings_count >= session.capacity:
+        if Booking.objects.filter(session=session).count() >= session.capacity:
             raise serializers.ValidationError("На жаль, на це заняття вже немає вільних місць.")
 
         session_date = session.start_at.date()
-
-        has_active_membership = MembershipHistory.objects.filter(
-            member=member,
-            status='active',
-            start_date__lte=session_date,
-            end_date__gte=session_date
-        ).exists()
-
-        if not has_active_membership:
-            raise serializers.ValidationError(
-                "У вас немає активного абонемента на дату проведення цього заняття."
-            )
+        if not MembershipHistory.objects.filter(member=member, status='active', start_date__lte=session_date,
+                                                end_date__gte=session_date).exists():
+            raise serializers.ValidationError("У вас немає активного абонемента на дату проведення цього заняття.")
 
         serializer.save(member=member)
 
 
 # --- АДМІНСЬКІ VIEWS ---
 
-class AdminMembershipApplicationViewSet(viewsets.ModelViewSet):
-    """
-    CRUD для заявок на абонементи (Лідів).
-    Доступ тільки для адмінів.
-    URL: /api/admin/applications/
-    """
-    queryset = MembershipApplication.objects.all().order_by('-created_at')
-    serializer_class = AdminMembershipApplicationSerializer
-    permission_classes = [IsAdminUser] # Захист: тільки для персоналу
-
 class AdminClassSessionViewSet(viewsets.ModelViewSet):
-    """
-    CRUD для розкладу. Доступ тільки для адмінів.
-    URL: /api/admin/schedule/
-    """
     queryset = ClassSession.objects.all().order_by('-start_at')
     serializer_class = AdminClassSessionSerializer
     permission_classes = [IsAdminUser]
 
 
 class AdminMemberViewSet(viewsets.ModelViewSet):
-    """
-    CRUD для клієнтів.
-    URL: /api/admin/members/
-    """
     queryset = Member.objects.all().order_by('-id')
-    serializer_class = AdminMemberSerializer  # <-- НОВИЙ СЕРІАЛІЗАТОР
+    serializer_class = AdminMemberSerializer
     permission_classes = [IsAdminUser]
 
 
 class AdminInstructorViewSet(viewsets.ModelViewSet):
-    """
-    CRUD для тренерів.
-    URL: /api/admin/instructors/
-    """
     queryset = Instructor.objects.all().order_by('id')
-    # 👇 ЗМІНЕНО: Використовуємо новий серіалізатор
     serializer_class = AdminInstructorSerializer
+    permission_classes = [IsAdminUser]
+
+
+class AdminMembershipApplicationViewSet(viewsets.ModelViewSet):
+    queryset = MembershipApplication.objects.all().order_by('-created_at')
+    serializer_class = AdminMembershipApplicationSerializer
     permission_classes = [IsAdminUser]
