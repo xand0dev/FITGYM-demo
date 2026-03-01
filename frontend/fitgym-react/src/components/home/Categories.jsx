@@ -1,50 +1,18 @@
 import React, { useState } from 'react';
-import { createPortal } from 'react-dom'; // Додано імпорт порталу
+import { createPortal } from 'react-dom';
 
 const CategoryCard = ({ title, img, isLarge, isTall, onClick }) => (
     <div 
-        className="category-card" 
+        className={`group relative overflow-hidden border-[3px] border-black bg-white h-full min-h-[220px] md:min-h-[240px] cursor-pointer ${isLarge ? 'md:col-span-2' : 'col-span-1'} ${isTall ? 'md:row-span-2' : 'row-span-1'}`} 
         onClick={onClick}
-        style={{
-            position: 'relative',
-            gridColumn: isLarge ? 'span 2' : 'span 1',
-            gridRow: isTall ? 'span 2' : 'span 1',
-            overflow: 'hidden',
-            border: '3px solid #000',
-            background: '#fff',
-            height: '100%',
-            minHeight: '220px',
-            cursor: 'pointer'
-        }}
     >
-        <img src={img} alt={title} style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            filter: 'grayscale(100%) brightness(0.7)',
-            transition: '0.8s cubic-bezier(0.4, 0, 0.2, 1)'
-        }} className="cat-img" />
+        <img src={img} alt={title} className="w-full h-full object-cover grayscale brightness-70 transition-all duration-800 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:grayscale-0 group-hover:brightness-60 group-hover:scale-105" />
         
-        <div className="cat-overlay" style={{
-            position: 'absolute',
-            top: 0, left: 0, width: '100%', height: '100%',
-            background: 'rgba(0, 0, 0, 0.4)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: '0.4s'
-        }}>
-            <h3 style={{
-                fontSize: 'clamp(1.2rem, 2vw, 2rem)',
-                fontWeight: '950',
-                textTransform: 'uppercase',
-                color: '#fff',
-                letterSpacing: '3px',
-                textAlign: 'center',
-                textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
-            }}>{title}</h3>
-            <div className="cat-line" style={{ width: '0%', height: '4px', background: '#ff0000', marginTop: '10px', transition: '0.5s' }}></div>
+        <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center transition-colors duration-400 group-hover:bg-primary/30">
+            <h3 className="text-[clamp(1.2rem,2vw,2rem)] font-black uppercase text-white tracking-[3px] text-center drop-shadow-[2px_2px_4px_rgba(0,0,0,0.5)]">
+                {title}
+            </h3>
+            <div className="w-0 h-1 bg-primary mt-2.5 transition-all duration-500 group-hover:w-[60%]"></div>
         </div>
     </div>
 );
@@ -63,20 +31,15 @@ export default function Categories() {
     const current = categoriesData.find(c => c.id === selectedId);
 
     return (
-        <section id="categories" style={{ padding: '100px 0', background: '#f9f9f9' }}>
-            <div className="container" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 5%' }}>
-                <div style={{ marginBottom: '50px', borderLeft: '8px solid #ff0000', paddingLeft: '20px' }}>
-                    <h2 style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: '900', textTransform: 'uppercase', margin: 0 }}>
-                        ОБЕРИ СВІЙ <span style={{color: '#ff0000'}}>ШЛЯХ</span>
+        <section id="categories" className="py-[100px] bg-[#f9f9f9]">
+            <div className="container mx-auto max-w-[1200px] px-5 md:px-[5%]">
+                <div className="mb-[50px] border-l-[8px] border-primary pl-5">
+                    <h2 className="text-[clamp(2rem,5vw,3rem)] font-black uppercase m-0">
+                        ОБЕРИ СВІЙ <span className="text-primary">ШЛЯХ</span>
                     </h2>
                 </div>
                 
-                <div className="bento-grid" style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                    gridAutoRows: '240px',
-                    gap: '20px'
-                }}>
+                <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fit,minmax(300px,1fr))] auto-rows-[250px] md:auto-rows-[240px] gap-5">
                     {categoriesData.map(cat => (
                         <CategoryCard 
                             key={cat.id}
@@ -90,23 +53,26 @@ export default function Categories() {
                 </div>
             </div>
 
-            {/* ПОВНОЕКРАННЕ ВІКНО З ФОТОМ ВИВОДИТЬСЯ ЧЕРЕЗ PORTAL */}
+            {/* ПОВНОЕКРАННЕ ВІКНО З ФОТОМ */}
             {current && createPortal(
-                <div className="modal-photo-overlay" onClick={() => setSelectedId(null)}>
+                <div className="fixed inset-0 w-screen h-screen z-[100000] flex items-center justify-center bg-black animate-fadeIn" onClick={() => setSelectedId(null)}>
                     {/* Фонове зображення */}
-                    <div className="modal-bg-image" style={{ backgroundImage: `url(${current.img})` }}></div>
+                    <div 
+                        className="absolute inset-0 bg-cover bg-center brightness-30 transition-all duration-500" 
+                        style={{ backgroundImage: `url(${current.img})` }}
+                    ></div>
                     
-                    <div className="modal-photo-content" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <span className="modal-tag">FITGYM / КАТЕГОРІЯ</span>
-                            <button className="modal-close-x" onClick={() => setSelectedId(null)}>ЗАКРИТИ ×</button>
+                    <div className="relative w-full max-w-[1000px] p-[30px] md:p-[60px] text-white animate-slideUp" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between mb-[50px] md:mb-[100px]">
+                            <span className="font-black tracking-[4px] text-primary text-[0.8rem]">FITGYM / КАТЕГОРІЯ</span>
+                            <button className="bg-transparent border-none text-white font-bold cursor-pointer tracking-[1px] hover:text-primary transition-colors" onClick={() => setSelectedId(null)}>ЗАКРИТИ ×</button>
                         </div>
                         
-                        <div className="modal-main">
-                            <h2 className="modal-big-title">{current.title}</h2>
-                            <p className="modal-text-desc">{current.desc}</p>
-                            <div className="modal-footer-cta">
-                                <a href="#plans" className="modal-link-btn" onClick={() => setSelectedId(null)}>Обрати абонемент →</a>
+                        <div>
+                            <h2 className="text-[clamp(3rem,10vw,7rem)] font-black uppercase mb-[30px] leading-[0.85] tracking-[-2px] md:tracking-[-4px]">{current.title}</h2>
+                            <p className="text-[1.3rem] max-w-[600px] leading-[1.6] text-white/80 font-medium">{current.desc}</p>
+                            <div className="mt-[50px]">
+                                <a href="#plans" className="text-white text-[1.8rem] font-black no-underline border-b-[5px] border-primary pb-1 transition-colors duration-300 hover:text-primary" onClick={() => setSelectedId(null)}>Обрати абонемент →</a>
                             </div>
                         </div>
                     </div>
@@ -114,88 +80,16 @@ export default function Categories() {
                 document.body
             )}
 
+            {/* Залишаємо тільки keyframes, щоб не мучити tailwind.config.js */}
             <style>{`
-                .category-card:hover .cat-img { filter: grayscale(0%) brightness(0.6); transform: scale(1.05); }
-                .category-card:hover .cat-overlay { background: rgba(255, 0, 0, 0.3) !important; }
-                .category-card:hover .cat-line { width: 60% !important; }
-
-                /* ВИПРАВЛЕНО розміри на vw/vh для надійності */
-                .modal-photo-overlay {
-                    position: fixed;
-                    top: 0; left: 0; width: 100vw; height: 100vh;
-                    z-index: 100000;
-                    display: flex; align-items: center; justify-content: center;
-                    background: #000;
-                    animation: fadeIn 0.5s ease;
-                }
-
-                .modal-bg-image {
-                    position: absolute;
-                    top: 0; left: 0; width: 100%; height: 100%;
-                    background-size: cover;
-                    background-position: center;
-                    filter: brightness(0.3); /* Затемнення фото */
-                    transition: 0.5s;
-                }
-
-                .modal-photo-content {
-                    position: relative;
-                    width: 100%;
-                    max-width: 1000px;
-                    padding: 60px;
-                    color: #fff;
-                    animation: slideUp 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-                }
-
-                .modal-header { display: flex; justify-content: space-between; margin-bottom: 100px; }
-                .modal-tag { font-weight: 900; letter-spacing: 4px; color: #ff0000; font-size: 0.8rem; }
-                .modal-close-x { background: none; border: none; color: #fff; font-weight: 700; cursor: pointer; letter-spacing: 1px; }
-
-                .modal-big-title { 
-                    font-size: clamp(3rem, 10vw, 7rem); 
-                    font-weight: 950; 
-                    text-transform: uppercase; 
-                    margin-bottom: 30px; 
-                    line-height: 0.85;
-                    letter-spacing: -4px;
-                }
-
-                .modal-text-desc { 
-                    font-size: 1.3rem; 
-                    max-width: 600px; 
-                    line-height: 1.6; 
-                    color: rgba(255,255,255,0.8);
-                    font-weight: 500;
-                }
-
-                .modal-footer-cta { margin-top: 50px; }
-                .modal-link-btn { 
-                    color: #fff; 
-                    font-size: 1.8rem; 
-                    font-weight: 900; 
-                    text-decoration: none; 
-                    border-bottom: 5px solid #ff0000;
-                    padding-bottom: 5px;
-                    transition: 0.3s;
-                }
-                .modal-link-btn:hover { color: #ff0000; }
-
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                .animate-fadeIn { animation: fadeIn 0.5s ease; }
+                
                 @keyframes slideUp { 
                     from { opacity: 0; transform: translateY(40px); } 
                     to { opacity: 1; transform: translateY(0); } 
                 }
-
-                @media (max-width: 768px) {
-                    .modal-photo-content { padding: 30px; }
-                    .modal-header { margin-bottom: 50px; }
-                    .modal-big-title { letter-spacing: -2px; }
-                }
-
-                @media (max-width: 600px) {
-                    .bento-grid { grid-template-columns: 1fr !important; grid-auto-rows: 250px !important; }
-                    .category-card { grid-column: span 1 !important; grid-row: span 1 !important; }
-                }
+                .animate-slideUp { animation: slideUp 0.6s cubic-bezier(0.23, 1, 0.32, 1); }
             `}</style>
         </section>
     );
