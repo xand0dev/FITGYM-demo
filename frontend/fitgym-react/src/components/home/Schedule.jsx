@@ -108,85 +108,95 @@ export default function Schedule() {
     };
 
     const isFull = selectedEvent?.booked >= selectedEvent?.capacity;
-    // Блокуємо кнопку, якщо місць немає або якщо зараз іде запит на сервер
     const isActionDisabled = isFull || bookMutation.isPending;
 
     return (
-        <section id="schedule" className="section container">
-            <h2 className="section-title">Актуальний розклад занять</h2>
-            
-            <div className="calendar-wrapper">
-                <FullCalendar
-                    ref={calendarRef}
-                    plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                    initialView="timeGridWeek"
-                    headerToolbar={{
-                        left: 'prev,next today',
-                        center: 'title',
-                        right: 'dayGridMonth,timeGridWeek'
-                    }}
-                    locale={ukLocale}
-                    slotMinTime="08:00:00"
-                    slotMaxTime="22:00:00"
-                    allDaySlot={false}
-                    slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
-                    eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
-                    events={fetchEvents}
-                    eventClick={handleEventClick}
-                    height="auto"
-                />
+        <section id="schedule" className="py-[80px] bg-white border-t border-black/5">
+            <div className="container mx-auto max-w-[1200px] px-5 lg:px-8">
+                <div className="text-center mb-[40px]">
+                    <h2 className="text-[clamp(2rem,5vw,2.5rem)] font-black uppercase text-black tracking-wide m-0">
+                        Актуальний <span className="text-primary">Розклад</span>
+                    </h2>
+                </div>
+                
+                <div className="bg-white rounded-2xl p-5 md:p-[30px] shadow-[0_10px_40px_rgba(0,0,0,0.08)] border border-[#eee] overflow-hidden">
+                    <FullCalendar
+                        ref={calendarRef}
+                        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                        initialView="timeGridWeek"
+                        headerToolbar={{
+                            left: 'prev,next today',
+                            center: 'title',
+                            right: 'dayGridMonth,timeGridWeek'
+                        }}
+                        locale={ukLocale}
+                        slotMinTime="08:00:00"
+                        slotMaxTime="22:00:00"
+                        allDaySlot={false}
+                        slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+                        eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+                        events={fetchEvents}
+                        eventClick={handleEventClick}
+                        height="auto"
+                    />
+                </div>
             </div>
 
-            {/* Використовуємо React Portal для рендеру модалки безпосередньо в <body> */}
+            {/* ПРЕМІУМ МОДАЛКА БРОНЮВАННЯ */}
             {selectedEvent && createPortal(
-                <div className="modal-overlay active" onClick={() => !bookMutation.isPending && setSelectedEvent(null)}>
-                    <div className="modal-content booking-modal" onClick={e => e.stopPropagation()}>
+                <div className="fixed inset-0 w-screen h-screen bg-black/80 backdrop-blur-md z-[100000] flex items-center justify-center p-4 animate-fadeIn" onClick={() => !bookMutation.isPending && setSelectedEvent(null)}>
+                    <div className="bg-[#141414] border border-[#333] border-t-4 border-t-primary rounded-2xl p-[35px] max-w-[420px] w-full shadow-[0_25px_60px_rgba(0,0,0,0.8)] relative overflow-hidden animate-popIn" onClick={e => e.stopPropagation()}>
+                        
                         <button 
-                            className="modal-close" 
+                            className="absolute top-[20px] right-[20px] w-[30px] h-[30px] flex items-center justify-center rounded-full text-[#555] text-2xl hover:text-white hover:bg-white/10 transition-colors duration-300 disabled:opacity-50" 
                             onClick={() => setSelectedEvent(null)}
                             disabled={bookMutation.isPending}
-                        >×</button>
+                        >
+                            &times;
+                        </button>
 
-                        <h3 className="modal-title">{selectedEvent.title}</h3>
-                        <div className="modal-divider"></div>
+                        <h3 className="mt-0 text-white text-[1.6rem] md:text-[1.8rem] font-extrabold text-center uppercase tracking-[1px] mb-[30px] pb-[20px] border-b border-white/10 relative">
+                            {selectedEvent.title}
+                            <span className="absolute -bottom-[2px] left-1/2 -translate-x-1/2 w-[60px] h-[3px] bg-primary shadow-[0_0_10px_#ff0000]"></span>
+                        </h3>
                         
-                        <div className="booking-details">
-                            <div className="detail-item">
-                                <i className="far fa-clock"></i> 
+                        <div className="flex flex-col gap-3">
+                            <div className="bg-white/5 p-3 px-4 rounded-lg flex items-center gap-4 text-[1.05rem] text-[#ddd] border border-transparent transition-all duration-300 hover:bg-white/10 hover:border-white/10">
+                                <i className="far fa-clock text-primary text-[1.2rem] w-6 text-center drop-shadow-[0_0_5px_rgba(230,0,0,0.4)]"></i> 
                                 <div>
-                                    <span className="label">Час: </span>
-                                    <span className="value">{formatDate(selectedEvent.start)}</span>
+                                    <span className="text-white font-semibold mr-2">Час:</span>
+                                    <span>{formatDate(selectedEvent.start)}</span>
                                 </div>
                             </div>
-                            <div className="detail-item">
-                                <i className="fas fa-user-tie"></i>
+                            <div className="bg-white/5 p-3 px-4 rounded-lg flex items-center gap-4 text-[1.05rem] text-[#ddd] border border-transparent transition-all duration-300 hover:bg-white/10 hover:border-white/10">
+                                <i className="fas fa-user-tie text-primary text-[1.2rem] w-6 text-center drop-shadow-[0_0_5px_rgba(230,0,0,0.4)]"></i>
                                 <div>
-                                    <span className="label">Тренер: </span>
-                                    <span className="value">{selectedEvent.instructor || 'Поліна Товстуха'}</span>
+                                    <span className="text-white font-semibold mr-2">Тренер:</span>
+                                    <span>{selectedEvent.instructor || 'Поліна Товстуха'}</span>
                                 </div>
                             </div>
-                            <div className="detail-item">
-                                <i className="fas fa-users"></i>
+                            <div className="bg-white/5 p-3 px-4 rounded-lg flex items-center gap-4 text-[1.05rem] text-[#ddd] border border-transparent transition-all duration-300 hover:bg-white/10 hover:border-white/10">
+                                <i className="fas fa-users text-primary text-[1.2rem] w-6 text-center drop-shadow-[0_0_5px_rgba(230,0,0,0.4)]"></i>
                                 <div>
-                                    <span className="label">Місця: </span>
-                                    <span className={`value ${isFull ? 'text-danger' : ''}`}>
+                                    <span className="text-white font-semibold mr-2">Місця:</span>
+                                    <span className={`font-bold ${isFull ? 'text-primary' : 'text-[#ddd]'}`}>
                                         {selectedEvent.booked || 0} / {selectedEvent.capacity}
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="booking-footer">
+                        <div className="mt-[30px] pt-0 grid grid-cols-1 md:grid-cols-[1fr_1.5fr] gap-4">
                             <button 
                                 onClick={() => setSelectedEvent(null)} 
-                                className="btn-cancel"
+                                className="w-full border border-[#444] text-[#aaa] rounded-lg py-[14px] text-[0.9rem] font-bold uppercase tracking-wide transition-colors duration-300 hover:border-white hover:text-white hover:bg-white/5 disabled:opacity-50"
                                 disabled={bookMutation.isPending}
                             >
                                 СКАСУВАТИ
                             </button>
                             <button 
                                 onClick={handleBooking} 
-                                className="btn btn-primary" 
+                                className="w-full bg-primary text-white rounded-lg py-[14px] text-[0.95rem] font-extrabold uppercase tracking-wide shadow-[0_5px_20px_rgba(230,0,0,0.3)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_25px_rgba(230,0,0,0.5)] disabled:opacity-50 disabled:hover:translate-y-0 disabled:cursor-not-allowed" 
                                 disabled={isActionDisabled}
                             >
                                 {bookMutation.isPending ? 'ОБРОБКА...' : (isFull ? 'МІСЦЬ НЕМАЄ' : 'ЗАПИСАТИСЯ')}
@@ -194,8 +204,46 @@ export default function Schedule() {
                         </div>
                     </div>
                 </div>,
-                document.body // <-- Куди рендерити
+                document.body
             )}
+
+            {/* Стилі для кастомізації FullCalendar та анімацій модалки */}
+            <style>{`
+                /* Анімації */
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                .animate-fadeIn { animation: fadeIn 0.3s ease forwards; }
+                
+                @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+                .animate-popIn { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+                /* Оновлений світлий дизайн календаря */
+                .fc-theme-standard td, .fc-theme-standard th { border-color: #eee; }
+                .fc .fc-toolbar-title { font-size: 1.4rem; font-weight: 900; text-transform: uppercase; color: #111; letter-spacing: 1px; }
+                
+                /* Кнопки навігації календаря */
+                .fc .fc-button-primary { 
+                    background-color: #222; border: none; color: #fff; font-weight: 700; 
+                    text-transform: capitalize; border-radius: 6px; padding: 8px 16px; transition: 0.3s; 
+                }
+                .fc .fc-button-primary:hover { background-color: #ff0000; }
+                .fc .fc-button-primary:not(:disabled).fc-button-active, 
+                .fc .fc-button-primary:not(:disabled):active { 
+                    background-color: #ff0000; 
+                }
+
+                .fc-col-header-cell-cushion { color: #666; font-weight: 800; padding: 12px 0 !important; font-size: 0.9rem; }
+                .fc-timegrid-slot-label-cushion { color: #888; font-size: 0.85rem; }
+                
+                /* Події (червоні плашки) */
+                .fc-event { 
+                    cursor: pointer; transition: transform 0.2s; border: none; 
+                    border-radius: 4px; box-shadow: 0 2px 5px rgba(255,0,0,0.3); 
+                }
+                .fc-event:hover { transform: scale(1.02); filter: brightness(1.1); }
+                .fc-day-today { background: rgba(255, 0, 0, 0.03) !important; }
+                .fc-timegrid-now-indicator-line { border-color: #ff0000; }
+                .fc-timegrid-now-indicator-arrow { border-color: #ff0000; background: #ff0000; }
+            `}</style>
         </section>
     );
 }
