@@ -48,6 +48,8 @@ export default function AdminSidebar({ activeTab, setActiveTab, sidebarOpen, set
                 <MenuButton id="dashboard" icon="fa-chart-line" label="Огляд" adminOnly={true} />
                 <MenuButton id="schedule" icon="fa-calendar-alt" label="Розклад" />
                 <MenuButton id="clients" icon="fa-users" label="Клієнти" />
+                {/* 👇 НОВА КНОПКА ДЛЯ ЗАЯВОК */}
+                <MenuButton id="applications" icon="fa-envelope-open-text" label="Заявки" adminOnly={true} />
                 <MenuButton id="trainers" icon="fa-dumbbell" label="Тренери" adminOnly={true} />
             </nav>
 

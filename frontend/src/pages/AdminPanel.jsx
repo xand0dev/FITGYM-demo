@@ -7,6 +7,7 @@ import AdminTopbar from '../components/admin/AdminTopbar';
 import DashboardTab from '../components/admin/DashboardTab';
 import DataTableTab from '../components/admin/DataTableTab';
 import ScheduleTab from '../components/admin/ScheduleTab';
+import ApplicationsTab from '../components/admin/ApplicationsTab'; 
 
 export default function AdminPanel() {
     const { user, logout } = useAuth();
@@ -25,6 +26,12 @@ export default function AdminPanel() {
         refetch: refetchClients
     } = useAuthData('admin-clients', '/api/admin/members/');
 
+    // 👇 ДОДАЛИ ЗАПИТ НА ОТРИМАННЯ ЗАЯВОК
+    const { 
+        data: applications = [], 
+        refetch: refetchApps
+    } = useAuthData('admin-apps', '/api/admin/applications/');
+
     useEffect(() => {
         // Замість окремого CSS-класу стилізуємо body прямо через Tailwind
         document.body.classList.add('bg-[#080808]', 'text-white');
@@ -34,6 +41,7 @@ export default function AdminPanel() {
     const forceRefetch = () => {
         refetchTrainers();
         refetchClients();
+        refetchApps(); // 👈 Не забули оновити і заявки
     };
 
     return (
@@ -71,6 +79,14 @@ export default function AdminPanel() {
                     )}
 
                     {activeTab === 'schedule' && <ScheduleTab />}
+
+                    {/* 👇 ДОДАЛИ РЕНДЕР НОВОЇ ВКЛАДКИ */}
+                    {activeTab === 'applications' && (
+                        <ApplicationsTab 
+                            data={applications} 
+                            onRefresh={forceRefetch} 
+                        />
+                    )}
 
                     {(activeTab === 'trainers' || activeTab === 'clients') && (
                         <DataTableTab 
