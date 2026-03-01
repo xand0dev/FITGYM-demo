@@ -2,6 +2,7 @@
 
 from rest_framework import serializers
 from django.contrib.auth.models import User
+from django.utils import timezone
 from .models import (
     Workout, Instructor, ClassSession, MembershipType, Class,
     Member, Booking, Room, Payment, MembershipApplication
@@ -92,20 +93,31 @@ class MemberSerializer(serializers.ModelSerializer):
     is_staff = serializers.BooleanField(source='user.is_staff', read_only=True)
     is_superuser = serializers.BooleanField(source='user.is_superuser', read_only=True)
 
+    # 👇 НОВЕ ПОЛЕ: Динамічно обчислюємо активний абонемент
+    active_membership = serializers.SerializerMethodField()
+
     class Meta:
         model = Member
         fields = [
-            'id',
-            'username',
-            'email',
-            'full_name',
-            'is_staff',
-            'is_superuser',
-            'contact',
-            'gender',
-            'birth_date',
-            'status'
+            'id', 'username', 'email', 'full_name', 'is_staff', 'is_superuser',
+            'contact', 'gender', 'birth_date', 'status', 'active_membership'  # 👈 Додали сюди
         ]
+
+    def get_active_membership(self, obj):
+        today = timezone.now().date()
+        # Шукаємо активний абонемент клієнта, який діє на сьогоднішню дату
+        active = obj.membershiphistory_set.filter(
+            status='active',
+            start_date__lte=today,
+            end_date__gte=today
+        ).order_by('-end_date').first()
+
+        if active:
+            return {
+                "name": active.membership_type.name,
+                "end_date": active.end_date.strftime("%d.%m.%Y")
+            }
+        return None
 
 
 # === КЛІЄНТСЬКІ ДІЇ ===
