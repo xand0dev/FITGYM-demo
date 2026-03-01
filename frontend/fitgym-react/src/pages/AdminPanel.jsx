@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-
-// Наша тактична матриця кешу
 import { useAuthData } from '../hooks/useFitQuery';
 
 import AdminSidebar from '../components/admin/AdminSidebar';
@@ -15,7 +13,6 @@ export default function AdminPanel() {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
-    // Вживляємо хуки замість ручного fetch та стейтів
     const { 
         data: trainers = [], 
         isLoading: isTrainersLoading,
@@ -29,36 +26,43 @@ export default function AdminPanel() {
     } = useAuthData('admin-clients', '/api/admin/members/');
 
     useEffect(() => {
-        // Темний стиль для боді
-        document.body.classList.add('admin-body');
-        return () => document.body.classList.remove('admin-body');
+        // Замість окремого CSS-класу стилізуємо body прямо через Tailwind
+        document.body.classList.add('bg-[#080808]', 'text-white');
+        return () => document.body.classList.remove('bg-[#080808]', 'text-white');
     }, []);
 
-    // Функція-міст для сумісності зі старим DataTableTab (поки ми його не оновили)
     const forceRefetch = () => {
         refetchTrainers();
         refetchClients();
     };
 
     return (
-        <div className={`admin-wrapper ${sidebarOpen ? 'sidebar-open' : ''}`}>
+        <div className="flex min-h-screen items-start bg-[#080808] text-white font-sans relative selection:bg-primary selection:text-white">
             
+            {/* Оверлей для мобільного меню */}
+            {sidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] lg:hidden animate-fadeIn"
+                    onClick={() => setSidebarOpen(false)}
+                ></div>
+            )}
+
             <AdminSidebar 
                 activeTab={activeTab} 
                 setActiveTab={setActiveTab} 
                 sidebarOpen={sidebarOpen} 
+                setSidebarOpen={setSidebarOpen}
                 logout={logout} 
             />
 
-            <main className="admin-content">
+            <main className="flex-1 w-full lg:w-[calc(100%-260px)] p-5 lg:p-[30px] box-border min-h-screen flex flex-col overflow-x-hidden">
                 <AdminTopbar 
                     user={user} 
                     sidebarOpen={sidebarOpen} 
                     setSidebarOpen={setSidebarOpen} 
                 />
 
-                <div className="admin-page-content">
-                    {/* Передаємо довжину масивів для Дашборда, або "..." під час завантаження */}
+                <div className="mt-2 lg:mt-[10px] flex-1">
                     {activeTab === 'dashboard' && (
                         <DashboardTab 
                             clientsCount={isClientsLoading ? '...' : clients.length} 
