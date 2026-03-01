@@ -1,4 +1,3 @@
-// src/components/BMICalculator.jsx
 import { useState } from 'react';
 
 export default function BMICalculator() {
@@ -8,7 +7,7 @@ export default function BMICalculator() {
     const [gender, setGender] = useState('');
     const [activity, setActivity] = useState('');
     
-    const [result, setResult] = useState(null); // { bmi: 22.5, status: 'normal' }
+    const [result, setResult] = useState(null);
 
     const calculateBMI = (e) => {
         e.preventDefault();
@@ -16,7 +15,7 @@ export default function BMICalculator() {
         if (!height || !weight) return;
 
         // Формула: вага (кг) / (зріст (м) * зріст (м))
-        const h = parseFloat(height) / 100; // переводимо см в метри
+        const h = parseFloat(height) / 100;
         const w = parseFloat(weight);
         
         if (h <= 0 || w <= 0) {
@@ -35,93 +34,133 @@ export default function BMICalculator() {
         setResult({ bmi: bmiValue, status });
     };
 
+    // Допоміжна функція для класів рядка таблиці
+    const getRowClass = (statusType) => {
+        const isActive = result?.status === statusType;
+        return `border-b border-[#ddd] transition-colors duration-300 ${isActive ? 'bg-primary text-white' : 'hover:bg-[#e8e8e8] text-[#666]'}`;
+    };
+
+    const getCell1Class = (statusType) => {
+        const isActive = result?.status === statusType;
+        return `p-3 text-[1rem] font-semibold ${isActive ? 'text-white' : 'text-black'}`;
+    };
+
+    const getCell2Class = (statusType) => {
+        const isActive = result?.status === statusType;
+        return `p-3 text-[1rem] ${isActive ? 'text-white' : 'text-[#666]'}`;
+    };
+
     return (
-        <section id="calculator" className="section container">
-            <h2 className="section-title">Визнач свій індекс маси тіла (ІМТ)</h2>
-            <p className="section-subtitle">ІМТ допомагає визначити, чи знаходиться ваша вага в межах норми. Введіть свої дані та отримайте результат.</p>
+        <section id="calculator" className="py-[80px] bg-white border-t border-black/5">
+            <div className="container mx-auto max-w-[1200px] px-5 lg:px-8">
+                <h2 className="text-[clamp(2rem,5vw,2.5rem)] text-center text-black font-black mb-[15px] uppercase tracking-wide">
+                    Визнач свій <span className="text-primary">ІМТ</span>
+                </h2>
+                <p className="text-center text-[#666] text-[1.1rem] mb-[50px] max-w-[700px] mx-auto font-medium">
+                    ІМТ допомагає визначити, чи знаходиться ваша вага в межах норми. Введіть свої дані та отримайте результат.
+                </p>
 
-            <div className="imt-wrapper">
-                {/* --- ТАБЛИЦЯ --- */}
-                <div className="imt-table-container">
-                    <table className="imt-table">
-                        <thead>
-                            <tr>
-                                <th>ІМТ</th>
-                                <th>ВАГОВИЙ СТАТУС</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr className={result?.status === 'underweight' ? 'active' : ''}>
-                                <td>Нижче 18.5</td>
-                                <td>Недостатня вага</td>
-                            </tr>
-                            <tr className={result?.status === 'normal' ? 'active' : ''}>
-                                <td>18.5 – 24.9</td>
-                                <td>Нормальна вага</td>
-                            </tr>
-                            <tr className={result?.status === 'overweight' ? 'active' : ''}>
-                                <td>25.0 – 29.9</td>
-                                <td>Зайва вага</td>
-                            </tr>
-                            <tr className={result?.status === 'obese' ? 'active' : ''}>
-                                <td>30.0 і вище</td>
-                                <td>Ожиріння</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <p className="imt-note">*ІМТ: Індекс маси тіла</p>
-                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-10 lg:gap-[50px] items-start">
+                    
+                    {/* --- ТАБЛИЦЯ --- */}
+                    <div className="bg-[#f4f4f4] rounded-xl p-[30px] shadow-[0_4px_15px_rgba(0,0,0,0.1)]">
+                        <table className="w-full border-collapse mb-4">
+                            <thead>
+                                <tr>
+                                    <th className="bg-primary text-white p-3 text-left uppercase text-[0.9rem] font-bold rounded-tl-md">ІМТ</th>
+                                    <th className="bg-primary text-white p-3 text-left uppercase text-[0.9rem] font-bold rounded-tr-md">Ваговий статус</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr className={getRowClass('underweight')}>
+                                    <td className={getCell1Class('underweight')}>Нижче 18.5</td>
+                                    <td className={getCell2Class('underweight')}>Недостатня вага</td>
+                                </tr>
+                                <tr className={getRowClass('normal')}>
+                                    <td className={getCell1Class('normal')}>18.5 – 24.9</td>
+                                    <td className={getCell2Class('normal')}>Нормальна вага</td>
+                                </tr>
+                                <tr className={getRowClass('overweight')}>
+                                    <td className={getCell1Class('overweight')}>25.0 – 29.9</td>
+                                    <td className={getCell2Class('overweight')}>Зайва вага</td>
+                                </tr>
+                                <tr className={getRowClass('obese')}>
+                                    <td className={getCell1Class('obese')}>30.0 і вище</td>
+                                    <td className={getCell2Class('obese')}>Ожиріння</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p className="text-[0.85rem] text-[#888] font-medium pl-2 italic">*ІМТ: Індекс маси тіла</p>
+                    </div>
 
-                {/* --- ФОРМА --- */}
-                <div className="imt-form-container">
-                    <form className="imt-form" onSubmit={calculateBMI}>
-                        <div className="form-row">
-                            <input 
-                                type="number" placeholder="Зріст / см" required min="100" max="250"
-                                value={height} onChange={e => setHeight(e.target.value)}
-                            />
-                            <input 
-                                type="number" placeholder="Вага / кг" required min="30" max="250"
-                                value={weight} onChange={e => setWeight(e.target.value)}
-                            />
-                        </div>
+                    {/* --- ФОРМА --- */}
+                    <div className="py-2 lg:py-5">
+                        <form onSubmit={calculateBMI}>
+                            <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 mb-4 sm:mb-5">
+                                <input 
+                                    className="flex-1 w-full p-3.5 bg-[#f4f4f4] border border-[#ddd] text-black rounded-md outline-none transition-all duration-300 focus:border-primary focus:ring-4 focus:ring-primary/20 placeholder-[#888]"
+                                    type="number" placeholder="Зріст / см" required min="100" max="250"
+                                    value={height} onChange={e => setHeight(e.target.value)}
+                                />
+                                <input 
+                                    className="flex-1 w-full p-3.5 bg-[#f4f4f4] border border-[#ddd] text-black rounded-md outline-none transition-all duration-300 focus:border-primary focus:ring-4 focus:ring-primary/20 placeholder-[#888]"
+                                    type="number" placeholder="Вага / кг" required min="30" max="250"
+                                    value={weight} onChange={e => setWeight(e.target.value)}
+                                />
+                            </div>
 
-                        <div className="form-row">
-                            <input 
-                                type="number" placeholder="Вік" required min="16" max="99"
-                                value={age} onChange={e => setAge(e.target.value)}
-                            />
-                            <select required value={gender} onChange={e => setGender(e.target.value)}>
-                                <option value="" disabled>Стать</option>
-                                <option value="male">Чоловік</option>
-                                <option value="female">Жінка</option>
-                            </select>
-                        </div>
+                            <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 mb-4 sm:mb-5">
+                                <input 
+                                    className="flex-1 w-full p-3.5 bg-[#f4f4f4] border border-[#ddd] text-black rounded-md outline-none transition-all duration-300 focus:border-primary focus:ring-4 focus:ring-primary/20 placeholder-[#888]"
+                                    type="number" placeholder="Вік" required min="16" max="99"
+                                    value={age} onChange={e => setAge(e.target.value)}
+                                />
+                                <select 
+                                    className="flex-1 w-full p-3.5 bg-[#f4f4f4] border border-[#ddd] text-black rounded-md outline-none transition-all duration-300 focus:border-primary focus:ring-4 focus:ring-primary/20 invalid:text-[#888]"
+                                    required value={gender} onChange={e => setGender(e.target.value)}
+                                >
+                                    <option value="" disabled>Стать</option>
+                                    <option value="male">Чоловік</option>
+                                    <option value="female">Жінка</option>
+                                </select>
+                            </div>
 
-                        <div className="form-row">
-                            <select required value={activity} onChange={e => setActivity(e.target.value)}>
-                                <option value="" disabled>Оберіть фіз. активність</option>
-                                <option value="sedentary">Мінімальна (Сидячий спосіб)</option>
-                                <option value="light">Легка (1-3 р/тиждень)</option>
-                                <option value="moderate">Помірна (3-5 р/тиждень)</option>
-                                <option value="active">Висока (6-7 р/тиждень)</option>
-                                <option value="extreme">Екстремальна (Щоденно)</option>
-                            </select>
-                        </div>
+                            <div className="mb-6">
+                                <select 
+                                    className="w-full p-3.5 bg-[#f4f4f4] border border-[#ddd] text-black rounded-md outline-none transition-all duration-300 focus:border-primary focus:ring-4 focus:ring-primary/20 invalid:text-[#888]"
+                                    required value={activity} onChange={e => setActivity(e.target.value)}
+                                >
+                                    <option value="" disabled>Оберіть фіз. активність</option>
+                                    <option value="sedentary">Мінімальна (Сидячий спосіб)</option>
+                                    <option value="light">Легка (1-3 р/тиждень)</option>
+                                    <option value="moderate">Помірна (3-5 р/тиждень)</option>
+                                    <option value="active">Висока (6-7 р/тиждень)</option>
+                                    <option value="extreme">Екстремальна (Щоденно)</option>
+                                </select>
+                            </div>
 
-                        {/* Блок результату */}
-                        <div className={`imt-result-box ${result ? result.status : ''}`}>
-                            {result ? (
-                                <span>Ваш ІМТ: {result.bmi}</span>
-                            ) : (
-                                <span>Введіть дані для розрахунку</span>
-                            )}
-                        </div>
+                            {/* Блок результату */}
+                            <div className={`flex items-center justify-center text-center font-bold p-4 rounded-md min-h-[55px] mb-6 border bg-[#111] tracking-wide transition-colors duration-300 ${
+                                !result ? 'border-[#333] text-[#888]' :
+                                result.status === 'normal' ? 'border-[#0aa84b] text-[#0aa84b]' :
+                                result.status === 'overweight' ? 'border-[#ff9900] text-[#ff9900]' :
+                                'border-primary text-primary'
+                            }`}>
+                                {result ? (
+                                    <span>Ваш ІМТ: {result.bmi}</span>
+                                ) : (
+                                    <span>Введіть дані для розрахунку</span>
+                                )}
+                            </div>
 
-                        <button type="submit" className="btn btn-primary imt-submit-btn" style={{width: '100%'}}>
-                            ОБЧИСЛИТИ
-                        </button>
-                    </form>
+                            <button 
+                                type="submit" 
+                                className="w-full bg-primary hover:bg-[#cc0000] text-white py-4 px-6 rounded-md font-black uppercase tracking-[1px] transition-all duration-300 shadow-[0_4px_15px_rgba(230,0,0,0.3)] hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(230,0,0,0.5)]"
+                            >
+                                ОБЧИСЛИТИ
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </section>
