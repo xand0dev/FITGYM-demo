@@ -4,7 +4,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import (
     Workout, Instructor, ClassSession, MembershipType, Class,
-    Member, Booking, Room, Payment
+    Member, Booking, Room, Payment, MembershipApplication
 )
 
 
@@ -219,3 +219,10 @@ class AdminMemberSerializer(serializers.ModelSerializer):
         instance.status = validated_data.get('status', instance.status)
         instance.save()
         return instance
+
+# === ЗАЯВКИ НА АБОНЕМЕНТ ===
+class MembershipApplicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MembershipApplication
+        fields = ['id', 'name', 'phone', 'membership_type', 'status', 'created_at']
+        read_only_fields = ['id', 'status', 'created_at']  # Ці поля юзер не може передати сам

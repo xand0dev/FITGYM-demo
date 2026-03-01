@@ -14,7 +14,8 @@ from .views import (
     BookingCreateView,
     AdminClassSessionViewSet,
     AdminMemberViewSet,
-    AdminInstructorViewSet
+    AdminInstructorViewSet,
+    MembershipApplicationCreateView
 )
 
 router = DefaultRouter()
@@ -37,4 +38,5 @@ urlpatterns = [
     path('', include(router.urls)),
     path('register/', RegisterView.as_view(), name='register'),
     path('book/', BookingCreateView.as_view(), name='book-create'),
+    path('apply/', MembershipApplicationCreateView.as_view(), name='apply'),
 ]

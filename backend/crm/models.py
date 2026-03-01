@@ -145,3 +145,30 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.member} - {self.amount} ({self.get_status_display()})"
+
+
+# === ЗАЯВКИ НА АБОНЕМЕНТ (ЛІДИ) ===
+class MembershipApplication(models.Model):
+    STATUS_CHOICES = [
+        ('new', 'Нова'),
+        ('in_progress', 'В роботі'),
+        ('completed', 'Успішно продано'),
+        ('cancelled', 'Відмова'),
+    ]
+
+    name = models.CharField(max_length=100, help_text="Ім'я клієнта")
+    phone = models.CharField(max_length=20, help_text="Контактний телефон")
+    membership_type = models.ForeignKey(MembershipType, on_delete=models.SET_NULL, null=True, blank=True,
+                                        help_text="Бажаний тариф")
+
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Заявка на абонемент"
+        verbose_name_plural = "Заявки на абонементи"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        plan_name = self.membership_type.name if self.membership_type else "Не вказано"
+        return f"Заявка від {self.name} ({self.phone}) - {plan_name}"

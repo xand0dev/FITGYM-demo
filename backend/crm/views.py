@@ -16,7 +16,8 @@ from .models import (
     Member,
     Booking,
     MembershipHistory,
-    Class  # <-- Додано імпорт моделі Class
+    Class,
+    MembershipApplication
 )
 from .serializers import (
     WorkoutSerializer,
@@ -30,7 +31,8 @@ from .serializers import (
     AdminClassSessionSerializer,
     ClassSerializer,
     AdminInstructorSerializer,
-    AdminMemberSerializer
+    AdminMemberSerializer,
+    MembershipApplicationSerializer
 )
 
 
@@ -70,6 +72,11 @@ class ClassSessionViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ClassSessionSerializer
     permission_classes = [permissions.AllowAny]
 
+class MembershipApplicationCreateView(generics.CreateAPIView):
+    """(POST) /api/apply/ - Відправка заявки на абонемент з лендінгу"""
+    queryset = MembershipApplication.objects.all()
+    serializer_class = MembershipApplicationSerializer
+    permission_classes = [permissions.AllowAny]  # Дозволяємо доступ без авторизації
 
 # --- AUTH VIEWS ---
 

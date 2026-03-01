@@ -8,7 +8,8 @@ from .models import (
     MembershipHistory,
     Class,
     ClassSession,
-    Booking
+    Booking,
+    MembershipApplication
 )
 
 # Реєструємо кожну модель
@@ -20,3 +21,4 @@ admin.site.register(MembershipHistory)
 admin.site.register(Class)
 admin.site.register(ClassSession)
 admin.site.register(Booking)
+admin.site.register(MembershipApplication)
