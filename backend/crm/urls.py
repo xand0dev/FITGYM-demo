@@ -15,7 +15,8 @@ from .views import (
     AdminClassSessionViewSet,
     AdminMemberViewSet,
     AdminInstructorViewSet,
-    MembershipApplicationCreateView
+    MembershipApplicationCreateView,
+    AdminMembershipApplicationViewSet
 )
 
 router = DefaultRouter()
@@ -33,6 +34,7 @@ router.register(r'my-bookings', MyBookingsViewSet, basename='mybooking')
 router.register(r'admin/schedule', AdminClassSessionViewSet, basename='admin-schedule')
 router.register(r'admin/members', AdminMemberViewSet, basename='admin-member')
 router.register(r'admin/instructors', AdminInstructorViewSet, basename='admin-instructor')
+router.register(r'admin/applications', AdminMembershipApplicationViewSet, basename='admin-application')
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -32,7 +32,8 @@ from .serializers import (
     ClassSerializer,
     AdminInstructorSerializer,
     AdminMemberSerializer,
-    MembershipApplicationSerializer
+    MembershipApplicationSerializer,
+    AdminMembershipApplicationSerializer
 )
 
 
@@ -160,6 +161,16 @@ class BookingCreateView(generics.CreateAPIView):
 
 
 # --- АДМІНСЬКІ VIEWS ---
+
+class AdminMembershipApplicationViewSet(viewsets.ModelViewSet):
+    """
+    CRUD для заявок на абонементи (Лідів).
+    Доступ тільки для адмінів.
+    URL: /api/admin/applications/
+    """
+    queryset = MembershipApplication.objects.all().order_by('-created_at')
+    serializer_class = AdminMembershipApplicationSerializer
+    permission_classes = [IsAdminUser] # Захист: тільки для персоналу
 
 class AdminClassSessionViewSet(viewsets.ModelViewSet):
     """

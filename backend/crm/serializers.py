@@ -140,6 +140,13 @@ class PaymentSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['payment_date', 'member']
 
+# === ЗАЯВКИ НА АБОНЕМЕНТ ===
+class MembershipApplicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MembershipApplication
+        fields = ['id', 'name', 'phone', 'membership_type', 'status', 'created_at']
+        read_only_fields = ['id', 'status', 'created_at']  # Ці поля юзер не може передати сам
+
 
 # === АДМІНСЬКІ СЕРІАЛІЗАТОРИ ===
 
@@ -220,9 +227,11 @@ class AdminMemberSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
-# === ЗАЯВКИ НА АБОНЕМЕНТ ===
-class MembershipApplicationSerializer(serializers.ModelSerializer):
+class AdminMembershipApplicationSerializer(serializers.ModelSerializer):
+    # Додаткове поле, щоб зручно виводити назву тарифу на фронтенді
+    membership_type_name = serializers.CharField(source='membership_type.name', read_only=True, allow_null=True)
+
     class Meta:
         model = MembershipApplication
-        fields = ['id', 'name', 'phone', 'membership_type', 'status', 'created_at']
-        read_only_fields = ['id', 'status', 'created_at']  # Ці поля юзер не може передати сам
+        fields = ['id', 'name', 'phone', 'membership_type', 'membership_type_name', 'status', 'created_at']
+
