@@ -9,6 +9,7 @@
 │   │   ├── AdminModal.jsx
 │   │   ├── AdminSidebar.jsx
 │   │   ├── AdminTopbar.jsx
+│   │   ├── ApplicationsTab.jsx
 │   │   ├── DashboardTab.jsx
 │   │   ├── DataTableTab.jsx
 │   │   └── ScheduleTab.jsx
@@ -303,6 +304,8 @@ export default function AdminSidebar({ activeTab, setActiveTab, sidebarOpen, set
                 <MenuButton id="dashboard" icon="fa-chart-line" label="Огляд" adminOnly={true} />
                 <MenuButton id="schedule" icon="fa-calendar-alt" label="Розклад" />
                 <MenuButton id="clients" icon="fa-users" label="Клієнти" />
+                {/* 👇 НОВА КНОПКА ДЛЯ ЗАЯВОК */}
+                <MenuButton id="applications" icon="fa-envelope-open-text" label="Заявки" adminOnly={true} />
                 <MenuButton id="trainers" icon="fa-dumbbell" label="Тренери" adminOnly={true} />
             </nav>
 
@@ -351,6 +354,176 @@ export default function AdminTopbar({ user, sidebarOpen, setSidebarOpen }) {
                 </div>
             </div>
         </header>
+    );
+}
+
+=========================================
+ФАЙЛ: src\components\admin\ApplicationsTab.jsx
+=========================================
+
+import { useState } from 'react';
+import AdminModal from './AdminModal';
+import { useFitMutation } from '../../hooks/useFitQuery';
+
+export default function ApplicationsTab({ data, onRefresh }) {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [formData, setFormData] = useState({});
+
+    const updateMutation = useFitMutation('PUT');
+    const deleteMutation = useFitMutation('DELETE');
+    const isSubmitting = updateMutation.isPending || deleteMutation.isPending;
+
+    const handleEdit = (item) => {
+        setFormData(item);
+        setIsModalOpen(true);
+    };
+
+    const handleDelete = (id) => {
+        if (!window.confirm('Ви впевнені, що хочете видалити цю заявку?')) return;
+        deleteMutation.mutate(
+            { endpoint: `/api/admin/applications/${id}/`, data: null },
+            {
+                onSuccess: () => { if (onRefresh) onRefresh(); },
+                onError: (e) => alert('Не вдалося видалити: ' + e.message)
+            }
+        );
+    };
+
+    const handleSave = (e) => {
+        e.preventDefault();
+        updateMutation.mutate(
+            { endpoint: `/api/admin/applications/${formData.id}/`, data: formData },
+            {
+                onSuccess: () => {
+                    setIsModalOpen(false);
+                    if (onRefresh) onRefresh();
+                },
+                onError: (e) => alert('Помилка збереження: ' + e.message)
+            }
+        );
+    };
+
+    const getStatusBadge = (status) => {
+        switch(status) {
+            case 'new': return <span className="bg-blue-500/20 text-blue-400 px-2 py-1 rounded text-xs font-bold uppercase border border-blue-500/30">Нова</span>;
+            case 'in_progress': return <span className="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded text-xs font-bold uppercase border border-yellow-500/30">В роботі</span>;
+            case 'completed': return <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded text-xs font-bold uppercase border border-green-500/30">Продано</span>;
+            case 'cancelled': return <span className="bg-red-500/20 text-red-400 px-2 py-1 rounded text-xs font-bold uppercase border border-red-500/30">Відмова</span>;
+            default: return status;
+        }
+    };
+
+    const inputClasses = "w-full p-[14px] bg-[#1a1a1a] border border-[#333] rounded-lg text-white outline-none focus:border-primary transition-colors disabled:opacity-50";
+
+    return (
+        <div className="animate-fadeIn">
+            <div className="flex justify-between items-center mb-[25px]">
+                <h3 className="m-0 color-white text-[1.2rem] uppercase font-extrabold tracking-wide">
+                    Лійка продажів: <span className="text-primary">Заявки</span>
+                </h3>
+            </div>
+
+            <div className="w-full overflow-x-auto bg-[#141414]/60 backdrop-blur-[20px] border border-[#222] rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.6)] custom-scrollbar">
+                <table className="w-full text-left border-collapse whitespace-nowrap min-w-[700px]">
+                    <thead>
+                        <tr className="border-b border-[#333] bg-white/5">
+                            <th className="p-[15px_20px] text-[0.85rem] font-bold text-[#888] uppercase tracking-wide">Дата</th>
+                            <th className="p-[15px_20px] text-[0.85rem] font-bold text-[#888] uppercase tracking-wide">Клієнт</th>
+                            <th className="p-[15px_20px] text-[0.85rem] font-bold text-[#888] uppercase tracking-wide">Тариф</th>
+                            <th className="p-[15px_20px] text-[0.85rem] font-bold text-[#888] uppercase tracking-wide">Статус</th>
+                            <th className="p-[15px_20px] text-[0.85rem] font-bold text-[#888] uppercase tracking-wide text-right">Дії</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {data && data.length > 0 ? data.map(item => (
+                            <tr key={item.id} className="border-b border-[#222] transition-colors duration-200 hover:bg-white/5 last:border-none">
+                                <td className="p-[15px_20px] text-[#aaa] text-[0.9rem]">
+                                    {new Date(item.created_at).toLocaleDateString('uk-UA')}
+                                </td>
+                                <td className="p-[15px_20px]">
+                                    <div className="flex flex-col">
+                                        <strong className="text-white text-[1rem]">{item.name}</strong>
+                                        <span className="text-primary text-[0.85rem] font-bold">{item.phone}</span>
+                                    </div>
+                                </td>
+                                <td className="p-[15px_20px] text-white font-semibold">
+                                    {item.membership_type_name || 'Не вказано'}
+                                </td>
+                                <td className="p-[15px_20px]">
+                                    {getStatusBadge(item.status)}
+                                </td>
+                                <td className="p-[15px_20px]">
+                                    <div className="flex gap-[12px] justify-end">
+                                        <button 
+                                            title="Обробити заявку" 
+                                            onClick={() => handleEdit(item)}
+                                            disabled={isSubmitting}
+                                            className="w-[32px] h-[32px] rounded-md bg-[#222] text-[#aaa] flex items-center justify-center transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
+                                        >
+                                            <i className="fas fa-pen"></i>
+                                        </button>
+                                        <button 
+                                            title="Видалити" 
+                                            onClick={() => handleDelete(item.id)} 
+                                            disabled={isSubmitting}
+                                            className="w-[32px] h-[32px] rounded-md bg-primary/10 border border-primary/20 text-primary flex items-center justify-center transition-colors hover:bg-primary/20 hover:text-[#ff1a1a] disabled:opacity-50"
+                                        >
+                                            <i className="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        )) : (
+                            <tr>
+                                <td colSpan="5" className="text-center text-[#666] p-[40px] font-medium">
+                                    Нових заявок ще немає.
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+            <AdminModal 
+                isOpen={isModalOpen} 
+                onClose={() => !isSubmitting && setIsModalOpen(false)} 
+                title="Обробка заявки"
+            >
+                <form className="flex flex-col gap-5" onSubmit={handleSave}>
+                    <div className="p-4 bg-white/5 border border-white/10 rounded-xl mb-2">
+                        <p className="m-0 text-[#aaa] text-sm mb-1">Клієнт: <strong className="text-white text-base">{formData.name}</strong></p>
+                        <p className="m-0 text-[#aaa] text-sm mb-1">Телефон: <strong className="text-primary text-base">{formData.phone}</strong></p>
+                        <p className="m-0 text-[#aaa] text-sm">Цікавить: <strong className="text-white text-base">{formData.membership_type_name}</strong></p>
+                    </div>
+
+                    <div>
+                        <label className="block mb-2 text-[0.8rem] font-bold text-[#888] uppercase tracking-wide">Статус заявки</label>
+                        <select 
+                            name="status" 
+                            value={formData.status || 'new'} 
+                            onChange={(e) => setFormData({...formData, status: e.target.value})} 
+                            disabled={isSubmitting} 
+                            className={inputClasses}
+                        >
+                            <option value="new">Нова (Не оброблено)</option>
+                            <option value="in_progress">В роботі (Думає)</option>
+                            <option value="completed">Успішно продано</option>
+                            <option value="cancelled">Відмова</option>
+                        </select>
+                    </div>
+
+                    <div className="mt-4 flex flex-col sm:flex-row justify-end gap-3">
+                        <button type="button" onClick={() => setIsModalOpen(false)} disabled={isSubmitting} className="w-full sm:w-auto px-[25px] py-[14px] bg-transparent border border-[#444] text-[#aaa] rounded-lg font-bold uppercase tracking-wide transition-colors hover:border-white hover:text-white disabled:opacity-50">
+                            Скасувати
+                        </button>
+                        <button type="submit" disabled={isSubmitting} className="w-full sm:w-auto px-[25px] py-[14px] bg-primary text-white rounded-lg font-extrabold uppercase tracking-wide shadow-[0_4px_15px_rgba(255,0,0,0.3)] transition-all hover:-translate-y-0.5 hover:bg-[#cc0000] disabled:opacity-50 flex items-center justify-center gap-2">
+                            <i className={isSubmitting ? "fas fa-spinner fa-spin" : "fas fa-check"}></i> 
+                            {isSubmitting ? 'ЗБЕРЕЖЕННЯ...' : 'ЗБЕРЕГТИ СТАТУС'}
+                        </button>
+                    </div>
+                </form>
+            </AdminModal>
+        </div>
     );
 }
 
@@ -1378,6 +1551,22 @@ export default function CabinetSidebar() {
     const lastName = user?.last_name || 'Атлет';
     const email = user?.email || 'Немає email';
 
+    // 👇 Визначаємо, що писати на бейджі статусу
+    let roleBadge = 'БЕЗ АБОНЕМЕНТА';
+    let isBadgeActive = false;
+
+    if (user?.is_superuser) {
+        roleBadge = 'АДМІНІСТРАТОР';
+        isBadgeActive = true;
+    } else if (user?.is_staff) {
+        roleBadge = 'ТРЕНЕР';
+        isBadgeActive = true;
+    } else if (user?.active_membership) {
+        // Якщо клієнт, виводимо назву тарифу і дату його закінчення
+        roleBadge = `${user.active_membership.name.toUpperCase()} (ДО ${user.active_membership.end_date})`;
+        isBadgeActive = true;
+    }
+
     return (
         <aside className="p-[30px] rounded-[24px] border border-[var(--c-border)] shadow-[0_10px_30px_rgba(0,0,0,0.1)] transition-colors duration-300 bg-[var(--c-card)] h-fit" data-aos="fade-right">
             <div className="text-center mb-[20px]">
@@ -1385,9 +1574,17 @@ export default function CabinetSidebar() {
                     className="w-[120px] h-[120px] rounded-full border-[3px] border-primary mx-auto mb-[15px] bg-center bg-cover shadow-[0_0_20px_rgba(255,0,0,0.3)]"
                     style={{ backgroundImage: "url('https://img.freepik.com/free-photo/muscular-man-doing-exercises-with-dumbbells_155003-1849.jpg')" }}
                 ></div>
-                <h2 className="text-primary font-black uppercase text-[1.4rem] leading-[1.2]">{firstName} <br/> {lastName}</h2>
-                <div className="inline-block mt-2.5 px-3 py-1 bg-primary/10 text-primary border border-primary rounded-full text-[0.7rem] font-extrabold">
-                    {user?.is_superuser ? 'АДМІНІСТРАТОР' : (user?.is_staff ? 'ТРЕНЕР' : 'PRO MEMBER')}
+                <h2 className="text-primary font-black uppercase text-[1.4rem] leading-[1.2]">
+                    {firstName} <br/> {lastName}
+                </h2>
+                
+                {/* 👇 Динамічний бейдж з правильними стилями */}
+                <div className={`inline-block mt-2.5 px-3 py-1 border rounded-full text-[0.7rem] font-extrabold transition-colors duration-300 ${
+                    isBadgeActive 
+                        ? 'bg-primary/10 text-primary border-primary' 
+                        : 'bg-[#88888820] text-[#888] border-[#888]'
+                }`}>
+                    {roleBadge}
                 </div>
             </div>
 
@@ -2015,33 +2212,104 @@ export default function Hero() {
 
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { usePublicData, useFitMutation } from '../../hooks/useFitQuery';
+import { useUI } from '../../context/UIContext';
 
-const Modal = ({ isOpen, onClose, planTitle }) => {
-    if (!isOpen) return null;
+// === КОМПОНЕНТ МОДАЛОЧКИ ДЛЯ ЗАЯВКИ ===
+const Modal = ({ isOpen, onClose, selectedPlan }) => {
+    const { addToast } = useUI();
+    const applyMutation = useFitMutation('POST');
     
+    // Стейт для полів форми
+    const [formData, setFormData] = useState({ name: '', phone: '' });
+
+    if (!isOpen || !selectedPlan) return null;
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        
+        // Відправляємо дані на наш новий ендпоінт
+        applyMutation.mutate(
+            { 
+                endpoint: '/api/apply/', 
+                data: {
+                    name: formData.name,
+                    phone: formData.phone,
+                    membership_type: selectedPlan.id
+                } 
+            },
+            {
+                onSuccess: () => {
+                    addToast('Заявку успішно відправлено! Ми вам зателефонуємо.', 'success');
+                    setFormData({ name: '', phone: '' }); // Очищаємо форму
+                    onClose(); // Закриваємо модалку
+                },
+                onError: (error) => {
+                    addToast(error.message || 'Помилка відправки заявки', 'error');
+                }
+            }
+        );
+    };
+
     return createPortal(
-        <div className="fixed inset-0 w-screen h-screen bg-black/60 backdrop-blur-sm flex justify-center items-center z-[1000]" onClick={onClose}>
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 p-[30px] rounded-2xl w-[90%] max-w-[320px] text-white text-center relative" onClick={(e) => e.stopPropagation()}>
-                <button className="absolute top-2.5 right-4 bg-transparent border-none text-white text-2xl cursor-pointer hover:text-primary transition-colors" onClick={onClose}>&times;</button>
-                <h3 className="text-[1.2rem] uppercase mb-1.5 font-bold">Оформити підписку</h3>
-                <p className="text-[0.9rem] mb-5">Тариф: <span className="text-primary font-bold">{planTitle}</span></p>
-                <form className="flex flex-col gap-2.5" onSubmit={(e) => e.preventDefault()}>
-                    <input className="p-2.5 bg-white/10 border border-white/30 rounded-lg text-white text-[0.9rem] outline-none focus:border-primary transition-colors placeholder-white/50" type="text" placeholder="Ім'я" required />
-                    <input className="p-2.5 bg-white/10 border border-white/30 rounded-lg text-white text-[0.9rem] outline-none focus:border-primary transition-colors placeholder-white/50" type="tel" placeholder="Телефон" required />
-                    <button type="submit" className="w-full p-2.5 bg-primary hover:bg-[#cc0000] text-white border-none rounded-md font-bold uppercase cursor-pointer transition-colors duration-300 text-[0.85rem] mt-2 shadow-[0_4px_10px_rgba(255,0,0,0.3)]">Замовити</button>
+        <div className="fixed inset-0 w-screen h-screen bg-black/60 backdrop-blur-sm flex justify-center items-center z-[1000] animate-fadeIn" onClick={onClose}>
+            <div className="bg-[#141414] border border-[#333] border-t-4 border-t-primary p-[30px] rounded-2xl w-[90%] max-w-[350px] text-white text-center relative shadow-[0_25px_60px_rgba(0,0,0,0.8)] animate-popIn" onClick={(e) => e.stopPropagation()}>
+                <button 
+                    className="absolute top-2.5 right-4 bg-transparent border-none text-[#888] text-2xl cursor-pointer hover:text-white transition-colors" 
+                    onClick={onClose}
+                    disabled={applyMutation.isPending}
+                >
+                    &times;
+                </button>
+                <h3 className="text-[1.2rem] uppercase mb-1.5 font-extrabold tracking-wide">Оформити підписку</h3>
+                <p className="text-[0.9rem] mb-5 text-[#aaa]">Тариф: <span className="text-primary font-bold">{selectedPlan.name}</span></p>
+                
+                <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+                    <input 
+                        className="p-3 bg-white/5 border border-[#333] rounded-lg text-white text-[0.9rem] outline-none focus:border-primary transition-colors placeholder-[#666]" 
+                        type="text" 
+                        placeholder="Ваше ім'я" 
+                        value={formData.name}
+                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                        required 
+                        disabled={applyMutation.isPending}
+                    />
+                    <input 
+                        className="p-3 bg-white/5 border border-[#333] rounded-lg text-white text-[0.9rem] outline-none focus:border-primary transition-colors placeholder-[#666]" 
+                        type="tel" 
+                        placeholder="Ваш телефон (+380...)" 
+                        value={formData.phone}
+                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                        required 
+                        disabled={applyMutation.isPending}
+                    />
+                    <button 
+                        type="submit" 
+                        className="w-full p-3 bg-primary hover:bg-[#cc0000] text-white border-none rounded-lg font-bold uppercase cursor-pointer transition-colors duration-300 text-[0.85rem] mt-2 shadow-[0_4px_15px_rgba(255,0,0,0.3)] disabled:opacity-50"
+                        disabled={applyMutation.isPending}
+                    >
+                        {applyMutation.isPending ? 'ВІДПРАВКА...' : 'ЗАМОВИТИ'}
+                    </button>
                 </form>
             </div>
+            <style>{`
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                .animate-fadeIn { animation: fadeIn 0.3s ease forwards; }
+                @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+                .animate-popIn { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+            `}</style>
         </div>,
         document.body
     );
 };
 
+// === КАРТКА ТАРИФУ ===
 const PlanCard = ({ title, price, features, isFeatured, onSelect }) => (
     <div className={`bg-white px-5 py-[25px] rounded-xl text-center transition-transform duration-300 relative flex flex-col hover:-translate-y-1.5 ${isFeatured ? 'border-2 border-primary scale-105 z-10 shadow-[0_15px_30px_rgba(255,0,0,0.15)]' : 'shadow-[0_5px_20px_rgba(0,0,0,0.1)]'}`}>
         {isFeatured && <div className="absolute -top-2.5 right-4 bg-primary text-white px-2.5 py-0.5 rounded text-[0.7rem] font-bold uppercase tracking-wider">Top</div>}
         <h3 className="text-[1.2rem] font-bold text-[#333] mb-2.5">{title}</h3>
         <div className="text-[2.2rem] font-extrabold text-primary mb-[15px]">
-            <span className="text-[1rem] align-super">₴</span>{price}<span className="text-[0.8rem] text-[#888] font-normal">/міс</span>
+            <span className="text-[1rem] align-super">₴</span>{Number(price)}<span className="text-[0.8rem] text-[#888] font-normal">/міс</span>
         </div>
         <ul className="list-none p-0 mb-5 text-left flex-1">
             {features.map((f, i) => (
@@ -2052,19 +2320,23 @@ const PlanCard = ({ title, price, features, isFeatured, onSelect }) => (
         </ul>
         <button 
             className={`w-full p-2.5 text-white border-none rounded-md font-bold uppercase cursor-pointer transition-colors duration-300 text-[0.85rem] mt-auto ${isFeatured ? 'bg-primary hover:bg-[#cc0000]' : 'bg-black hover:bg-primary'}`} 
-            onClick={() => onSelect(title)}
+            onClick={onSelect}
         >
             Обрати
         </button>
     </div>
 );
 
+// === ГОЛОВНИЙ КОМПОНЕНТ ===
 export default function Plans() {
     const [isModalOpen, setModalOpen] = useState(false);
-    const [selectedPlan, setSelectedPlan] = useState('');
+    const [selectedPlan, setSelectedPlan] = useState(null);
 
-    const handlePlanSelect = (title) => {
-        setSelectedPlan(title);
+    // Витягуємо тарифи з бекенду
+    const { data: plans = [], isLoading } = usePublicData('plans', '/api/membership-types/');
+
+    const handlePlanSelect = (plan) => {
+        setSelectedPlan(plan);
         setModalOpen(true);
     };
 
@@ -2078,14 +2350,43 @@ export default function Plans() {
                     <h2 className="text-[2.2rem] font-extrabold uppercase tracking-wide">Наші <span className="text-primary">Тарифи</span></h2>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-center">
-                    <PlanCard title="Базовий" price="800" features={["8 тренувань", "Кардіо зона", "Душ"]} onSelect={handlePlanSelect} />
-                    <PlanCard title="Безліміт" price="1200" isFeatured features={["Безліміт", "Всі зони", "24/7"]} onSelect={handlePlanSelect} />
-                    <PlanCard title="PRO" price="2500" features={["Персональний план", "Заморозка", "Пріоритет"]} onSelect={handlePlanSelect} />
-                </div>
+                {isLoading ? (
+                    <div className="text-center text-white font-bold text-xl animate-pulse">
+                        Завантаження тарифів...
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-5 items-center justify-center">
+                        {plans.length > 0 ? plans.map((plan, index) => {
+                            // Розбиваємо опис з адмінки на масив фіч (по комі або новому рядку)
+                            const features = plan.description 
+                                ? plan.description.split(/[,;\n]+/).map(f => f.trim()).filter(Boolean) 
+                                : ["Стандартний доступ"];
+                            
+                            // Робимо центральну картку (або другу по рахунку) виділеною (Top)
+                            const isFeatured = index === 1;
+
+                            return (
+                                <PlanCard 
+                                    key={plan.id}
+                                    title={plan.name} 
+                                    price={plan.amount} 
+                                    features={features}
+                                    isFeatured={isFeatured} 
+                                    onSelect={() => handlePlanSelect(plan)} 
+                                />
+                            );
+                        }) : (
+                            <div className="text-center text-white col-span-full">Тарифи ще не додані.</div>
+                        )}
+                    </div>
+                )}
             </div>
             
-            <Modal isOpen={isModalOpen} onClose={() => setModalOpen(false)} planTitle={selectedPlan} />
+            <Modal 
+                isOpen={isModalOpen} 
+                onClose={() => setModalOpen(false)} 
+                selectedPlan={selectedPlan} 
+            />
         </section>
     );
 }
@@ -2855,12 +3156,6 @@ export default function ToastContainer() {
 
 // src/context/AuthContext.jsx
 
-/**
- * Провайдер авторизації.
- * Перевіряє токен при завантаженні, зберігає дані юзера.
- * Надає: user, login, logout, loading.
- */
-
 import { createContext, useState, useEffect, useContext } from 'react';
 import { authRequest, getToken } from '../utils/api';
 
@@ -2877,12 +3172,11 @@ export function AuthProvider({ children }) {
 
     const checkAuth = async () => {
         const token = getToken();
+        
         if (token) {
             try {
-                // Отримуємо профіль
-                const data = await authRequest('/api/me/');
-                // Бекенд іноді повертає масив
-                const profile = Array.isArray(data) ? data[0] : data;
+                // Отримуємо універсальний профіль (Клієнт, Тренер або Адмін)
+                const profile = await authRequest('/api/me/');
                 setUser(profile);
             } catch (e) {
                 console.error("Auth Failed", e);
@@ -2896,7 +3190,7 @@ export function AuthProvider({ children }) {
     const login = (token, username) => {
         localStorage.setItem('fp_token', JSON.stringify(token));
         localStorage.setItem('fp_user_name', JSON.stringify(username));
-        checkAuth(); // Оновлюємо дані користувача
+        checkAuth(); // Оновлюємо дані користувача після логіну
     };
 
     const logout = () => {
@@ -3093,6 +3387,7 @@ import AdminTopbar from '../components/admin/AdminTopbar';
 import DashboardTab from '../components/admin/DashboardTab';
 import DataTableTab from '../components/admin/DataTableTab';
 import ScheduleTab from '../components/admin/ScheduleTab';
+import ApplicationsTab from '../components/admin/ApplicationsTab'; 
 
 export default function AdminPanel() {
     const { user, logout } = useAuth();
@@ -3111,6 +3406,12 @@ export default function AdminPanel() {
         refetch: refetchClients
     } = useAuthData('admin-clients', '/api/admin/members/');
 
+    // 👇 ДОДАЛИ ЗАПИТ НА ОТРИМАННЯ ЗАЯВОК
+    const { 
+        data: applications = [], 
+        refetch: refetchApps
+    } = useAuthData('admin-apps', '/api/admin/applications/');
+
     useEffect(() => {
         // Замість окремого CSS-класу стилізуємо body прямо через Tailwind
         document.body.classList.add('bg-[#080808]', 'text-white');
@@ -3120,6 +3421,7 @@ export default function AdminPanel() {
     const forceRefetch = () => {
         refetchTrainers();
         refetchClients();
+        refetchApps(); // 👈 Не забули оновити і заявки
     };
 
     return (
@@ -3157,6 +3459,14 @@ export default function AdminPanel() {
                     )}
 
                     {activeTab === 'schedule' && <ScheduleTab />}
+
+                    {/* 👇 ДОДАЛИ РЕНДЕР НОВОЇ ВКЛАДКИ */}
+                    {activeTab === 'applications' && (
+                        <ApplicationsTab 
+                            data={applications} 
+                            onRefresh={forceRefetch} 
+                        />
+                    )}
 
                     {(activeTab === 'trainers' || activeTab === 'clients') && (
                         <DataTableTab 
