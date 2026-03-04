@@ -5,30 +5,31 @@ import { useAuthData } from '../hooks/useFitQuery';
 import AdminSidebar from '../components/admin/AdminSidebar';
 import AdminTopbar from '../components/admin/AdminTopbar';
 import DashboardTab from '../components/admin/DashboardTab';
-import DataTableTab from '../components/admin/DataTableTab';
 import ScheduleTab from '../components/admin/ScheduleTab';
-import ApplicationsTab from '../components/admin/ApplicationsTab'; 
+import ApplicationsTab from '../components/admin/ApplicationsTab';
+import ClientsTab from '../components/admin/ClientsTab';
+import TrainersTab from '../components/admin/TrainersTab';
 
 export default function AdminPanel() {
     const { user, logout } = useAuth();
     const [activeTab, setActiveTab] = useState('dashboard');
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
-    const { 
-        data: trainers = [], 
+    const {
+        data: trainers = [],
         isLoading: isTrainersLoading,
         refetch: refetchTrainers
     } = useAuthData('admin-trainers', '/api/admin/instructors/');
-    
-    const { 
-        data: clients = [], 
+
+    const {
+        data: clients = [],
         isLoading: isClientsLoading,
         refetch: refetchClients
     } = useAuthData('admin-clients', '/api/admin/members/');
 
     // 👇 ДОДАЛИ ЗАПИТ НА ОТРИМАННЯ ЗАЯВОК
-    const { 
-        data: applications = [], 
+    const {
+        data: applications = [],
         refetch: refetchApps
     } = useAuthData('admin-apps', '/api/admin/applications/');
 
@@ -46,35 +47,35 @@ export default function AdminPanel() {
 
     return (
         <div className="flex min-h-screen items-start bg-[#080808] text-white font-sans relative selection:bg-primary selection:text-white">
-            
+
             {/* Оверлей для мобільного меню */}
             {sidebarOpen && (
-                <div 
+                <div
                     className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] lg:hidden animate-fadeIn"
                     onClick={() => setSidebarOpen(false)}
                 ></div>
             )}
 
-            <AdminSidebar 
-                activeTab={activeTab} 
-                setActiveTab={setActiveTab} 
-                sidebarOpen={sidebarOpen} 
+            <AdminSidebar
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                sidebarOpen={sidebarOpen}
                 setSidebarOpen={setSidebarOpen}
-                logout={logout} 
+                logout={logout}
             />
 
             <main className="flex-1 w-full lg:w-[calc(100%-260px)] p-5 lg:p-[30px] box-border min-h-screen flex flex-col overflow-x-hidden">
-                <AdminTopbar 
-                    user={user} 
-                    sidebarOpen={sidebarOpen} 
-                    setSidebarOpen={setSidebarOpen} 
+                <AdminTopbar
+                    user={user}
+                    sidebarOpen={sidebarOpen}
+                    setSidebarOpen={setSidebarOpen}
                 />
 
                 <div className="mt-2 lg:mt-[10px] flex-1">
                     {activeTab === 'dashboard' && (
-                        <DashboardTab 
-                            clientsCount={isClientsLoading ? '...' : clients.length} 
-                            trainersCount={isTrainersLoading ? '...' : trainers.length} 
+                        <DashboardTab
+                            clientsCount={isClientsLoading ? '...' : clients.length}
+                            trainersCount={isTrainersLoading ? '...' : trainers.length}
                         />
                     )}
 
@@ -82,16 +83,24 @@ export default function AdminPanel() {
 
                     {/* 👇 ДОДАЛИ РЕНДЕР НОВОЇ ВКЛАДКИ */}
                     {activeTab === 'applications' && (
-                        <ApplicationsTab 
-                            data={applications} 
-                            onRefresh={forceRefetch} 
+                        <ApplicationsTab
+                            data={applications}
+                            onRefresh={forceRefetch}
                         />
                     )}
 
-                    {(activeTab === 'trainers' || activeTab === 'clients') && (
-                        <DataTableTab 
-                            data={activeTab === 'trainers' ? trainers : clients} 
-                            tabType={activeTab}
+                    {/* 👇 РЕНДЕР КЛІЄНТІВ (НОВИЙ ДИЗАЙН ПРЕМІУМ-ТАБЛИЦІ) */}
+                    {activeTab === 'clients' && (
+                        <ClientsTab
+                            data={clients}
+                            onRefresh={forceRefetch}
+                        />
+                    )}
+
+                    {/* РЕНДЕР ТРЕНЕРІВ */}
+                    {activeTab === 'trainers' && (
+                        <TrainersTab
+                            data={trainers}
                             onRefresh={forceRefetch}
                         />
                     )}
