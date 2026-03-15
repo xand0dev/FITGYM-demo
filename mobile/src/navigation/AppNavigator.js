@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
@@ -8,8 +8,9 @@ import { View, ActivityIndicator } from 'react-native';
 import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
 import CabinetScreen from '../screens/CabinetScreen';
+import ClassDetailsScreen from '../screens/ClassDetailsScreen';
 import { COLORS } from '../constants/theme';
-import { AuthContext } from '../store/AuthContext';
+import useAppStore from '../store/useAppStore';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -36,10 +37,9 @@ function MainTabs() {
 }
 
 export default function AppNavigator() {
-  // Беремо дані з Контексту
-  const { userToken, isLoading } = useContext(AuthContext);
+  const userToken = useAppStore((state) => state.userToken);
+  const isLoading = useAppStore((state) => state.isLoading);
 
-  // Поки перевіряємо токен при старті — показуємо крутилку
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', backgroundColor: COLORS.background }}>
@@ -52,11 +52,12 @@ export default function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {userToken == null ? (
-          // Якщо токена немає - показуємо екран входу
           <Stack.Screen name="Auth" component={LoginScreen} />
         ) : (
-          // Якщо токен є - пускаємо в додаток
-          <Stack.Screen name="Main" component={MainTabs} />
+          <>
+            <Stack.Screen name="Main" component={MainTabs} />
+            <Stack.Screen name="ClassDetails" component={ClassDetailsScreen} />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>
