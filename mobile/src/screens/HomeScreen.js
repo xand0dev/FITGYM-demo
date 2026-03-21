@@ -40,7 +40,13 @@ export default function HomeScreen() {
     try {
       const res = await apiClient.get('/schedule/');
       if (res.data && res.data.length > 0) {
-        setUpcomingClass(res.data[0]); // First upcoming class
+        const now = new Date();
+        const upcoming = res.data.filter(session => new Date(session.start_at) > now);
+        if (upcoming.length > 0) {
+          setUpcomingClass(upcoming[0]); // First upcoming class
+        } else {
+          setUpcomingClass(null);
+        }
       }
     } catch (e) {
       console.log('Error fetching upcoming class for home screen', e);

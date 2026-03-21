@@ -76,14 +76,19 @@ export default function AppNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Main" component={MainTabs} />
-        <Stack.Screen name="ClassDetails" component={ClassDetailsScreen} />
-        <Stack.Screen name="ActiveWorkout" component={ActiveWorkoutScreen} />
-        <Stack.Screen name="Membership" component={MembershipScreen} />
-        {/* Temporarily disabled login/register screens
-        <Stack.Screen name="Auth" component={LoginScreen} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
-        */}
+        {userToken == null ? (
+          <>
+            <Stack.Screen name="Auth" component={LoginScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+          </>
+        ) : (
+          <>
+            <Stack.Screen name="Main" component={MainTabs} />
+            <Stack.Screen name="ClassDetails" component={ClassDetailsScreen} />
+            <Stack.Screen name="ActiveWorkout" component={ActiveWorkoutScreen} />
+            <Stack.Screen name="Membership" component={MembershipScreen} />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );

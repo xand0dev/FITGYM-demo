@@ -24,9 +24,10 @@ export default function WorkoutsScreen() {
     try {
       setIsLoading(true);
       const res = await apiClient.get('/schedule/');
-      // Filter out past classes for better UX (optional, but good practice)
-      // For now we just show all or let backend handle it
-      setSchedule(res.data);
+      // Відфільтровуємо минулі заняття
+      const now = new Date();
+      const upcoming = res.data.filter(session => new Date(session.start_at) > now);
+      setSchedule(upcoming);
     } catch (e) {
       console.log('Error fetching schedule', e?.response?.data || e.message);
     } finally {
