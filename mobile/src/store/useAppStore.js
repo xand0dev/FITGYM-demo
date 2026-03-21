@@ -6,17 +6,34 @@ import { Alert } from 'react-native';
 const useAppStore = create((set) => ({
   userToken: null,
   isLoading: true,
+  theme: 'dark',
   
   checkToken: async () => {
     try {
       const token = await SecureStore.getItemAsync('userToken');
+      const savedTheme = await SecureStore.getItemAsync('userTheme');
       if (token) {
         set({ userToken: token });
       }
+      if (savedTheme) {
+        set({ theme: savedTheme });
+      }
     } catch (e) {
-      console.log('Помилка читання токена', e);
+      console.log('Помилка читання даних', e);
     } finally {
       set({ isLoading: false });
+    }
+  },
+
+  toggleTheme: async () => {
+    try {
+      set((state) => {
+        const newTheme = state.theme === 'light' ? 'dark' : 'light';
+        SecureStore.setItemAsync('userTheme', newTheme).catch(console.error);
+        return { theme: newTheme };
+      });
+    } catch (e) {
+      console.error('Помилка збереження теми', e);
     }
   },
 
@@ -32,14 +49,36 @@ const useAppStore = create((set) => ({
       set({ userToken: token });
       
     } catch (error) {
-      console.log('Помилка входу:', error);
-      Alert.alert('Помилка', 'Невірний логін або пароль або сервер недоступний');
+      console.log('Помилка входу:', error?.response?.data || error.message);
+      const errorMessage = error?.response?.data?.detail 
+        || (error.message === 'Network Error' ? 'Сервер недоступний (перевірте IP в client.js або чи запущений сервер)' : 'Невірний логін або пароль');
+      Alert.alert('Помилка входу', errorMessage);
     }
   },
 
   logout: async () => {
     await SecureStore.deleteItemAsync('userToken');
     set({ userToken: null });
+  },
+
+  register: async (username, name, email, password) => {
+    try {
+      const response = await apiClient.post('/register/', {
+        username,
+        name,
+        email,
+        password,
+      });
+
+      if (response.data.token) {
+        const token = response.data.token;
+        await SecureStore.setItemAsync('userToken', token);
+        set({ userToken: token });
+      }
+    } catch (error) {
+      console.log('Помилка реєстрації:', error?.response?.data || error.message);
+      Alert.alert('Помилка реєстрації', error?.response?.data?.detail || 'Не вдалося зареєструватись');
+    }
   }
 }));
 

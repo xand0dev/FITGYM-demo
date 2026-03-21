@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../constants/theme';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import apiClient from '../api/client';
 
 export default function ClassDetailsScreen() {
+  const COLORS = useTheme();
+  const styles = getStyles(COLORS);
+  
   const navigation = useNavigation();
   const route = useRoute();
   const { classItem } = route.params;
@@ -29,7 +32,7 @@ export default function ClassDetailsScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
+          <Ionicons name="arrow-back" size={24} color={COLORS.text === '#000000' ? '#ffffff' : COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Деталі тренування</Text>
         <View style={{width: 40}} />
@@ -79,7 +82,7 @@ export default function ClassDetailsScreen() {
           disabled={isBooking}
         >
           {isBooking ? (
-            <ActivityIndicator color={COLORS.text} />
+            <ActivityIndicator color="#ffffff" />
           ) : (
             <Text style={styles.bookBtnText}>ЗАБРОНЮВАТИ МІСЦЕ</Text>
           )}
@@ -89,7 +92,7 @@ export default function ClassDetailsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: { 
     flexDirection: 'row', 
@@ -100,26 +103,26 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     backgroundColor: COLORS.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#222'
+    borderBottomColor: Object.hasOwn(COLORS, 'border') ? COLORS.border : '#222'
   },
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#222', alignItems: 'center', justifyContent: 'center' },
   headerTitle: { color: COLORS.text, fontSize: 18, fontWeight: 'bold' },
   
   content: { padding: 20, flex: 1 },
   tagWrap: { alignSelf: 'flex-start', backgroundColor: '#222', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginBottom: 15 },
-  tag: { color: COLORS.muted, fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase' },
+  tag: { color: '#888888', fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase' }, // always grey on dark badge
   title: { color: COLORS.text, fontSize: 32, fontWeight: '900', marginBottom: 30, letterSpacing: -1 },
   
-  infoBox: { backgroundColor: COLORS.card, borderRadius: 15, padding: 20, borderWidth: 1, borderColor: '#333', marginBottom: 30 },
+  infoBox: { backgroundColor: COLORS.card, borderRadius: 15, padding: 20, borderWidth: 1, borderColor: Object.hasOwn(COLORS, 'border') ? COLORS.border : '#333', marginBottom: 30 },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 15 },
   infoLabel: { color: COLORS.muted, fontSize: 12, marginBottom: 2 },
   infoValue: { color: COLORS.text, fontSize: 16, fontWeight: 'bold' },
-  divider: { height: 1, backgroundColor: '#333', marginVertical: 15 },
+  divider: { height: 1, backgroundColor: Object.hasOwn(COLORS, 'border') ? COLORS.border : '#333', marginVertical: 15 },
   
   descTitle: { color: COLORS.text, fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
   description: { color: COLORS.muted, fontSize: 15, lineHeight: 24 },
   
-  footer: { padding: 20, paddingBottom: 40, backgroundColor: COLORS.card, borderTopWidth: 1, borderTopColor: '#222' },
+  footer: { padding: 20, paddingBottom: 40, backgroundColor: COLORS.card, borderTopWidth: 1, borderTopColor: Object.hasOwn(COLORS, 'border') ? COLORS.border : '#222' },
   bookBtn: { backgroundColor: COLORS.primary, paddingVertical: 18, borderRadius: 10, alignItems: 'center', shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 8 },
-  bookBtnText: { color: COLORS.text, fontSize: 16, fontWeight: '900', letterSpacing: 1 }
+  bookBtnText: { color: '#ffffff', fontSize: 16, fontWeight: '900', letterSpacing: 1 } // always white text on primary red
 });

@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator 
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../constants/theme';
 import useAppStore from '../store/useAppStore';
 
 const schema = yup.object({
@@ -11,9 +11,11 @@ const schema = yup.object({
   password: yup.string().required('Введіть пароль').min(4, 'Пароль занадто короткий'),
 }).required();
 
-export default function LoginScreen() {
+export default function LoginScreen({ navigation }) {
   const login = useAppStore((state) => state.login);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const COLORS = useTheme();
+  const styles = getStyles(COLORS);
 
   const { control, handleSubmit, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
@@ -42,7 +44,7 @@ export default function LoginScreen() {
               <TextInput 
                 style={[styles.input, errors.username && styles.inputError]} 
                 placeholder="Логін" 
-                placeholderTextColor="#555"
+                placeholderTextColor={COLORS.muted}
                 onBlur={onBlur}
                 onChangeText={onChange}
                 value={value}
@@ -61,7 +63,7 @@ export default function LoginScreen() {
               <TextInput 
                 style={[styles.input, errors.password && styles.inputError]} 
                 placeholder="Пароль" 
-                placeholderTextColor="#555"
+                placeholderTextColor={COLORS.muted}
                 secureTextEntry
                 onBlur={onBlur}
                 onChangeText={onChange}
@@ -78,23 +80,30 @@ export default function LoginScreen() {
           disabled={isSubmitting}
         >
           {isSubmitting ? (
-            <ActivityIndicator color={COLORS.text} />
+            <ActivityIndicator color={COLORS.text === '#000000' ? '#ffffff' : COLORS.text} />
           ) : (
             <Text style={styles.buttonText}>УВІЙТИ</Text>
           )}
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={{ marginTop: 20, alignItems: 'center' }}
+          onPress={() => navigation.navigate('Register')} 
+        >
+           <Text style={{ color: COLORS.muted, fontSize: 14 }}>Ще не маєте акаунту? <Text style={{color: COLORS.primary}}>Реєстрація</Text></Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', padding: 30 },
   inputContainer: { width: '100%' },
   logoText: { color: COLORS.text, fontSize: 48, fontWeight: '900', textAlign: 'center', marginBottom: 50, letterSpacing: -2 },
-  input: { backgroundColor: '#141414', borderWidth: 1, borderColor: '#333', padding: 15, color: COLORS.text, borderRadius: 8, marginBottom: 15 },
+  input: { backgroundColor: Object.hasOwn(COLORS, 'cardBackground') ? COLORS.cardBackground : '#141414', borderWidth: 1, borderColor: Object.hasOwn(COLORS, 'border') ? COLORS.border : '#333', padding: 15, color: COLORS.text, borderRadius: 8, marginBottom: 15 },
   inputError: { borderColor: COLORS.error },
   errorText: { color: COLORS.error, fontSize: 12, marginBottom: 10, marginTop: -10, marginLeft: 5 },
   button: { backgroundColor: COLORS.primary, padding: 18, borderRadius: 8, alignItems: 'center', marginTop: 10 },
-  buttonText: { color: COLORS.text, fontWeight: '900', fontSize: 16 }
+  buttonText: { color: '#ffffff', fontWeight: '900', fontSize: 16 } // White text on primary button
 });

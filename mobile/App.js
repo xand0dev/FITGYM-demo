@@ -6,6 +6,7 @@ import useAppStore from './src/store/useAppStore';
 
 export default function App() {
   const checkToken = useAppStore((state) => state.checkToken);
+  const theme = useAppStore((state) => state.theme);
   
   useEffect(() => {
     checkToken();
@@ -13,7 +14,7 @@ export default function App() {
 
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <AppNavigator />
     </>
   );

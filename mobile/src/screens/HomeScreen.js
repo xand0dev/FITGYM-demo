@@ -1,160 +1,184 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { COLORS } from '../constants/theme';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, SafeAreaView } from 'react-native';
+import { useTheme } from '../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import apiClient from '../api/client';
+import { LineChart } from 'react-native-chart-kit';
+import * as SecureStore from 'expo-secure-store';
+
+const screenWidth = Dimensions.get('window').width;
 
 export default function HomeScreen() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [classesData, setClassesData] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const navigation = useNavigation();
+  const COLORS = useTheme();
+  const styles = getStyles(COLORS);
+  
+  const [waterAmount, setWaterAmount] = useState(0); // in ml
+  const dailyGoal = 2500; // 2.5L
+
+  // Chart data
+  const chartData = {
+    labels: ['Пн', 'Вв', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'],
+    datasets: [
+      {
+        data: [72.5, 72.3, 72.1, 71.8, 71.9, 71.5, 71.2],
+        color: (opacity = 1) => `rgba(224, 255, 79, ${opacity})`,
+        strokeWidth: 3
+      }
+    ],
+    legend: ["Зміна ваги (кг)"]
+  };
 
   useEffect(() => {
-    fetchSchedule();
+    loadWater();
   }, []);
 
-  const fetchSchedule = async () => {
+  const loadWater = async () => {
     try {
-      setIsLoading(true);
-      const response = await apiClient.get('/schedule/');
-      setClassesData(response.data);
-    } catch (error) {
-      console.log('Помилка завантаження розкладу:', error);
-    } finally {
-      setIsLoading(false);
+      const today = new Date().toDateString();
+      const saved = await SecureStore.getItemAsync('waterTracker');
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (data.date === today) {
+          setWaterAmount(data.amount);
+        } else {
+          // New day, reset water
+          setWaterAmount(0);
+          saveWater(0, today);
+        }
+      }
+    } catch (e) {
+      console.log('Error loading water', e);
     }
   };
 
-  // Фільтрація по сутності ClassSession
-  const filteredData = classesData.filter(item => {
-    const searchString = searchQuery.toLowerCase();
-    const className = item.class_name ? item.class_name.toLowerCase() : '';
-    const instructorName = item.instructor_name ? item.instructor_name.toLowerCase() : '';
-    
-    return className.includes(searchString) || instructorName.includes(searchString);
-  });
-
-  const renderItem = ({ item }) => {
-    const startDate = new Date(item.start_at);
-    const endDate = new Date(item.end_at);
-    
-    const timeString = `${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')} - ${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
-    const dateString = startDate.toLocaleDateString('uk-UA');
-
-    return (
-      <TouchableOpacity 
-        style={styles.card}
-        onPress={() => navigation.navigate('ClassDetails', { classItem: { ...item, parsedTime: timeString, parsedDate: dateString } })}
-      >
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>{item.class_name}</Text>
-          <View style={styles.intensityBadge}>
-             {/* Замість інтенсивності виводимо місткість для прикладу або просто тег */}
-            <Text style={styles.intensityText}>Місць: {item.capacity}</Text>
-          </View>
-        </View>
-        
-        <View style={styles.cardBody}>
-          <View style={styles.infoRow}>
-            <Ionicons name="calendar-outline" size={16} color={COLORS.primary} />
-            <Text style={styles.infoText}>{dateString} {timeString}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Ionicons name="person-outline" size={16} color={COLORS.muted} />
-            <Text style={styles.infoText}>{item.instructor_name || 'Без тренера'}</Text>
-          </View>
-          {item.room_name && (
-            <View style={[styles.infoRow, { marginTop: 5 }]}>
-              <Ionicons name="location-outline" size={16} color={COLORS.muted} />
-              <Text style={styles.infoText}>{item.room_name}</Text>
-            </View>
-          )}
-        </View>
-      </TouchableOpacity>
-    );
+  const saveWater = async (amount, dateString) => {
+    try {
+      await SecureStore.setItemAsync('waterTracker', JSON.stringify({ amount, date: dateString }));
+    } catch (e) {
+      console.log('Error saving water', e);
+    }
   };
 
+  const addWater = (ml) => {
+    const today = new Date().toDateString();
+    const newAmount = waterAmount + ml;
+    setWaterAmount(newAmount);
+    saveWater(newAmount, today);
+  };
+
+  const resetWater = () => {
+    const today = new Date().toDateString();
+    setWaterAmount(0);
+    saveWater(0, today);
+  };
+
+  const progressPercent = Math.min((waterAmount / dailyGoal) * 100, 100);
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.greeting}>Привіт, Спортсмене!</Text>
-        <Text style={styles.subtitle}>Твоє наступне тренування чекає.</Text>
-      </View>
-
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color={COLORS.muted} style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Пошук тренувань або тренера..."
-          placeholderTextColor={COLORS.muted}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </View>
-
-      <Text style={styles.sectionTitle}>Розклад занять</Text>
-      
-      {isLoading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        
+        <View style={styles.header}>
+          <Text style={styles.greeting}>Привіт, Чемпіоне! 👋</Text>
+          <Text style={styles.subtitle}>Ось твій прогрес на сьогодні.</Text>
         </View>
-      ) : (
-        <FlatList
-          data={filteredData}
-          keyExtractor={item => item.id.toString()}
-          renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>
-              {classesData.length === 0 ? 'Розклад порожній (немає зв\'язку з БД або сесій).' : 'Занять не знайдено.'}
-            </Text>
-          }
-          refreshing={isLoading}
-          onRefresh={fetchSchedule}
-        />
-      )}
-    </View>
+
+        {/* --- WATER TRACKER --- */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={styles.cardHeaderLeft}>
+              <Ionicons name="water" size={24} color="#00bfff" />
+              <Text style={styles.cardTitle}>Трекер Води</Text>
+            </View>
+            <TouchableOpacity onPress={resetWater}>
+              <Ionicons name="refresh" size={20} color={COLORS.muted} />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.waterInfo}>
+            <Text style={styles.waterAmount}>{waterAmount} <Text style={styles.waterUnit}>/ {dailyGoal} мл</Text></Text>
+            <Text style={styles.waterPercent}>{Math.round(progressPercent)}%</Text>
+          </View>
+
+          {/* Progress Bar */}
+          <View style={styles.progressBarBg}>
+            <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
+          </View>
+
+          <View style={styles.waterButtonsRow}>
+            <TouchableOpacity style={styles.waterBtn} onPress={() => addWater(250)}>
+              <Ionicons name="add" size={16} color="#fff" />
+              <Text style={styles.waterBtnText}>250 мл</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.waterBtn} onPress={() => addWater(500)}>
+              <Ionicons name="add" size={16} color="#fff" />
+              <Text style={styles.waterBtnText}>500 мл</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* --- WEIGHT PROGRESS CHART --- */}
+        <View style={styles.card}>
+          <View style={[styles.cardHeader, { marginBottom: 15 }]}>
+            <View style={styles.cardHeaderLeft}>
+              <Ionicons name="trending-down" size={24} color={COLORS.primary} />
+              <Text style={styles.cardTitle}>Твоя Вага</Text>
+            </View>
+          </View>
+          
+          <LineChart
+            data={chartData}
+            width={screenWidth - 80}
+            height={220}
+            chartConfig={{
+              backgroundColor: Object.hasOwn(COLORS, 'cardBackground') ? COLORS.cardBackground : '#1a1a1a',
+              backgroundGradientFrom: Object.hasOwn(COLORS, 'cardBackground') ? COLORS.cardBackground : '#1a1a1a',
+              backgroundGradientTo: Object.hasOwn(COLORS, 'cardBackground') ? COLORS.cardBackground : '#1a1a1a',
+              decimalPlaces: 1,
+              color: (opacity = 1) => COLORS.text === '#000000' ? `rgba(0, 0, 0, ${opacity})` : `rgba(255, 255, 255, ${opacity})`,
+              labelColor: (opacity = 1) => COLORS.muted,
+              style: { borderRadius: 16 },
+              propsForDots: { r: "5", strokeWidth: "2", stroke: COLORS.primary }
+            }}
+            bezier
+            style={{ marginVertical: 8, borderRadius: 16, alignSelf: 'center' }}
+          />
+        </View>
+
+        {/* --- TODAY'S ACTION --- */}
+        <View style={[styles.card, { backgroundColor: COLORS.primary }]}>
+           <Text style={[styles.cardTitle, { color: '#000' }]}>Тренування Дня</Text>
+           <Text style={{ color: '#000', marginTop: 5, fontSize: 16, fontWeight: '500' }}>Сьогодні за планом: Груди та Трицепс. Давай зробимо це!</Text>
+           <TouchableOpacity style={styles.startBtn}>
+             <Text style={styles.startBtnText}>Почати Тренування</Text>
+             <Ionicons name="arrow-forward" size={20} color="#fff" />
+           </TouchableOpacity>
+        </View>
+
+        <View style={{height: 40}} />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  header: { padding: 20, paddingTop: 60, backgroundColor: COLORS.card },
-  greeting: { color: COLORS.text, fontSize: 24, fontWeight: '800' },
-  subtitle: { color: COLORS.primary, fontSize: 14, marginTop: 5, fontWeight: '600' },
-  
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    margin: 20,
-    borderRadius: 10,
-    paddingHorizontal: 15,
-  },
-  searchIcon: { marginRight: 10 },
-  searchInput: { flex: 1, paddingVertical: 12, color: COLORS.text, fontSize: 16 },
-  
-  sectionTitle: { color: COLORS.text, fontSize: 20, fontWeight: 'bold', marginHorizontal: 20, marginBottom: 15 },
-  listContent: { paddingHorizontal: 20, paddingBottom: 30 },
-  
-  card: {
-    backgroundColor: COLORS.card,
-    borderRadius: 15,
-    padding: 15,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#222',
-  },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
-  cardTitle: { color: COLORS.text, fontSize: 18, fontWeight: '800', flex: 1 },
-  intensityBadge: { backgroundColor: 'rgba(230, 0, 0, 0.1)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 5, marginLeft: 10 },
-  intensityText: { color: COLORS.primary, fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase' },
-  
-  cardBody: { flexDirection: 'column' },
-  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  infoText: { color: COLORS.muted, fontSize: 14, fontWeight: '500' },
-  emptyText: { color: COLORS.muted, textAlign: 'center', marginTop: 40, fontSize: 16 }
+  scrollContent: { paddingHorizontal: 20 },
+  header: { paddingTop: 40, paddingBottom: 20 },
+  greeting: { color: COLORS.text, fontSize: 28, fontWeight: '800' },
+  subtitle: { color: COLORS.muted, fontSize: 16, marginTop: 5 },
+  card: { backgroundColor: Object.hasOwn(COLORS, 'cardBackground') ? COLORS.cardBackground : '#1a1a1a', borderRadius: 20, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: Object.hasOwn(COLORS, 'border') ? COLORS.border : '#333' },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cardHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  cardTitle: { color: COLORS.text, fontSize: 20, fontWeight: 'bold' },
+  waterInfo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 15, marginBottom: 10 },
+  waterAmount: { color: COLORS.text, fontSize: 32, fontWeight: '900' },
+  waterUnit: { fontSize: 16, color: COLORS.muted, fontWeight: 'normal' },
+  waterPercent: { color: '#00bfff', fontSize: 24, fontWeight: 'bold' },
+  progressBarBg: { width: '100%', height: 12, backgroundColor: Object.hasOwn(COLORS, 'darkerCard') ? COLORS.darkerCard : '#333', borderRadius: 6, marginBottom: 20, overflow: 'hidden' },
+  progressBarFill: { height: '100%', backgroundColor: '#00bfff', borderRadius: 6 },
+  waterButtonsRow: { flexDirection: 'row', gap: 10 },
+  waterBtn: { flex: 1, backgroundColor: 'rgba(0, 191, 255, 0.2)', paddingVertical: 12, borderRadius: 10, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: 'rgba(0, 191, 255, 0.5)' },
+  waterBtnText: { color: COLORS.text, fontSize: 16, fontWeight: 'bold' }, // Adjusted text color mapped to theme
+  startBtn: { backgroundColor: '#000', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 15, borderRadius: 12, marginTop: 15, gap: 10 },
+  startBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
 });
