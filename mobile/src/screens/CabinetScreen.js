@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator
 import { Ionicons, Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../constants/theme';
+import { useNavigation } from '@react-navigation/native';
 import useAppStore from '../store/useAppStore';
 import apiClient from '../api/client';
 
@@ -10,6 +11,7 @@ export default function CabinetScreen() {
   const { logout, toggleTheme, theme } = useAppStore();
   const COLORS = useTheme();
   const styles = getStyles(COLORS);
+  const navigation = useNavigation();
 
   const [profile, setProfile] = useState(null);
   const [bookings, setBookings] = useState([]);
@@ -141,6 +143,17 @@ export default function CabinetScreen() {
           <Text style={styles.statLabel}>Тариф</Text>
         </View>
       </View>
+
+      {!profile?.active_membership && (
+        <View style={{ paddingHorizontal: 24, marginTop: 20 }}>
+          <TouchableOpacity 
+            style={{ backgroundColor: COLORS.primary, padding: 15, borderRadius: 12, alignItems: 'center' }}
+            onPress={() => navigation.navigate('Membership')}
+          >
+            <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>Отримати абонемент</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Bookings Section */}
       <View style={styles.section}>

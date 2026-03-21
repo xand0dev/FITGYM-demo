@@ -4,14 +4,18 @@ import { useTheme } from '../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LineChart } from 'react-native-chart-kit';
 import * as SecureStore from 'expo-secure-store';
+import apiClient from '../api/client';
+import { useNavigation } from '@react-navigation/native';
 
 const screenWidth = Dimensions.get('window').width;
 
 export default function HomeScreen() {
   const COLORS = useTheme();
   const styles = getStyles(COLORS);
+  const navigation = useNavigation();
   
   const [waterAmount, setWaterAmount] = useState(0); // in ml
+  const [upcomingClass, setUpcomingClass] = useState(null);
   const dailyGoal = 2500; // 2.5L
 
   // Chart data
@@ -29,7 +33,19 @@ export default function HomeScreen() {
 
   useEffect(() => {
     loadWater();
+    fetchUpcomingClass();
   }, []);
+
+  const fetchUpcomingClass = async () => {
+    try {
+      const res = await apiClient.get('/schedule/');
+      if (res.data && res.data.length > 0) {
+        setUpcomingClass(res.data[0]); // First upcoming class
+      }
+    } catch (e) {
+      console.log('Error fetching upcoming class for home screen', e);
+    }
+  };
 
   const loadWater = async () => {
     try {
@@ -146,10 +162,24 @@ export default function HomeScreen() {
 
         {/* --- TODAY'S ACTION --- */}
         <View style={[styles.card, { backgroundColor: COLORS.primary }]}>
-           <Text style={[styles.cardTitle, { color: '#000' }]}>Тренування Дня</Text>
-           <Text style={{ color: '#000', marginTop: 5, fontSize: 16, fontWeight: '500' }}>Сьогодні за планом: Груди та Трицепс. Давай зробимо це!</Text>
-           <TouchableOpacity style={styles.startBtn}>
-             <Text style={styles.startBtnText}>Почати Тренування</Text>
+           <Text style={[styles.cardTitle, { color: '#000' }]}>Найближче Заняття</Text>
+           <Text style={{ color: '#000', marginTop: 5, fontSize: 16, fontWeight: '500' }}>
+             {upcomingClass ? `${upcomingClass.class_name} о ${new Date(upcomingClass.start_at).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}` : 'Наразі немає запланованих занять'}
+           </Text>
+           <TouchableOpacity 
+              style={styles.startBtn} 
+              onPress={() => {
+                if(upcomingClass) {
+                  const startDate = new Date(upcomingClass.start_at);
+                  const parsedTime = startDate.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+                  const parsedDate = startDate.toLocaleDateString('uk-UA');
+                  navigation.navigate('ClassDetails', { classItem: { ...upcomingClass, parsedTime, parsedDate }});
+                } else {
+                  navigation.navigate('Workouts');
+                }
+              }}
+            >
+             <Text style={styles.startBtnText}>{upcomingClass ? 'Деталі та запис' : 'Дивитись розклад'}</Text>
              <Ionicons name="arrow-forward" size={20} color="#fff" />
            </TouchableOpacity>
         </View>

@@ -15,6 +15,7 @@ import ClassDetailsScreen from '../screens/ClassDetailsScreen';
 import ToolsScreen from '../screens/ToolsScreen';
 import EducationScreen from '../screens/EducationScreen';
 import ActiveWorkoutScreen from '../screens/ActiveWorkoutScreen';
+import MembershipScreen from '../screens/MembershipScreen';
 import { useTheme } from '../constants/theme';
 import useAppStore from '../store/useAppStore';
 
@@ -78,6 +79,7 @@ export default function AppNavigator() {
         <Stack.Screen name="Main" component={MainTabs} />
         <Stack.Screen name="ClassDetails" component={ClassDetailsScreen} />
         <Stack.Screen name="ActiveWorkout" component={ActiveWorkoutScreen} />
+        <Stack.Screen name="Membership" component={MembershipScreen} />
         {/* Temporarily disabled login/register screens
         <Stack.Screen name="Auth" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
