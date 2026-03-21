@@ -158,6 +158,11 @@ export default function CabinetScreen() {
 
       {/* Stats Cards */}
       <View style={styles.statsContainer}>
+        <TouchableOpacity style={styles.statBox} onPress={() => navigation.navigate('Achievements')} activeOpacity={0.8}>
+          <Ionicons name="trophy" size={28} color={COLORS.primary} style={{marginBottom: 8}} />
+          <Text style={styles.statLabel}>Досягнення</Text>
+        </TouchableOpacity>
+        
         <View style={styles.statBox}>
           <Text style={styles.statValue}>{bookings.length}</Text>
           <Text style={styles.statLabel}>Записів</Text>
@@ -258,6 +263,16 @@ export default function CabinetScreen() {
               thumbColor={theme === 'dark' ? COLORS.primary : '#f4f3f4'}
             />
           </View>
+
+          <View style={styles.settingDivider} />
+
+          <TouchableOpacity style={styles.settingRow} onPress={() => navigation.navigate('FitCoinsShop')}>
+            <View style={[styles.settingIconBox, {backgroundColor: 'rgba(255, 215, 0, 0.15)'}]}>
+              <Ionicons name="server" size={20} color="#ffd700" />
+            </View>
+            <Text style={styles.settingText}>Нагороди (FitCoins)</Text>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.muted} />
+          </TouchableOpacity>
 
           <View style={styles.settingDivider} />
 

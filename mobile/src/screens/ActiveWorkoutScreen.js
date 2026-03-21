@@ -1,137 +1,199 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, ScrollView, Linking } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Dimensions, Vibration } from 'react-native';
 import { useTheme } from '../constants/theme';
-import RestTimer from '../components/RestTimer';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { AnimatedCircularProgress } from 'react-native-circular-progress';
+import useAppStore from '../store/useAppStore';
 
-export default function ActiveWorkoutScreen({ route, navigation }) {
+const { width } = Dimensions.get('window');
+
+export default function ActiveWorkoutScreen() {
+  const ObjectHasOwn = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
   const COLORS = useTheme();
-  const styles = getStyles(COLORS);
-  const { exercise } = route.params;
-  
-  // Array of booleans representing whether a set is completed
-  const [setsCompleted, setSetsCompleted] = useState(Array(exercise.sets).fill(false));
-  const [showRestTimer, setShowRestTimer] = useState(false);
+  const styles = getStyles(COLORS, ObjectHasOwn);
+  const navigation = useNavigation();
+  const { streak, updateStreak } = useAppStore();
 
-  const toggleSet = (index) => {
-    const newSets = [...setsCompleted];
-    newSets[index] = !newSets[index];
-    setSetsCompleted(newSets);
+  const [timer, setTimer] = useState(0); // in seconds
+  const [isActive, setIsActive] = useState(true);
+  const [calories, setCalories] = useState(0);
+  const [heartRate, setHeartRate] = useState(85); // Mock heart rate
 
-    // If marked as true (completed), show the rest timer
-    if (newSets[index] === true) {
-      setShowRestTimer(true);
+  useEffect(() => {
+    let interval = null;
+    if (isActive) {
+      interval = setInterval(() => {
+        setTimer(timer => timer + 1);
+        
+        // Mock calorie burn (approx 10 cal / min)
+        if (timer > 0 && timer % 6 === 0) {
+          setCalories(c => c + 1);
+        }
+        
+        // Mock heart rate fluctuation
+        if (timer % 3 === 0) {
+          setHeartRate(Math.floor(Math.random() * (165 - 110 + 1)) + 110);
+        }
+
+      }, 1000);
+    } else if (!isActive && timer !== 0) {
+      clearInterval(interval);
     }
+    return () => clearInterval(interval);
+  }, [isActive, timer]);
+
+  const formatTime = (totalSeconds) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const openVideo = () => {
-    if (exercise.videoUrl) {
-      Linking.openURL(exercise.videoUrl);
-    }
+  const handleFinish = () => {
+    setIsActive(false);
+    Vibration.vibrate([0, 100, 50, 100]);
+    updateStreak(); // Reward the user for finishing a workout
+    navigation.navigate('Main'); // Or navigate to a dedicated "Workout Summary" screen
   };
-
-  const allDone = setsCompleted.every(Boolean);
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Виконання</Text>
-        <View style={{ width: 24 }} />
+        <Text style={styles.headerTitle}>Активне тренування</Text>
+        <View style={styles.pulseDot} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Image source={{ uri: exercise.imageUrl || 'https://via.placeholder.com/400x200' }} style={styles.image} />
         
-        <Text style={styles.title}>{exercise.title}</Text>
-        <Text style={styles.description}>{exercise.description}</Text>
+        <View style={styles.timerWrapper}>
+          <AnimatedCircularProgress
+            size={width * 0.7}
+            width={15}
+            fill={(timer % 60) * (100 / 60)}
+            tintColor={COLORS.primary}
+            backgroundColor={ObjectHasOwn(COLORS, 'cardBackground') ? COLORS.cardBackground : '#222'}
+            rotation={0}
+            lineCap="round"
+          >
+            {
+              () => (
+                <View style={styles.timerInner}>
+                  <Text style={styles.timerText}>{formatTime(timer)}</Text>
+                  <Text style={styles.timerLabel}>МИНУЛО</Text>
+                </View>
+              )
+            }
+          </AnimatedCircularProgress>
+        </View>
 
-        {exercise.videoUrl && (
-          <TouchableOpacity style={styles.videoBtn} onPress={openVideo}>
-            <Ionicons name="logo-youtube" size={20} color="#ffffff" />
-            <Text style={styles.videoBtnText}>Дивитися техніку (Відео)</Text>
-          </TouchableOpacity>
-        )}
-
-        <View style={styles.statsCard}>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Підходи</Text>
-            <Text style={styles.statValue}>{exercise.sets}</Text>
+        <View style={styles.statsGrid}>
+          <View style={styles.statCard}>
+            <Ionicons name="flame" size={32} color="#ff4500" />
+            <Text style={styles.statValue}>{calories}</Text>
+            <Text style={styles.statLabel}>ККАЛ</Text>
           </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Повторення</Text>
-            <Text style={styles.statValue}>{exercise.reps}</Text>
+          
+          <View style={styles.statCard}>
+            <Ionicons name="heart" size={32} color="#ff0044" />
+            <Text style={styles.statValue}>{heartRate}</Text>
+            <Text style={styles.statLabel}>BPM</Text>
           </View>
         </View>
 
-        {showRestTimer && !allDone && (
-          <View style={{ marginTop: 20 }}>
-            <RestTimer initialSeconds={60} onComplete={() => setShowRestTimer(false)} />
-            <TouchableOpacity onPress={() => setShowRestTimer(false)} style={styles.closeTimerBtn}>
-               <Text style={styles.closeTimerText}>Сховати таймер</Text>
-            </TouchableOpacity>
+        <View style={styles.musicCard}>
+          <Ionicons name="musical-notes" size={24} color={COLORS.primary} />
+          <View style={{marginLeft: 15, flex: 1}}>
+             <Text style={styles.musicTitle}>PHONK WORKOUT MIX</Text>
+             <Text style={styles.musicSub}>Spotify Sync (Mock)</Text>
           </View>
-        )}
-
-        <View style={styles.setsContainer}>
-          <Text style={styles.setsTitle}>Відмітьте підходи:</Text>
-          {setsCompleted.map((isComplete, index) => (
-            <TouchableOpacity 
-              key={index} 
-              style={[styles.setRow, isComplete && styles.setRowCompleted]} 
-              onPress={() => toggleSet(index)}
-            >
-              <Text style={[styles.setText, isComplete && styles.setTextCompleted]}>Підхід {index + 1}</Text>
-              <View style={[styles.checkCircle, isComplete && styles.checkCircleCompleted]}>
-                {isComplete && <Ionicons name="checkmark" size={18} color="#ffffff" />}
-              </View>
-            </TouchableOpacity>
-          ))}
+          <Ionicons name="play-circle" size={36} color={COLORS.text} />
         </View>
 
-        {allDone && (
-          <View style={styles.successBox}>
-            <Ionicons name="trophy" size={40} color="#ffaa00" />
-            <Text style={styles.successTitle}>Вправа виконана!</Text>
-            <TouchableOpacity style={styles.finishBtn} onPress={() => navigation.goBack()}>
-               <Text style={styles.finishBtnText}>Повернутись до списку</Text>
-            </TouchableOpacity>
-          </View>
-        )}
       </ScrollView>
+
+      <View style={styles.footer}>
+        <TouchableOpacity 
+          style={[styles.controlBtn, {backgroundColor: isActive ? '#ffaa00' : COLORS.primary}]} 
+          onPress={() => {
+            Vibration.vibrate(30);
+            setIsActive(!isActive);
+          }}
+        >
+          <Ionicons name={isActive ? "pause" : "play"} size={28} color="#000" />
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.finishBtn} onPress={handleFinish}>
+          <Text style={styles.finishText}>ЗАВЕРШИТИ</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
 
-const getStyles = (COLORS) => StyleSheet.create({
+const getStyles = (COLORS, ObjectHasOwn) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20 },
-  backBtn: { padding: 5 },
-  headerTitle: { color: COLORS.text, fontSize: 20, fontWeight: 'bold' },
-  content: { paddingHorizontal: 20, paddingBottom: 40 },
-  image: { width: '100%', height: 200, borderRadius: 15, marginBottom: 20 },
-  title: { color: COLORS.primary, fontSize: 26, fontWeight: '900', marginBottom: 10 },
-  description: { color: COLORS.muted, fontSize: 16, lineHeight: 22, marginBottom: 20 },
-  videoBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#e52d27', padding: 12, borderRadius: 10, justifyContent: 'center', marginBottom: 20, gap: 10 },
-  videoBtnText: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' },
-  statsCard: { flexDirection: 'row', backgroundColor: Object.hasOwn(COLORS, 'cardBackground') ? COLORS.cardBackground : '#1a1a1a', borderRadius: 15, padding: 20, justifyContent: 'space-around', borderWidth: 1, borderColor: Object.hasOwn(COLORS, 'border') ? COLORS.border : '#333' },
-  statItem: { alignItems: 'center' },
-  statLabel: { color: COLORS.muted, fontSize: 14, marginBottom: 5 },
-  statValue: { color: COLORS.text, fontSize: 28, fontWeight: 'bold' },
-  closeTimerBtn: { marginTop: 10, alignItems: 'center' },
-  closeTimerText: { color: COLORS.error, fontSize: 14, fontWeight: 'bold' },
-  setsContainer: { marginTop: 30 },
-  setsTitle: { color: COLORS.text, fontSize: 20, fontWeight: 'bold', marginBottom: 15 },
-  setRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: Object.hasOwn(COLORS, 'darkerCard') ? COLORS.darkerCard : '#141414', padding: 20, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: Object.hasOwn(COLORS, 'border') ? COLORS.border : '#333' },
-  setRowCompleted: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  setText: { color: COLORS.text, fontSize: 18, fontWeight: 'bold' },
-  setTextCompleted: { color: '#ffffff' }, // Always white on primary background
-  checkCircle: { width: 30, height: 30, borderRadius: 15, borderWidth: 2, borderColor: COLORS.muted, alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' },
-  checkCircleCompleted: { borderColor: '#ffffff' },
-  successBox: { marginTop: 30, alignItems: 'center', padding: 20, backgroundColor: 'rgba(255, 170, 0, 0.1)', borderRadius: 15, borderWidth: 1, borderColor: '#ffaa00' },
-  successTitle: { color: '#ffaa00', fontSize: 22, fontWeight: 'bold', marginTop: 10, marginBottom: 20 },
-  finishBtn: { backgroundColor: '#ffaa00', paddingVertical: 12, paddingHorizontal: 30, borderRadius: 25 },
-  finishBtnText: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' }
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: ObjectHasOwn(COLORS, 'border') ? COLORS.border : '#222'
+  },
+  headerTitle: { color: COLORS.text, fontSize: 16, fontWeight: '800', letterSpacing: 2, textTransform: 'uppercase' },
+  pulseDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#ff0044', position: 'absolute', right: 20 },
+
+  content: { padding: 20, alignItems: 'center' },
+  
+  timerWrapper: {
+    marginVertical: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10
+  },
+  timerInner: { alignItems: 'center' },
+  timerText: { color: COLORS.text, fontSize: 50, fontWeight: '900', fontVariant: ['tabular-nums'] },
+  timerLabel: { color: COLORS.muted, fontSize: 14, fontWeight: '800', letterSpacing: 2, marginTop: 5 },
+
+  statsGrid: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 30 },
+  statCard: { 
+    backgroundColor: ObjectHasOwn(COLORS, 'cardBackground') ? COLORS.cardBackground : '#1a1a1a', 
+    borderRadius: 24, padding: 20, alignItems: 'center', width: '48%', 
+    borderWidth: 1, borderColor: ObjectHasOwn(COLORS, 'border') ? COLORS.border : '#333'
+  },
+  statValue: { color: COLORS.text, fontSize: 32, fontWeight: '900', marginTop: 10 },
+  statLabel: { color: COLORS.muted, fontSize: 12, fontWeight: '800', letterSpacing: 1, marginTop: 5 },
+
+  musicCard: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: ObjectHasOwn(COLORS, 'cardBackground') ? COLORS.cardBackground : '#1a1a1a',
+    borderRadius: 20, padding: 20, width: '100%',
+    borderWidth: 1, borderColor: ObjectHasOwn(COLORS, 'border') ? COLORS.border : '#333'
+  },
+  musicTitle: { color: COLORS.text, fontSize: 16, fontWeight: '800' },
+  musicSub: { color: COLORS.muted, fontSize: 13, marginTop: 4 },
+
+  footer: { 
+    flexDirection: 'row', padding: 20, paddingBottom: 40, 
+    borderTopWidth: 1, borderTopColor: ObjectHasOwn(COLORS, 'border') ? COLORS.border : '#222',
+    backgroundColor: COLORS.background 
+  },
+  controlBtn: { 
+    width: 60, height: 60, borderRadius: 30, 
+    justifyContent: 'center', alignItems: 'center', marginRight: 15 
+  },
+  finishBtn: { 
+    flex: 1, backgroundColor: '#ff0044', borderRadius: 30, 
+    justifyContent: 'center', alignItems: 'center' 
+  },
+  finishText: { color: '#fff', fontSize: 16, fontWeight: '900', letterSpacing: 2 }
 });

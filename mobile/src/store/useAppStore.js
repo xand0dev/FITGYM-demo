@@ -9,6 +9,11 @@ const useAppStore = create((set) => ({
   isLoading: true,
   theme: 'dark',
   accentColor: '#e60000',
+  fitnessGoal: null,
+  streak: 0,
+  lastActiveDate: null,
+  fitCoins: 0,
+  aiChatHistory: [],
   
   checkToken: async () => {
     try {
@@ -16,6 +21,12 @@ const useAppStore = create((set) => ({
       const savedTheme = await SecureStore.getItemAsync('userTheme');
       const onboarded = await SecureStore.getItemAsync('hasCompletedOnboarding');
       const savedAccentColor = await SecureStore.getItemAsync('userAccentColor');
+      const savedGoal = await SecureStore.getItemAsync('userFitnessGoal');
+      const savedStreak = await SecureStore.getItemAsync('userStreak');
+      const savedLastDate = await SecureStore.getItemAsync('lastActiveDate');
+      const savedCoins = await SecureStore.getItemAsync('userFitCoins');
+      const savedChat = await SecureStore.getItemAsync('aiChatHistory');
+      
       if (token) {
         set({ userToken: token });
       }
@@ -24,6 +35,23 @@ const useAppStore = create((set) => ({
       }
       if (savedAccentColor) {
         set({ accentColor: savedAccentColor });
+      }
+      if (savedGoal) {
+        set({ fitnessGoal: savedGoal });
+      }
+      if (savedStreak) {
+        set({ streak: parseInt(savedStreak) });
+      }
+      if (savedLastDate) {
+        set({ lastActiveDate: savedLastDate });
+      }
+      if (savedCoins) {
+        set({ fitCoins: parseInt(savedCoins) });
+      }
+      if (savedChat) {
+        set({ aiChatHistory: JSON.parse(savedChat) });
+      } else {
+        set({ aiChatHistory: [{ id: '1', role: 'ai', text: "Привіт! Я твій персональний ШІ-тренер FITGYM Core. Запитуй мене про що завгодно: складання програм, дієти або мотивацію. 🔥" }] });
       }
       set({ hasCompletedOnboarding: onboarded === 'true' });
     } catch (e) {
@@ -60,6 +88,82 @@ const useAppStore = create((set) => ({
       set({ accentColor: color });
     } catch (e) {
       console.log('Помилка збереження кольору', e);
+    }
+  },
+
+  setFitnessGoal: async (goal) => {
+    try {
+      await SecureStore.setItemAsync('userFitnessGoal', goal);
+      set({ fitnessGoal: goal });
+    } catch (e) {
+      console.log('Помилка збереження цілі', e);
+    }
+  },
+
+  updateStreak: async () => {
+    try {
+      const todayDate = new Date().toDateString();
+      set((state) => {
+        let newStreak = state.streak;
+        
+        if (state.lastActiveDate === todayDate) {
+          // Already logged today
+          return state;
+        }
+
+        if (state.lastActiveDate) {
+          const lastDate = new Date(state.lastActiveDate);
+          const today = new Date(todayDate);
+          const diffTime = Math.abs(today - lastDate);
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+          
+          if (diffDays === 1) {
+            newStreak += 1; // Consecutive day
+          } else if (diffDays > 1) {
+            newStreak = 1; // Streak broken
+          }
+        } else {
+          newStreak = 1; // First active day
+        }
+
+        SecureStore.setItemAsync('userStreak', newStreak.toString());
+        SecureStore.setItemAsync('lastActiveDate', todayDate);
+        return { streak: newStreak, lastActiveDate: todayDate };
+      });
+    } catch (e) {
+      console.log('Помилка оновлення стріку', e);
+    }
+  },
+
+  addFitCoins: async (amount) => {
+    try {
+      set((state) => {
+        const newTotal = state.fitCoins + amount;
+        SecureStore.setItemAsync('userFitCoins', newTotal.toString());
+        return { fitCoins: newTotal };
+      });
+    } catch (e) {
+      console.log('Помилка оновлення коїнів', e);
+    }
+  },
+
+  updateAiChatHistory: async (messages) => {
+    try {
+      const trimmed = messages.slice(-40); // Зберігаємо останні 40 повідомлень
+      await SecureStore.setItemAsync('aiChatHistory', JSON.stringify(trimmed));
+      set({ aiChatHistory: trimmed });
+    } catch (e) {
+      console.log('Помилка збереження історії чату', e);
+    }
+  },
+
+  clearAiChatHistory: async () => {
+    try {
+      const defaultState = [{ id: '1', role: 'ai', text: "Привіт! Я твій персональний ШІ-тренер FITGYM Core. Запитуй мене про що завгодно: складання програм, дієти або мотивацію. 🔥" }];
+      await SecureStore.setItemAsync('aiChatHistory', JSON.stringify(defaultState));
+      set({ aiChatHistory: defaultState });
+    } catch(e) {
+      console.log('Помилка очищення чату', e);
     }
   },
 

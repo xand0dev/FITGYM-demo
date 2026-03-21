@@ -1,21 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, Modal, Vibration, Platform, Dimensions } from 'react-native';
 import { useTheme } from '../constants/theme';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import apiClient from '../api/client';
 import useAppStore from '../store/useAppStore';
 
+const { width } = Dimensions.get('window');
+
 export default function MembershipScreen() {
+  const ObjectHasOwn = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
   const COLORS = useTheme();
-  const styles = getStyles(COLORS);
+  const styles = getStyles(COLORS, ObjectHasOwn);
   const navigation = useNavigation();
   
   const [plans, setPlans] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // To auto-fill user info for the application
   const [userInfo, setUserInfo] = useState(null);
+
+  // VIP Checkout State
+  const [checkoutModalVisible, setCheckoutModalVisible] = useState(false);
+  const [checkoutStep, setCheckoutStep] = useState(0); // 0=confirm, 1=processing, 2=success
+  const [selectedPlan, setSelectedPlan] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -38,32 +44,43 @@ export default function MembershipScreen() {
     }
   };
 
-  const handleApply = async (planId, planName) => {
-    Alert.alert(
-      'Оформлення абонемента',
-      `Бажаєте залишити заявку на покупку тарифу "${planName}"?`,
-      [
-        { text: 'Скасувати', style: 'cancel' },
-        { 
-          text: 'Підтвердити', 
-          onPress: async () => {
-            try {
-              // Creating MembershipApplication
-              await apiClient.post('/apply/', {
-                name: userInfo?.full_name || userInfo?.username || 'Клієнт',
-                phone: userInfo?.contact || '+380',
-                membership_type: planId
-              });
-              Alert.alert('Успіх', 'Заявку успішно відправлено. Менеджер зв\'яжеться з вами найближчим часом.');
-              navigation.goBack();
-            } catch (error) {
-              Alert.alert('Помилка', 'Не вдалося створити заявку.');
-              console.log(error);
-            }
-          }
-        }
-      ]
-    );
+  const startCheckout = (planId, planName, planPrice) => {
+    setSelectedPlan({ id: planId, name: planName, price: planPrice });
+    setCheckoutStep(0);
+    setCheckoutModalVisible(true);
+    Vibration.vibrate(20);
+  };
+
+  const processPayment = async () => {
+    setCheckoutStep(1); // Set to Processing
+    Vibration.vibrate(30);
+    
+    // Simulate bank/network delay for premium UX feel
+    setTimeout(async () => {
+      try {
+        await apiClient.post('/apply/', {
+          name: userInfo?.full_name || userInfo?.username || 'Клієнт',
+          phone: userInfo?.contact || '+380',
+          membership_type: selectedPlan.id
+        });
+        
+        setCheckoutStep(2); // Set to Success
+        Vibration.vibrate([0, 50, 50, 50]); // Success pattern
+        
+        // Auto-close modal after 2.5 seconds
+        setTimeout(() => {
+          setCheckoutModalVisible(false);
+          navigation.goBack();
+          // Alert just to ensure the user knows it's completely done
+          setTimeout(() => Alert.alert('Вітаємо!', `Ваш тариф "${selectedPlan.name}" активовано! Меню розблоковано.`), 500);
+        }, 2500);
+        
+      } catch (error) {
+        setCheckoutModalVisible(false);
+        const errDesc = error.response?.data?.detail || error.message;
+        Alert.alert('Помилка', `Платіж не пройшов. Причина: ${errDesc}`);
+      }
+    }, 2000);
   };
 
   if (isLoading) {
@@ -88,26 +105,82 @@ export default function MembershipScreen() {
         data={plans}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={{ padding: 20 }}
+        showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <View style={styles.planCard}>
             <View style={styles.planHeader}>
               <Text style={styles.planName}>{item.name}</Text>
               <Text style={styles.planPrice}>{item.amount} ₴</Text>
             </View>
-            <Text style={styles.planPeriod}>{item.period_months} місяців</Text>
+            <Text style={styles.planPeriod}>{item.period_months} місяців безлім</Text>
             <Text style={styles.planDesc}>{item.description}</Text>
             
-            <TouchableOpacity style={styles.applyBtn} onPress={() => handleApply(item.id, item.name)}>
-              <Text style={styles.applyBtnText}>Залишити заявку</Text>
+            <TouchableOpacity style={styles.applyBtn} onPress={() => startCheckout(item.id, item.name, item.amount)}>
+              <Text style={styles.applyBtnText}>Обрати тариф</Text>
             </TouchableOpacity>
           </View>
         )}
       />
+
+      {/* VIP Checkout Modal */}
+      <Modal visible={checkoutModalVisible} transparent animationType="slide">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.bottomSheet}>
+            {checkoutStep === 0 && (
+              <View style={styles.sheetContent}>
+                <Ionicons name="card" size={40} color={COLORS.text} style={{marginBottom: 15}} />
+                <Text style={styles.sheetTitle}>Підтвердження Оплати</Text>
+                
+                <View style={styles.receiptContainer}>
+                  <View style={styles.receiptRow}>
+                    <Text style={styles.receiptText}>Тариф: {selectedPlan?.name}</Text>
+                  </View>
+                  <View style={styles.divider} />
+                  <View style={styles.receiptRow}>
+                    <Text style={[styles.receiptText, {fontWeight: 'bold', fontSize: 18}]}>До сплати:</Text>
+                    <Text style={styles.receiptPrice}>{selectedPlan?.price} ₴</Text>
+                  </View>
+                </View>
+
+                <View style={styles.paymentMethodRow}>
+                  <Ionicons name="card-outline" size={28} color={COLORS.muted} style={{marginRight: 10}} />
+                  <Text style={styles.paymentMethodText}>Mastercard / Visa / Apple Pay</Text>
+                </View>
+
+                <TouchableOpacity style={styles.payBtn} onPress={processPayment}>
+                   <Text style={styles.payBtnText}>Оплатити {selectedPlan?.price} ₴</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.cancelLinkBtn} onPress={() => setCheckoutModalVisible(false)}>
+                   <Text style={styles.cancelLinkText}>Скасувати</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {checkoutStep === 1 && (
+              <View style={[styles.sheetContent, {alignItems: 'center', paddingVertical: 60}]}>
+                <ActivityIndicator size="large" color={COLORS.primary} style={{transform: [{scale: 1.5}], marginBottom: 30}} />
+                <Text style={styles.sheetTitle}>Зв'язок з банком...</Text>
+                <Text style={styles.sheetSubtitle}>Будь ласка, зачекайте. Не закривайте додаток.</Text>
+              </View>
+            )}
+
+            {checkoutStep === 2 && (
+              <View style={[styles.sheetContent, {alignItems: 'center', paddingVertical: 50}]}>
+                <View style={styles.successCircle}>
+                  <Ionicons name="checkmark" size={60} color="#fff" />
+                </View>
+                <Text style={[styles.sheetTitle, {marginTop: 20}]}>Оплата успішна!</Text>
+                <Text style={styles.sheetSubtitle}>Дякуємо за покупку. Акаунт оновлено.</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
-const getStyles = (COLORS) => StyleSheet.create({
+const getStyles = (COLORS, ObjectHasOwn) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: { 
     flexDirection: 'row', 
@@ -118,34 +191,64 @@ const getStyles = (COLORS) => StyleSheet.create({
     paddingBottom: 20,
     backgroundColor: COLORS.card,
     borderBottomWidth: 1,
-    borderBottomColor: Object.hasOwn(COLORS, 'border') ? COLORS.border : '#222'
+    borderBottomColor: ObjectHasOwn(COLORS, 'border') ? COLORS.border : '#222'
   },
-  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#222', alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { color: COLORS.text, fontSize: 18, fontWeight: 'bold' },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#222', alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { color: COLORS.text, fontSize: 18, fontWeight: '900' },
   
   planCard: {
-    backgroundColor: COLORS.cardBackground,
+    backgroundColor: ObjectHasOwn(COLORS, 'cardBackground') ? COLORS.cardBackground : '#1A1A1A',
     padding: 24,
-    borderRadius: 20,
+    borderRadius: 24,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: Object.hasOwn(COLORS, 'border') ? COLORS.border : '#333',
+    borderColor: ObjectHasOwn(COLORS, 'border') ? COLORS.border : '#333',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3
   },
   planHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
-  planName: { color: COLORS.text, fontSize: 22, fontWeight: 'bold' },
-  planPrice: { color: COLORS.primary, fontSize: 22, fontWeight: 'bold' },
-  planPeriod: { color: COLORS.muted, fontSize: 14, marginBottom: 15 },
-  planDesc: { color: COLORS.text, fontSize: 15, marginBottom: 20, lineHeight: 22 },
+  planName: { color: COLORS.text, fontSize: 24, fontWeight: '900' },
+  planPrice: { color: COLORS.primary, fontSize: 24, fontWeight: '900' },
+  planPeriod: { color: COLORS.muted, fontSize: 15, fontWeight: '700', textTransform: 'uppercase', marginBottom: 15, letterSpacing: 1 },
+  planDesc: { color: COLORS.text, fontSize: 16, marginBottom: 25, lineHeight: 24 },
   
   applyBtn: {
     backgroundColor: COLORS.primary,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 16,
+    borderRadius: 16,
     alignItems: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5
   },
-  applyBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  }
+  applyBtnText: { color: '#000', fontSize: 17, fontWeight: '900', letterSpacing: 0.5 },
+
+  // Modal Styles
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  bottomSheet: { backgroundColor: ObjectHasOwn(COLORS, 'cardBackground') ? COLORS.cardBackground : '#1A1A1A', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 30, paddingBottom: Platform.OS === 'ios' ? 40 : 30, shadowColor: '#000', shadowOffset: { width: 0, height: -5 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 20 },
+  sheetContent: { width: '100%' },
+  sheetTitle: { color: COLORS.text, fontSize: 24, fontWeight: '900', marginBottom: 20 },
+  sheetSubtitle: { color: COLORS.muted, fontSize: 16, textAlign: 'center', marginTop: 10 },
+  
+  receiptContainer: { backgroundColor: ObjectHasOwn(COLORS, 'darkerCard') ? COLORS.darkerCard : '#111', borderRadius: 16, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: ObjectHasOwn(COLORS, 'border') ? COLORS.border : '#333' },
+  receiptRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  receiptText: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
+  receiptPrice: { color: COLORS.primary, fontSize: 20, fontWeight: '900' },
+  divider: { height: 1, backgroundColor: ObjectHasOwn(COLORS, 'border') ? COLORS.border : '#333', marginVertical: 15 },
+  
+  paymentMethodRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#222', padding: 15, borderRadius: 12, marginBottom: 30 },
+  paymentMethodText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  
+  payBtn: { backgroundColor: COLORS.primary, paddingVertical: 18, borderRadius: 16, alignItems: 'center', marginBottom: 15 },
+  payBtnText: { color: '#000', fontSize: 18, fontWeight: '900', letterSpacing: 1 },
+  
+  cancelLinkBtn: { paddingVertical: 10, alignItems: 'center' },
+  cancelLinkText: { color: COLORS.muted, fontSize: 16, fontWeight: '700' },
+  
+  successCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#00C851', justifyContent: 'center', alignItems: 'center', shadowColor: '#00C851', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 10 }
 });

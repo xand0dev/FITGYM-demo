@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, Dimensions, TouchableOpacity, Image, Animated, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Dimensions, TouchableOpacity, Image, Animated, Platform, Vibration } from 'react-native';
 import { useTheme } from '../constants/theme';
 import useAppStore from '../store/useAppStore';
 
@@ -20,18 +20,33 @@ const SLIDES = [
   },
   { 
     id: '3', 
-    title: 'Трекери та Довідник', 
-    desc: 'Слідкуйте за споживанням води, вагою та вивчайте рецепти здорового харчування.', 
+    title: 'Екосистема Клубу', 
+    desc: 'Слідкуйте за водою, спілкуйтеся в стрічці та підбирайте здоровий раціон у довіднику.', 
     image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&fit=crop'
+  },
+  {
+    id: '4',
+    title: 'Ваша Головна Ціль',
+    desc: 'Оберіть напрямок, щоб ми могли персоналізувати ваш головний екран.',
+    image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&fit=crop',
+    isGoalSelection: true
   }
 ];
 
+const GOALS = [
+  { id: 'weight_loss', label: 'Схуднення та Тонус', emoji: '🔥' },
+  { id: 'muscle_gain', label: 'Набір М\'язової Маси', emoji: '💪' },
+  { id: 'keep_fit', label: 'Підтримка Форми', emoji: '🥗' }
+];
+
 export default function OnboardingScreen() {
+  const ObjectHasOwn = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
   const COLORS = useTheme();
-  const styles = getStyles(COLORS);
-  const completeOnboarding = useAppStore(state => state.completeOnboarding);
+  const styles = getStyles(COLORS, ObjectHasOwn);
+  const { completeOnboarding, setFitnessGoal } = useAppStore();
 
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedGoal, setSelectedGoal] = useState(null);
   const scrollX = useRef(new Animated.Value(0)).current;
   const slidesRef = useRef(null);
 
@@ -47,8 +62,20 @@ export default function OnboardingScreen() {
     if (currentIndex < SLIDES.length - 1) {
       slidesRef.current.scrollToIndex({ index: currentIndex + 1 });
     } else {
+      // Complete Onboarding if on last slide
+      if (!selectedGoal) {
+         // Default if they didn't pick
+         setFitnessGoal('keep_fit');
+      } else {
+         setFitnessGoal(selectedGoal);
+      }
       completeOnboarding();
     }
+  };
+
+  const handleGoalSelect = (goalId) => {
+    setSelectedGoal(goalId);
+    Vibration.vibrate(20);
   };
 
   const renderItem = ({ item }) => (
@@ -59,6 +86,22 @@ export default function OnboardingScreen() {
       <View style={styles.contentBox}>
         <Text style={styles.title}>{item.title}</Text>
         <Text style={styles.desc}>{item.desc}</Text>
+
+        {item.isGoalSelection && (
+          <View style={styles.goalsContainer}>
+            {GOALS.map(goal => (
+               <TouchableOpacity 
+                 key={goal.id} 
+                 style={[styles.goalBtn, selectedGoal === goal.id && styles.goalBtnActive]}
+                 onPress={() => handleGoalSelect(goal.id)}
+                 activeOpacity={0.8}
+               >
+                 <Text style={styles.goalEmoji}>{goal.emoji}</Text>
+                 <Text style={[styles.goalText, selectedGoal === goal.id && styles.goalTextActive]}>{goal.label}</Text>
+               </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </View>
     </View>
   );
@@ -79,7 +122,6 @@ export default function OnboardingScreen() {
         ref={slidesRef}
       />
       
-      {/* Footer Navigation */}
       <View style={styles.footer}>
         <View style={styles.pagination}>
            {SLIDES.map((_, i) => {
@@ -98,7 +140,11 @@ export default function OnboardingScreen() {
            })}
         </View>
 
-        <TouchableOpacity style={styles.button} onPress={scrollToNext} activeOpacity={0.8}>
+        <TouchableOpacity 
+           style={[styles.button, currentIndex === SLIDES.length - 1 && !selectedGoal && {opacity: 0.5}]} 
+           onPress={scrollToNext} 
+           activeOpacity={0.8}
+        >
            <Text style={styles.buttonText}>{currentIndex === SLIDES.length - 1 ? 'ПОЧАТИ' : 'ДалІ'}</Text>
         </TouchableOpacity>
       </View>
@@ -106,7 +152,7 @@ export default function OnboardingScreen() {
   );
 }
 
-const getStyles = (COLORS) => StyleSheet.create({
+const getStyles = (COLORS, ObjectHasOwn) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   slide: { width, height },
   image: { flex: 1, width: '100%', height: '100%' },
@@ -121,7 +167,7 @@ const getStyles = (COLORS) => StyleSheet.create({
     right: 0, 
     padding: 30, 
     paddingBottom: Platform.OS === 'ios' ? 140 : 120, // space for footer
-    backgroundColor: Object.hasOwn(COLORS, 'darkerCard') ? COLORS.darkerCard : '#111',
+    backgroundColor: ObjectHasOwn(COLORS, 'darkerCard') ? COLORS.darkerCard : '#111',
     borderTopLeftRadius: 30, 
     borderTopRightRadius: 30,
     shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.15, shadowRadius: 20
@@ -129,6 +175,13 @@ const getStyles = (COLORS) => StyleSheet.create({
   title: { color: COLORS.text, fontSize: 32, fontWeight: '900', letterSpacing: -1, marginBottom: 15 },
   desc: { color: COLORS.muted, fontSize: 16, lineHeight: 24, paddingRight: 20 },
   
+  goalsContainer: { marginTop: 20, gap: 10 },
+  goalBtn: { flexDirection: 'row', alignItems: 'center', padding: 15, borderRadius: 16, backgroundColor: ObjectHasOwn(COLORS, 'cardBackground') ? COLORS.cardBackground : '#1A1A1A', borderWidth: 2, borderColor: 'transparent' },
+  goalBtnActive: { borderColor: COLORS.primary, backgroundColor: `${COLORS.primary}20` },
+  goalEmoji: { fontSize: 24, marginRight: 15 },
+  goalText: { color: COLORS.text, fontSize: 16, fontWeight: '700' },
+  goalTextActive: { color: COLORS.primary, fontWeight: '900' },
+
   footer: { 
     position: 'absolute', 
     bottom: Platform.OS === 'ios' ? 40 : 20, 

@@ -4,12 +4,42 @@ import { useTheme } from '../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import apiClient from '../api/client';
+import useAppStore from '../store/useAppStore';
 
 const TERMS = [
   { term: 'Суперсет', desc: 'Виконання двох або більше різних вправ без відпочинку між ними.' },
   { term: 'Дропсет', desc: 'Виконання вправи до відмови, після чого вага зменшується на 20-30% і підхід продовжується.' },
   { term: 'Профіцит калорій', desc: 'Споживання більшої кількості калорій, ніж витрачається, для набору маси.' },
   { term: 'База', desc: 'Базові багатосуглобові вправи (присідання, станова тяга, жим лежачи).' }
+];
+
+// --- STATIC DATA FOR LEADERBOARD ---
+const LEADERBOARD_USERS = [
+  { id: 1, name: 'Олександр Д.', points: 14500, streak: 32, avatar: 'https://i.pravatar.cc/150?img=11' },
+  { id: 2, name: 'Марія К.', points: 12200, streak: 15, avatar: null },
+  { id: 3, name: 'Твій Профіль', points: 0, streak: 0, avatar: null, isMe: true }, // Will be hydrated
+  { id: 4, name: 'Ігор С.', points: 8900, streak: 5, avatar: 'https://i.pravatar.cc/150?img=33' },
+  { id: 5, name: 'Анна В.', points: 4100, streak: 2, avatar: 'https://i.pravatar.cc/150?img=5' },
+];
+
+const COMMUNITY_POSTS = [
+  {
+    id: 1, author: 'Admin FITGYM', sub: 'Адміністрація', time: '2 год тому',
+    text: '🔥 Оновлення Розкладу! Додано нові вечірні класи з кросфіту. Реєструйтесь заздалегідь через додаток.',
+    image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&fit=crop',
+    likes: 24, comments: 2
+  },
+  {
+    id: 2, author: 'Тренер Олег', sub: 'Головний тренер', time: 'Вчора',
+    text: 'Пам\'ятайте про гідратацію! 💧 Пийте мінімум 2 літри води в день, а особливо під час інтенсивних тренувань. Як ваш прогрес?',
+    likes: 42, comments: 12
+  },
+  {
+    id: 3, author: 'FITGYM Team', sub: 'Новини клубу', time: '2 дні тому',
+    text: 'Чекали на нове обладнання? Ми повністю оновили кардіо-зону. Заходьте протестувати нові сайкл-екранні байки! 🚴',
+    image: 'https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=800&fit=crop',
+    likes: 89, comments: 14
+  }
 ];
 
 const STRETCHES = [
@@ -100,14 +130,17 @@ const INITIAL_CHECKLIST = [
 ];
 
 export default function EducationScreen() {
+  const ObjectHasOwn = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
   const COLORS = useTheme();
-  const styles = getStyles(COLORS);
-  const [activeTab, setActiveTab] = useState('programs');
+  const styles = getStyles(COLORS, ObjectHasOwn);
+  const [activeTab, setActiveTab] = useState('community');
   const [checklist, setChecklist] = useState(INITIAL_CHECKLIST);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   
   const [instructors, setInstructors] = useState([]);
   const [workouts, setWorkouts] = useState([]);
+  
+  const { streak, fitCoins } = useAppStore(); // Hydrate current user stats
 
   useEffect(() => {
     loadChecklist();
@@ -156,6 +189,12 @@ export default function EducationScreen() {
 
   const renderTabs = () => (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsContainer}>
+      <TouchableOpacity onPress={() => setActiveTab('community')} style={[styles.tab, activeTab === 'community' && styles.activeTab]}>
+        <Text style={[styles.tabText, activeTab === 'community' && styles.activeTabText]}>Стрічка</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => setActiveTab('leaderboard')} style={[styles.tab, activeTab === 'leaderboard' && styles.activeTab]}>
+        <Text style={[styles.tabText, activeTab === 'leaderboard' && styles.activeTabText]}>Лідерборд</Text>
+      </TouchableOpacity>
       <TouchableOpacity onPress={() => setActiveTab('programs')} style={[styles.tab, activeTab === 'programs' && styles.activeTab]}>
         <Text style={[styles.tabText, activeTab === 'programs' && styles.activeTabText]}>Напрямки</Text>
       </TouchableOpacity>
@@ -189,6 +228,106 @@ export default function EducationScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         
+        {activeTab === 'community' && (
+          <View>
+            <Text style={styles.sectionTitle}>Стрічка Клубу</Text>
+            {COMMUNITY_POSTS.map(post => (
+              <View key={post.id} style={styles.postCard}>
+                <View style={styles.postHeader}>
+                  <View style={styles.postAvatar}>
+                    <Text style={styles.postAvatarText}>{post.author.charAt(0)}</Text>
+                  </View>
+                  <View style={{flex: 1, marginLeft: 12}}>
+                    <Text style={styles.postAuthor}>{post.author}</Text>
+                    <Text style={styles.postTime}>{post.time} • {post.sub}</Text>
+                  </View>
+                  <TouchableOpacity><Ionicons name="ellipsis-horizontal" size={20} color={COLORS.muted} /></TouchableOpacity>
+                </View>
+                
+                <Text style={styles.postText}>{post.text}</Text>
+                
+                {post.image && (
+                  <Image source={{ uri: post.image }} style={styles.postImage} resizeMode="cover" />
+                )}
+                
+                <View style={styles.postActions}>
+                  <TouchableOpacity style={styles.postActionBtn}>
+                    <Ionicons name="heart-outline" size={22} color={COLORS.text} />
+                    <Text style={styles.postActionText}>{post.likes}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.postActionBtn}>
+                    <Ionicons name="chatbubble-outline" size={20} color={COLORS.text} />
+                    <Text style={styles.postActionText}>{post.comments}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.postActionBtn, {marginLeft: 'auto'}]}>
+                    <Ionicons name="share-outline" size={22} color={COLORS.text} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {activeTab === 'leaderboard' && (
+          <View>
+            <View style={styles.leaderboardHeader}>
+              <Ionicons name="trophy" size={40} color="#ffd700" style={{marginBottom: 10}} />
+              <Text style={styles.leaderboardHeaderTitle}>Арена FITGYM</Text>
+              <Text style={styles.leaderboardHeaderSub}>Рейтинг заробляєшь потом та кров'ю.</Text>
+            </View>
+            
+            {LEADERBOARD_USERS.map(u => u.isMe ? { ...u, points: fitCoins || 0, streak: streak || 0 } : u)
+              .sort((a, b) => b.points - a.points)
+              .map((user, index) => {
+              const rankColor = index === 0 ? '#ffd700' : index === 1 ? '#c0c0c0' : index === 2 ? '#cd7f32' : COLORS.text;
+              
+              return (
+                <TouchableOpacity 
+                  key={user.id} 
+                  style={[styles.rankCard, user.isMe && { borderColor: COLORS.primary, borderWidth: 1 }]}
+                  activeOpacity={user.isMe ? 1 : 0.7}
+                  onPress={() => {
+                    if (!user.isMe) {
+                      import('react-native').then(rn => rn.Alert.alert("Виклик!", `Кинути виклик ${user.name}?`));
+                    }
+                  }}
+                >
+                  <View style={styles.rankNumBox}>
+                    <Text style={[styles.rankNum, {color: rankColor}]}>#{index + 1}</Text>
+                  </View>
+                  
+                  <View style={styles.rankAvatar}>
+                    {user.avatar ? (
+                      <Image source={{uri: user.avatar}} style={{width: '100%', height: '100%', borderRadius: 20}} />
+                    ) : (
+                      <Text style={{color: '#000', fontWeight: 'bold', fontSize: 18}}>{user.name.charAt(0)}</Text>
+                    )}
+                  </View>
+                  
+                  <View style={styles.rankInfo}>
+                    <Text style={[styles.rankName, user.isMe && {color: COLORS.primary}]}>
+                      {user.name} {user.isMe && '(Ви)'}
+                    </Text>
+                    <View style={{flexDirection: 'row', alignItems: 'center', marginTop: 4}}>
+                      <Ionicons name="flame" size={14} color="#ff4500" style={{marginRight: 4}} />
+                      <Text style={styles.rankStreak}>{user.streak} дн.</Text>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.rankPointsWrap}>
+                     <Text style={[styles.rankPoints, {color: rankColor}]}>{user.points}</Text>
+                     <Text style={{color: COLORS.muted, fontSize: 10, fontWeight: '700'}}>FC</Text>
+                  </View>
+                </TouchableOpacity>
+              )
+            })}
+            
+            <Text style={{color: COLORS.muted, fontSize: 12, textAlign: 'center', marginTop: 20, marginBottom: 40}}>
+              Натисніть на користувача, щоб кинути йому виклик.
+            </Text>
+          </View>
+        )}
+
         {activeTab === 'programs' && (
           <View>
             <Text style={styles.sectionTitle}>Наші Напрямки Тренувань</Text>
@@ -382,7 +521,7 @@ export default function EducationScreen() {
   );
 }
 
-const getStyles = (COLORS) => StyleSheet.create({
+const getStyles = (COLORS, ObjectHasOwn) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: { padding: 20, paddingTop: 40 },
   title: { color: COLORS.text, fontSize: 24, fontWeight: 'bold' },
@@ -469,4 +608,38 @@ const getStyles = (COLORS) => StyleSheet.create({
   stepNumberBox: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(230, 0, 0, 0.1)', alignItems: 'center', justifyContent: 'center' },
   stepNumberText: { color: COLORS.primary, fontWeight: '900', fontSize: 15 },
   stepText: { color: COLORS.text, fontSize: 16, lineHeight: 24, flex: 1, paddingTop: 4 },
+  
+  // Community Feed Post Card
+  postCard: { backgroundColor: ObjectHasOwn(COLORS, 'cardBackground') ? COLORS.cardBackground : '#1a1a1a', borderRadius: 20, marginBottom: 20, padding: 20, borderWidth: 1, borderColor: ObjectHasOwn(COLORS, 'border') ? COLORS.border : '#333', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 4 },
+  postHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
+  postAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
+  postAvatarText: { color: '#000', fontSize: 20, fontWeight: '900' },
+  postAuthor: { color: COLORS.text, fontSize: 16, fontWeight: '800', marginBottom: 2 },
+  postTime: { color: COLORS.muted, fontSize: 12, fontWeight: '600' },
+  postText: { color: COLORS.text, fontSize: 15, lineHeight: 22, marginBottom: 15 },
+  postImage: { width: '100%', height: 200, borderRadius: 12, marginBottom: 15 },
+  postActions: { flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderTopColor: ObjectHasOwn(COLORS, 'border') ? COLORS.border : '#333', paddingTop: 15, marginTop: 5 },
+  postActionBtn: { flexDirection: 'row', alignItems: 'center', marginRight: 25 },
+  postActionText: { color: COLORS.text, fontSize: 15, fontWeight: '600', marginLeft: 6 },
+  
+  // Leaderboards
+  leaderboardHeader: { alignItems: 'center', paddingVertical: 20, marginBottom: 10 },
+  leaderboardHeaderTitle: { color: COLORS.text, fontSize: 24, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 },
+  leaderboardHeaderSub: { color: COLORS.muted, fontSize: 13, marginTop: 5 },
+  
+  rankCard: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: ObjectHasOwn(COLORS, 'cardBackground') ? COLORS.cardBackground : '#1a1a1a',
+    padding: 15, borderRadius: 20, marginBottom: 12,
+    borderWidth: 1, borderColor: ObjectHasOwn(COLORS, 'border') ? COLORS.border : '#333',
+    shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.1, shadowRadius: 10, elevation: 3
+  },
+  rankNumBox: { width: 35, alignItems: 'center', justifyContent: 'center' },
+  rankNum: { fontSize: 18, fontWeight: '900' },
+  rankAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.muted + '40', alignItems: 'center', justifyContent: 'center', marginHorizontal: 15 },
+  rankInfo: { flex: 1 },
+  rankName: { color: COLORS.text, fontSize: 16, fontWeight: '800' },
+  rankStreak: { color: COLORS.muted, fontSize: 12, fontWeight: '700' },
+  rankPointsWrap: { alignItems: 'flex-end', marginLeft: 10 },
+  rankPoints: { fontSize: 20, fontWeight: '900' }
 });

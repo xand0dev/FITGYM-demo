@@ -17,6 +17,10 @@ import EducationScreen from '../screens/EducationScreen';
 import ActiveWorkoutScreen from '../screens/ActiveWorkoutScreen';
 import MembershipScreen from '../screens/MembershipScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
+import AchievementsScreen from '../screens/AchievementsScreen';
+import GymPassScreen from '../screens/GymPassScreen';
+import FitCoinsShopScreen from '../screens/FitCoinsShopScreen';
+import AICoachScreen from '../screens/AICoachScreen';
 import { useTheme } from '../constants/theme';
 import useAppStore from '../store/useAppStore';
 
@@ -90,7 +94,11 @@ export default function AppNavigator() {
             <Stack.Screen name="Main" component={MainTabs} />
             <Stack.Screen name="ClassDetails" component={ClassDetailsScreen} />
             <Stack.Screen name="ActiveWorkout" component={ActiveWorkoutScreen} />
+            <Stack.Screen name="GymPass" component={GymPassScreen} />
+            <Stack.Screen name="FitCoinsShop" component={FitCoinsShopScreen} />
+            <Stack.Screen name="AICoach" component={AICoachScreen} />
             <Stack.Screen name="Membership" component={MembershipScreen} />
+            <Stack.Screen name="Achievements" component={AchievementsScreen} />
           </>
         )}
       </Stack.Navigator>

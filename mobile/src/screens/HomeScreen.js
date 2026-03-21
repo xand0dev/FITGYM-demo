@@ -6,13 +6,16 @@ import { LineChart, ProgressChart } from 'react-native-chart-kit';
 import * as SecureStore from 'expo-secure-store';
 import apiClient from '../api/client';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import useAppStore from '../store/useAppStore';
 
 const screenWidth = Dimensions.get('window').width;
 
 export default function HomeScreen() {
+  const ObjectHasOwn = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
   const COLORS = useTheme();
-  const styles = getStyles(COLORS);
+  const styles = getStyles(COLORS, ObjectHasOwn);
   const navigation = useNavigation();
+  const { fitnessGoal, streak, updateStreak } = useAppStore();
   
   const [waterAmount, setWaterAmount] = useState(0); // in ml
   const [upcomingClass, setUpcomingClass] = useState(null);
@@ -117,6 +120,11 @@ export default function HomeScreen() {
     const newAmount = waterAmount + ml;
     setWaterAmount(newAmount);
     saveWater(newAmount, today);
+    
+    // Minimal streak logic: if they hit water goal, it counts as an active day
+    if (newAmount >= dailyGoal) {
+      updateStreak();
+    }
   };
 
   const resetWater = () => {
@@ -128,13 +136,20 @@ export default function HomeScreen() {
 
   const progressPercent = Math.min((waterAmount / dailyGoal) * 100, 100);
 
+  const getMotivation = () => {
+    if (fitnessGoal === 'weight_loss') return 'Сьогодні чудовий день для кардіо! Спалюємо калорії 🔥';
+    if (fitnessGoal === 'muscle_gain') return 'Час для бази! Більше білка, більше ваги 💪';
+    if (fitnessGoal === 'keep_fit') return 'Рух - це життя. Збережемо тонус разом 🌟';
+    return 'Ось твій прогрес на сьогодні.';
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
         <View style={styles.header}>
           <Text style={styles.greeting}>{getGreeting()},{userName ? `\n${userName}!` : ' Чемпіоне!'} 👋</Text>
-          <Text style={styles.subtitle}>Ось твій прогрес на сьогодні.</Text>
+          <Text style={styles.subtitle}>{getMotivation()}</Text>
         </View>
 
         {/* --- QUICK ACTIONS --- */}
@@ -151,11 +166,11 @@ export default function HomeScreen() {
             </View>
             <Text style={styles.actionText}>Абонемент</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Education')}>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('GymPass')}>
              <View style={[styles.actionIconWrap, { backgroundColor: 'rgba(255, 105, 180, 0.15)' }]}>
-              <Ionicons name="book-outline" size={26} color="#ff69b4" />
+              <Ionicons name="qr-code-outline" size={26} color="#ff69b4" />
             </View>
-            <Text style={styles.actionText}>Довідник</Text>
+            <Text style={styles.actionText}>Перепустка</Text>
           </TouchableOpacity>
         </View>
 
@@ -230,10 +245,16 @@ export default function HomeScreen() {
            <View style={{width: 15}} />
            
            <View style={[styles.card, styles.halfCard, {justifyContent: 'center', alignItems: 'center'}]}>
-              <Text style={styles.cardTitleSm}>Активність</Text>
-              <Ionicons name="flame" size={50} color={COLORS.primary} style={{opacity: 0.8, marginVertical: 20}} />
-              <Text style={{color: COLORS.text, fontWeight: '800', fontSize: 24}}>350</Text>
-              <Text style={{color: COLORS.muted, fontSize: 12}}>ккал спалено</Text>
+              <Text style={styles.cardTitleSm}>Стрік (Дні)</Text>
+              
+              <View style={styles.streakFlameWrap}>
+                 <Ionicons name="flame" size={60} color={streak > 0 ? '#ff4500' : COLORS.muted} style={{...styles.shadowFlame, shadowColor: streak > 0 ? '#ff4500' : 'transparent'}} />
+              </View>
+              
+              <Text style={{color: COLORS.text, fontWeight: '900', fontSize: 32, marginTop: 10}}>{streak}</Text>
+              <Text style={{color: COLORS.muted, fontSize: 13, textAlign: 'center', marginTop: 5}}>
+                {streak > 0 ? 'Так тримати! 🔥' : 'Виконай норму води'}
+              </Text>
            </View>
         </View>
 
@@ -271,16 +292,25 @@ export default function HomeScreen() {
 
         <View style={{height: 40}} />
       </ScrollView>
+
+      {/* --- AI COACH FAB --- */}
+      <TouchableOpacity 
+        style={[styles.aiFab, { shadowColor: COLORS.primary }]}
+        activeOpacity={0.8}
+        onPress={() => navigation.navigate('AICoach')}
+      >
+        <Ionicons name="hardware-chip" size={28} color="#000" />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
 
-const getStyles = (COLORS) => StyleSheet.create({
+const getStyles = (COLORS, ObjectHasOwn) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   scrollContent: { paddingHorizontal: 20 },
   header: { paddingTop: 40, paddingBottom: 25 },
   greeting: { color: COLORS.text, fontSize: 32, fontWeight: '900', letterSpacing: -1 },
-  subtitle: { color: COLORS.muted, fontSize: 16, marginTop: 8 },
+  subtitle: { color: COLORS.primary, fontSize: 13, fontWeight: '700', marginTop: 8 },
   
   quickActionsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 25 },
   actionBtn: { alignItems: 'center', width: '30%' },
@@ -310,5 +340,26 @@ const getStyles = (COLORS) => StyleSheet.create({
   
   waterButtonsRow: { flexDirection: 'row', gap: 8, justifyContent: 'center' },
   waterBtn: { flex: 1, backgroundColor: 'rgba(0, 191, 255, 0.15)', paddingVertical: 10, borderRadius: 12, alignItems: 'center' },
-  waterBtnText: { color: '#00bfff', fontSize: 14, fontWeight: '800' }
+  waterBtnText: { color: '#00bfff', fontSize: 14, fontWeight: '800' },
+  
+  streakFlameWrap: { marginTop: 15 },
+  shadowFlame: { shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 20, elevation: 10 },
+  
+  aiFab: {
+    position: 'absolute',
+    bottom: 30, // Above the bottom tab bar
+    right: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 15,
+    elevation: 10,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.2)'
+  }
 });
