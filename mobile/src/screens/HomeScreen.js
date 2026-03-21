@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, SafeAreaView, Vibration } from 'react-native';
 import { useTheme } from '../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LineChart, ProgressChart } from 'react-native-chart-kit';
@@ -112,6 +112,7 @@ export default function HomeScreen() {
   };
 
   const addWater = (ml) => {
+    Vibration.vibrate(40);
     const today = new Date().toDateString();
     const newAmount = waterAmount + ml;
     setWaterAmount(newAmount);
@@ -119,6 +120,7 @@ export default function HomeScreen() {
   };
 
   const resetWater = () => {
+    Vibration.vibrate([0, 30, 30, 30]);
     const today = new Date().toDateString();
     setWaterAmount(0);
     saveWater(0, today);

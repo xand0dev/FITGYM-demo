@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image, Switch, Vibration } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../constants/theme';
@@ -9,7 +9,7 @@ import apiClient from '../api/client';
 import SkeletonLoader from '../components/SkeletonLoader';
 
 export default function CabinetScreen() {
-  const { logout, toggleTheme, theme } = useAppStore();
+  const { logout, toggleTheme, theme, accentColor, setAccentColor } = useAppStore();
   const COLORS = useTheme();
   const styles = getStyles(COLORS);
   const navigation = useNavigation();
@@ -54,6 +54,7 @@ export default function CabinetScreen() {
       { text: 'Так', style: 'destructive', onPress: async () => {
           try {
             await apiClient.delete(`/my-bookings/${bookingId}/`);
+            Vibration.vibrate([0, 50, 50, 50]);
             setBookings(bookings.filter(b => b.id !== bookingId));
             Alert.alert('Успіх', 'Запис скасовано');
           } catch (error) {
@@ -249,7 +250,10 @@ export default function CabinetScreen() {
             <Text style={styles.settingText}>Темна тема</Text>
             <Switch 
               value={theme === 'dark'} 
-              onValueChange={toggleTheme}
+              onValueChange={(val) => {
+                Vibration.vibrate(20);
+                toggleTheme(val);
+              }}
               trackColor={{ false: COLORS.border, true: COLORS.primary + '80' }} // adding transparency
               thumbColor={theme === 'dark' ? COLORS.primary : '#f4f3f4'}
             />
@@ -274,6 +278,27 @@ export default function CabinetScreen() {
             <Text style={styles.settingText}>Мова (Українська)</Text>
             <Ionicons name="chevron-forward" size={20} color={COLORS.muted} />
           </TouchableOpacity>
+
+          <View style={styles.settingDivider} />
+
+          <View style={{ padding: 16 }}>
+            <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '600', marginBottom: 15 }}>Колір додатку</Text>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              {['#e60000', '#E0FF4F', '#00bfff', '#ff69b4', '#A855F7'].map((c, i) => (
+                <TouchableOpacity 
+                  key={i} 
+                  onPress={() => {
+                    Vibration.vibrate(20);
+                    setAccentColor(c);
+                  }}
+                  style={{ 
+                    width: 36, height: 36, borderRadius: 18, backgroundColor: c, 
+                    borderWidth: 2, borderColor: accentColor === c ? COLORS.text : 'transparent' 
+                  }} 
+                />
+              ))}
+            </View>
+          </View>
         </View>
 
         <TouchableOpacity style={styles.logoutBtn} onPress={logout}>

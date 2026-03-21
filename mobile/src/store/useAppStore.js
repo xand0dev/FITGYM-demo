@@ -8,17 +8,22 @@ const useAppStore = create((set) => ({
   hasCompletedOnboarding: false,
   isLoading: true,
   theme: 'dark',
+  accentColor: '#e60000',
   
   checkToken: async () => {
     try {
       const token = await SecureStore.getItemAsync('userToken');
       const savedTheme = await SecureStore.getItemAsync('userTheme');
       const onboarded = await SecureStore.getItemAsync('hasCompletedOnboarding');
+      const savedAccentColor = await SecureStore.getItemAsync('userAccentColor');
       if (token) {
         set({ userToken: token });
       }
       if (savedTheme) {
         set({ theme: savedTheme });
+      }
+      if (savedAccentColor) {
+        set({ accentColor: savedAccentColor });
       }
       set({ hasCompletedOnboarding: onboarded === 'true' });
     } catch (e) {
@@ -46,6 +51,15 @@ const useAppStore = create((set) => ({
       });
     } catch (e) {
       console.error('Помилка збереження теми', e);
+    }
+  },
+
+  setAccentColor: async (color) => {
+    try {
+      await SecureStore.setItemAsync('userAccentColor', color);
+      set({ accentColor: color });
+    } catch (e) {
+      console.log('Помилка збереження кольору', e);
     }
   },
 

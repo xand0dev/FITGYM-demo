@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, SafeAreaView, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, SafeAreaView, TouchableOpacity, ScrollView, ActivityIndicator, Vibration } from 'react-native';
 import { useTheme } from '../constants/theme';
 import ClassCard from '../components/ClassCard';
 import RestTimer from '../components/RestTimer';
@@ -84,7 +84,10 @@ export default function WorkoutsScreen() {
                   <TouchableOpacity 
                      key={i} 
                      style={[styles.dateCard, isSelected && styles.dateCardActive]}
-                     onPress={() => setSelectedDate(dateStr)}
+                     onPress={() => {
+                       Vibration.vibrate(30);
+                       setSelectedDate(dateStr);
+                     }}
                      activeOpacity={0.7}
                   >
                     <Text style={[styles.dayName, isSelected && styles.dayNameActive]}>{dayName}</Text>

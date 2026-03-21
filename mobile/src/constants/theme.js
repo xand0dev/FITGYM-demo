@@ -23,5 +23,12 @@ import useAppStore from '../store/useAppStore';
 
 export const useTheme = () => {
   const themeMode = useAppStore(state => state.theme);
-  return themeMode === 'light' ? LIGHT_COLORS : COLORS;
+  const accentColor = useAppStore(state => state.accentColor);
+  
+  const baseTheme = themeMode === 'light' ? LIGHT_COLORS : COLORS;
+  
+  return {
+    ...baseTheme,
+    primary: accentColor || baseTheme.primary
+  };
 };
