@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image, Switch } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../constants/theme';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import useAppStore from '../store/useAppStore';
 import apiClient from '../api/client';
 
@@ -18,26 +18,34 @@ export default function CabinetScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [avatarUri, setAvatarUri] = useState(null);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
 
-  const fetchData = async () => {
-    try {
-      setIsLoading(true);
-      const [meRes, bookingsRes] = await Promise.all([
-        apiClient.get('/me/'),
-        apiClient.get('/my-bookings/')
-      ]);
-      setProfile(meRes.data);
-      setBookings(bookingsRes.data);
-    } catch (error) {
-      console.log('Помилка завантаження профілю:', error);
-      Alert.alert('Помилка', 'Не вдалося завантажити дані профілю');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      const fetchData = async () => {
+        try {
+          const [meRes, bookingsRes] = await Promise.all([
+            apiClient.get('/me/'),
+            apiClient.get('/my-bookings/')
+          ]);
+          if (isActive) {
+            setProfile(meRes.data);
+            setBookings(bookingsRes.data.results || bookingsRes.data);
+          }
+        } catch (error) {
+          console.log('Помилка завантаження профілю:', error);
+        } finally {
+          if (isActive) setIsLoading(false);
+        }
+      };
+
+      fetchData();
+
+      return () => {
+        isActive = false;
+      };
+    }, [])
+  );
 
   const handleCancelBooking = async (bookingId) => {
     Alert.alert('Підтвердження', 'Ви впевнені, що хочете скасувати запис?', [
