@@ -22,8 +22,8 @@ export default function ClassCard({ session }) {
       })}
     >
       <View style={styles.timeBox}>
-        <Text style={styles.timeText}>{parsedTime}</Text>
-        <Text style={styles.dateText}>{parsedDate}</Text>
+        <Text style={styles.timeText} numberOfLines={1} adjustsFontSizeToFit>{parsedTime}</Text>
+        <Text style={styles.dateText} numberOfLines={1} adjustsFontSizeToFit>{parsedDate}</Text>
       </View>
       <View style={styles.info}>
         <Text style={styles.title}>{session.class_name}</Text>
@@ -58,7 +58,7 @@ const getStyles = (COLORS) => StyleSheet.create({
     borderColor: Object.hasOwn(COLORS, 'border') ? COLORS.border : 'transparent',
   },
   timeBox: {
-    width: 70,
+    width: 85,
     alignItems: 'center',
     justifyContent: 'center',
     borderRightWidth: 1,

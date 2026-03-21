@@ -106,20 +106,51 @@ export default function MembershipScreen() {
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={{ padding: 20 }}
         showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
+        renderItem={({ item }) => {
+          const formattedPrice = parseInt(item.amount).toLocaleString('uk-UA');
+          
+          // Fix correct Ukrainian grammar for months
+          const getMonthsWord = (monthsStr) => {
+             const m = parseInt(monthsStr, 10) || 0;
+             const m10 = m % 10;
+             const m100 = m % 100;
+             if (m100 >= 11 && m100 <= 19) return 'МІСЯЦІВ';
+             if (m10 === 1) return 'МІСЯЦЬ';
+             if (m10 >= 2 && m10 <= 4) return 'МІСЯЦІ';
+             return 'МІСЯЦІВ';
+          };
+          
+          // Strip redundant (1 місяць) and (12 місяців) from the name since it's in the badge now
+          // Using [\s\S] to handle newlines that might come from DB
+          const cleanName = item.name.replace(/\s*\([\s\S]*?\)/g, '').trim();
+
+          return (
           <View style={styles.planCard}>
-            <View style={styles.planHeader}>
-              <Text style={styles.planName}>{item.name}</Text>
-              <Text style={styles.planPrice}>{item.amount} ₴</Text>
+            {/* Top Badge */}
+            <View style={styles.badgeContainer}>
+              <Text style={styles.badgeText}>{item.period_months} {getMonthsWord(item.period_months)} БЕЗЛІМ</Text>
             </View>
-            <Text style={styles.planPeriod}>{item.period_months} місяців безлім</Text>
+            
+            {/* Title */}
+            <Text style={styles.planName} numberOfLines={1} adjustsFontSizeToFit>{cleanName}</Text>
+            
+            {/* Price Block */}
+            <View style={styles.priceContainer}>
+              <Text style={styles.planPrice}>{formattedPrice}</Text>
+              <Text style={styles.currencyText}> ₴</Text>
+            </View>
+            
+            {/* Divider */}
+            <View style={styles.planDivider} />
+            
+            {/* Description */}
             <Text style={styles.planDesc}>{item.description}</Text>
             
-            <TouchableOpacity style={styles.applyBtn} onPress={() => startCheckout(item.id, item.name, item.amount)}>
+            <TouchableOpacity style={styles.applyBtn} onPress={() => startCheckout(item.id, item.name, formattedPrice)}>
               <Text style={styles.applyBtnText}>Обрати тариф</Text>
             </TouchableOpacity>
           </View>
-        )}
+        )}}
       />
 
       {/* VIP Checkout Modal */}
@@ -199,21 +230,35 @@ const getStyles = (COLORS, ObjectHasOwn) => StyleSheet.create({
   planCard: {
     backgroundColor: ObjectHasOwn(COLORS, 'cardBackground') ? COLORS.cardBackground : '#1A1A1A',
     padding: 24,
-    borderRadius: 24,
-    marginBottom: 20,
+    borderRadius: 28,
+    marginBottom: 25,
     borderWidth: 1,
     borderColor: ObjectHasOwn(COLORS, 'border') ? COLORS.border : '#333',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 5
   },
-  planHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
-  planName: { color: COLORS.text, fontSize: 24, fontWeight: '900' },
-  planPrice: { color: COLORS.primary, fontSize: 24, fontWeight: '900' },
-  planPeriod: { color: COLORS.muted, fontSize: 15, fontWeight: '700', textTransform: 'uppercase', marginBottom: 15, letterSpacing: 1 },
-  planDesc: { color: COLORS.text, fontSize: 16, marginBottom: 25, lineHeight: 24 },
+  badgeContainer: {
+    backgroundColor: COLORS.primary + '20',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    marginBottom: 16
+  },
+  badgeText: { color: COLORS.primary, fontSize: 13, fontWeight: '900', letterSpacing: 1 },
+  
+  planName: { color: COLORS.text, fontSize: 32, fontWeight: '900', marginBottom: 10, lineHeight: 36 },
+  
+  priceContainer: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 20 },
+  planPrice: { color: COLORS.text, fontSize: 44, fontWeight: '900', letterSpacing: -1 },
+  currencyText: { color: COLORS.muted, fontSize: 24, fontWeight: '700', marginLeft: 4 },
+  
+  planDivider: { height: 1, backgroundColor: ObjectHasOwn(COLORS, 'border') ? COLORS.border : '#333', marginBottom: 20 },
+  
+  planDesc: { color: COLORS.muted, fontSize: 16, marginBottom: 30, lineHeight: 24 },
   
   applyBtn: {
     backgroundColor: COLORS.primary,

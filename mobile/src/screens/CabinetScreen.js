@@ -136,19 +136,21 @@ export default function CabinetScreen() {
       <View style={styles.header}>
         <View style={styles.profileHeader}>
           <TouchableOpacity style={styles.avatarContainer} onPress={handleAvatarPress}>
-            {avatarUri ? (
-              <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
-            ) : (
-              <Text style={styles.avatarText}>{profile?.full_name?.charAt(0) || 'U'}</Text>
-            )}
+            <View style={styles.avatar}>
+               {avatarUri ? (
+                 <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+               ) : (
+                 <Text style={styles.avatarText}>{profile?.full_name?.charAt(0) || 'U'}</Text>
+               )}
+            </View>
             <View style={styles.editIconBadge}>
               <Ionicons name="camera" size={12} color="#fff" />
             </View>
           </TouchableOpacity>
           <View style={styles.profileInfo}>
-            <Text style={styles.userName}>{profile?.full_name || profile?.username}</Text>
+            <Text style={styles.userName} numberOfLines={1} adjustsFontSizeToFit>{profile?.full_name || profile?.username}</Text>
             <View style={styles.statusBadge}>
-              <Text style={styles.userStatus}>
+              <Text style={styles.userStatus} numberOfLines={2}>
                 {profile?.active_membership ? `Абонемент: ${profile.active_membership.name}` : 'Базовий акаунт'}
               </Text>
             </View>
@@ -159,17 +161,17 @@ export default function CabinetScreen() {
       {/* Stats Cards */}
       <View style={styles.statsContainer}>
         <TouchableOpacity style={styles.statBox} onPress={() => navigation.navigate('Achievements')} activeOpacity={0.8}>
-          <Ionicons name="trophy" size={28} color={COLORS.primary} style={{marginBottom: 8}} />
-          <Text style={styles.statLabel}>Досягнення</Text>
+          <Ionicons name="trophy" size={26} color={COLORS.primary} style={{marginBottom: 8}} />
+          <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit>Досягнення</Text>
         </TouchableOpacity>
         
         <View style={styles.statBox}>
           <Text style={styles.statValue}>{bookings.length}</Text>
-          <Text style={styles.statLabel}>Записів</Text>
+          <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit>Записів</Text>
         </View>
         <View style={styles.statBox}>
-          <Text style={styles.statValue}>{profile?.active_membership ? 'PRO' : '-'}</Text>
-          <Text style={styles.statLabel}>Тариф</Text>
+          <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>{profile?.active_membership ? 'PRO' : '-'}</Text>
+          <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit>Тариф</Text>
         </View>
       </View>
 
@@ -382,18 +384,21 @@ const getStyles = (COLORS) => StyleSheet.create({
     paddingHorizontal: 12, 
     paddingVertical: 6, 
     borderRadius: 12, 
-    alignSelf: 'flex-start' 
+    alignSelf: 'flex-start',
+    marginTop: 4
   },
-  userStatus: { color: COLORS.primary, fontSize: 13, fontWeight: '700' },
+  userStatus: { color: COLORS.primary, fontSize: 13, fontWeight: '700', flexWrap: 'wrap' },
   
-  statsContainer: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginTop: 15 },
+  statsContainer: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: 15 },
   statBox: { 
     flex: 1, 
     backgroundColor: COLORS.cardBackground, 
-    marginHorizontal: 8, 
-    padding: 20, 
+    marginHorizontal: 5, 
+    paddingVertical: 15, 
+    paddingHorizontal: 5,
     borderRadius: 20, 
     alignItems: 'center', 
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 10,
@@ -401,8 +406,8 @@ const getStyles = (COLORS) => StyleSheet.create({
     borderWidth: 1, 
     borderColor: Object.hasOwn(COLORS, 'darkerCard') ? COLORS.darkerCard : COLORS.border 
   },
-  statValue: { color: COLORS.text, fontSize: 28, fontWeight: '900' },
-  statLabel: { color: COLORS.muted, fontSize: 13, marginTop: 4, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 },
+  statValue: { color: COLORS.text, fontSize: 24, fontWeight: '900' },
+  statLabel: { color: COLORS.muted, fontSize: 11, marginTop: 4, fontWeight: '700', textTransform: 'uppercase', textAlign: 'center' },
   
   section: { paddingHorizontal: 24, marginTop: 30 },
   sectionTitle: { color: COLORS.text, fontSize: 20, fontWeight: '800', marginBottom: 15 },
