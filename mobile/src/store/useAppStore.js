@@ -5,6 +5,7 @@ import { Alert } from 'react-native';
 
 const useAppStore = create((set) => ({
   userToken: null,
+  hasCompletedOnboarding: false,
   isLoading: true,
   theme: 'dark',
   
@@ -12,16 +13,27 @@ const useAppStore = create((set) => ({
     try {
       const token = await SecureStore.getItemAsync('userToken');
       const savedTheme = await SecureStore.getItemAsync('userTheme');
+      const onboarded = await SecureStore.getItemAsync('hasCompletedOnboarding');
       if (token) {
         set({ userToken: token });
       }
       if (savedTheme) {
         set({ theme: savedTheme });
       }
+      set({ hasCompletedOnboarding: onboarded === 'true' });
     } catch (e) {
       console.log('Помилка читання даних', e);
     } finally {
       set({ isLoading: false });
+    }
+  },
+
+  completeOnboarding: async () => {
+    try {
+      await SecureStore.setItemAsync('hasCompletedOnboarding', 'true');
+      set({ hasCompletedOnboarding: true });
+    } catch (e) {
+      console.log('Помилка збереження даних', e);
     }
   },
 

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Ima
 import { useTheme } from '../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
+import apiClient from '../api/client';
 
 const TERMS = [
   { term: 'Суперсет', desc: 'Виконання двох або більше різних вправ без відпочинку між ними.' },
@@ -101,13 +102,30 @@ const INITIAL_CHECKLIST = [
 export default function EducationScreen() {
   const COLORS = useTheme();
   const styles = getStyles(COLORS);
-  const [activeTab, setActiveTab] = useState('recipes'); 
+  const [activeTab, setActiveTab] = useState('programs');
   const [checklist, setChecklist] = useState(INITIAL_CHECKLIST);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
+  
+  const [instructors, setInstructors] = useState([]);
+  const [workouts, setWorkouts] = useState([]);
 
   useEffect(() => {
     loadChecklist();
+    fetchBackendData();
   }, []);
+
+  const fetchBackendData = async () => {
+    try {
+      const [instRes, workRes] = await Promise.all([
+        apiClient.get('/instructors/'),
+        apiClient.get('/workouts/')
+      ]);
+      setInstructors(instRes.data);
+      setWorkouts(workRes.data);
+    } catch (e) {
+      console.log('Error fetching backend data in Education', e);
+    }
+  };
 
   const loadChecklist = async () => {
     try {
@@ -138,6 +156,12 @@ export default function EducationScreen() {
 
   const renderTabs = () => (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsContainer}>
+      <TouchableOpacity onPress={() => setActiveTab('programs')} style={[styles.tab, activeTab === 'programs' && styles.activeTab]}>
+        <Text style={[styles.tabText, activeTab === 'programs' && styles.activeTabText]}>Напрямки</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => setActiveTab('instructors')} style={[styles.tab, activeTab === 'instructors' && styles.activeTab]}>
+        <Text style={[styles.tabText, activeTab === 'instructors' && styles.activeTabText]}>Команда</Text>
+      </TouchableOpacity>
       <TouchableOpacity onPress={() => setActiveTab('recipes')} style={[styles.tab, activeTab === 'recipes' && styles.activeTab]}>
         <Text style={[styles.tabText, activeTab === 'recipes' && styles.activeTabText]}>Страви</Text>
       </TouchableOpacity>
@@ -165,6 +189,54 @@ export default function EducationScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         
+        {activeTab === 'programs' && (
+          <View>
+            <Text style={styles.sectionTitle}>Наші Напрямки Тренувань</Text>
+            {workouts.length === 0 ? (
+               <Text style={{color: COLORS.muted}}>Завантаження або напрямки відсутні...</Text>
+            ) : (
+              workouts.map((item) => (
+                <View key={item.id} style={styles.programCard}>
+                  <View style={[styles.programIconWrap, { backgroundColor: `${COLORS.primary}20` }]}>
+                    <Ionicons name="fitness" size={28} color={COLORS.primary} />
+                  </View>
+                  <View style={styles.programInfo}>
+                    <Text style={styles.programTitle}>{item.name}</Text>
+                    <Text style={styles.programDesc}>{item.description}</Text>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        )}
+
+        {activeTab === 'instructors' && (
+          <View>
+            <Text style={styles.sectionTitle}>Наші Тренери</Text>
+            {instructors.length === 0 ? (
+               <Text style={{color: COLORS.muted}}>Завантаження або тренери відсутні...</Text>
+            ) : (
+               instructors.map((item) => (
+                <View key={item.id} style={styles.instructorCard}>
+                  <View style={styles.instructorAvatarWrap}>
+                    <View style={styles.instructorAvatar}>
+                      <Text style={styles.instructorAvatarText}>{item.full_name?.charAt(0) || 'T'}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.instructorInfo}>
+                    <Text style={styles.instructorName}>{item.full_name}</Text>
+                    <View style={styles.specialtyBadge}>
+                      <Ionicons name="star" size={14} color={COLORS.primary} />
+                      <Text style={styles.specialtyText}>{item.specialties}</Text>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={COLORS.muted} style={{ opacity: 0.5 }} />
+                </View>
+              ))
+            )}
+          </View>
+        )}
+
         {activeTab === 'recipes' && (
           <View>
             <Text style={styles.sectionTitle}>Корисні Рецепти</Text>
@@ -333,6 +405,33 @@ const getStyles = (COLORS) => StyleSheet.create({
   checkText: { color: COLORS.text, fontSize: 16, marginLeft: 15 },
   checkTextDone: { color: COLORS.muted, textDecorationLine: 'line-through' },
   
+  instructorCard: { 
+    flexDirection: 'row', alignItems: 'center', 
+    backgroundColor: Object.hasOwn(COLORS, 'cardBackground') ? COLORS.cardBackground : '#1a1a1a', 
+    borderRadius: 20, padding: 15, marginBottom: 15,
+    borderWidth: 1, borderColor: Object.hasOwn(COLORS, 'border') ? COLORS.border : '#333',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 4
+  },
+  instructorAvatarWrap: { padding: 3, borderRadius: 30, borderWidth: 2, borderColor: `${COLORS.primary}50` },
+  instructorAvatar: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.primary },
+  instructorAvatarText: { color: '#fff', fontSize: 22, fontWeight: '900' },
+  instructorInfo: { flex: 1, marginLeft: 15 },
+  instructorName: { color: COLORS.text, fontSize: 18, fontWeight: '800', marginBottom: 4 },
+  specialtyBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: `${COLORS.primary}15`, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, alignSelf: 'flex-start' },
+  specialtyText: { color: COLORS.primary, fontSize: 13, fontWeight: '600' },
+
+  programCard: {
+    backgroundColor: Object.hasOwn(COLORS, 'cardBackground') ? COLORS.cardBackground : '#1a1a1a', 
+    borderRadius: 20, padding: 20, marginBottom: 15,
+    borderWidth: 1, borderColor: Object.hasOwn(COLORS, 'border') ? COLORS.border : '#333',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.15, shadowRadius: 15, elevation: 5,
+    flexDirection: 'row', alignItems: 'center'
+  },
+  programIconWrap: { width: 60, height: 60, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+  programInfo: { flex: 1 },
+  programTitle: { color: COLORS.text, fontSize: 20, fontWeight: '900', marginBottom: 6, letterSpacing: -0.5 },
+  programDesc: { color: COLORS.muted, fontSize: 14, lineHeight: 20 },
+
   // Recipes Re-design (iOS Aesthetic)
   recipeCard: { borderRadius: 24, marginBottom: 25, shadowColor: COLORS.text === '#000000' ? '#000' : '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 8, overflow: 'hidden' },
   recipeImage: { width: '100%', height: 220 },

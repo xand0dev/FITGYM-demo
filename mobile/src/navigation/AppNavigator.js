@@ -16,6 +16,7 @@ import ToolsScreen from '../screens/ToolsScreen';
 import EducationScreen from '../screens/EducationScreen';
 import ActiveWorkoutScreen from '../screens/ActiveWorkoutScreen';
 import MembershipScreen from '../screens/MembershipScreen';
+import OnboardingScreen from '../screens/OnboardingScreen';
 import { useTheme } from '../constants/theme';
 import useAppStore from '../store/useAppStore';
 
@@ -63,6 +64,7 @@ function MainTabs() {
 export default function AppNavigator() {
   const userToken = useAppStore((state) => state.userToken);
   const isLoading = useAppStore((state) => state.isLoading);
+  const hasCompletedOnboarding = useAppStore((state) => state.hasCompletedOnboarding);
   const COLORS = useTheme();
 
   if (isLoading) {
@@ -76,7 +78,9 @@ export default function AppNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {userToken == null ? (
+        {!hasCompletedOnboarding ? (
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+        ) : userToken == null ? (
           <>
             <Stack.Screen name="Auth" component={LoginScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />

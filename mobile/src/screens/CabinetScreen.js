@@ -6,6 +6,7 @@ import { useTheme } from '../constants/theme';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import useAppStore from '../store/useAppStore';
 import apiClient from '../api/client';
+import SkeletonLoader from '../components/SkeletonLoader';
 
 export default function CabinetScreen() {
   const { logout, toggleTheme, theme } = useAppStore();
@@ -108,8 +109,22 @@ export default function CabinetScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+      <View style={[styles.container, { padding: 24, paddingTop: 60 }]}>
+         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20, marginBottom: 30 }}>
+            <SkeletonLoader width={80} height={80} borderRadius={25} />
+            <View style={{ flex: 1 }}>
+               <SkeletonLoader width={150} height={28} style={{ marginBottom: 10 }} />
+               <SkeletonLoader width={100} height={30} borderRadius={12} />
+            </View>
+         </View>
+         
+         <View style={{ flexDirection: 'row', gap: 15, marginBottom: 30 }}>
+            <SkeletonLoader width={160} height={100} borderRadius={20} style={{ flex: 1 }} />
+            <SkeletonLoader width={160} height={100} borderRadius={20} style={{ flex: 1 }} />
+         </View>
+
+         <SkeletonLoader width={120} height={20} style={{ marginBottom: 15 }} />
+         <SkeletonLoader width="100%" height={120} borderRadius={20} style={{ marginBottom: 15 }} />
       </View>
     );
   }
@@ -152,16 +167,34 @@ export default function CabinetScreen() {
         </View>
       </View>
 
-      {!profile?.active_membership && (
-        <View style={{ paddingHorizontal: 24, marginTop: 20 }}>
-          <TouchableOpacity 
-            style={{ backgroundColor: COLORS.primary, padding: 15, borderRadius: 12, alignItems: 'center' }}
-            onPress={() => navigation.navigate('Membership')}
-          >
-            <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>Отримати абонемент</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <View style={{ paddingHorizontal: 24, marginTop: 20 }}>
+        {profile?.active_membership ? (
+          <View style={styles.proCard}>
+            <View style={styles.proCardGlow} />
+            <View style={styles.proCardHeader}>
+              <Ionicons name="star" size={20} color="#FFD700" />
+              <Text style={styles.proCardTitle}>PRO MEMBER</Text>
+            </View>
+            <Text style={styles.proCardPlanName}>{profile.active_membership.name}</Text>
+            <Text style={styles.proCardDesc}>Дякуємо, що обираєте нас. Ваші тренування безмежні!</Text>
+          </View>
+        ) : (
+          <View style={styles.basicCard}>
+            <View style={styles.basicCardHeader}>
+              <Ionicons name="lock-closed" size={20} color={COLORS.muted} />
+              <Text style={styles.basicCardTitle}>БАЗОВИЙ АКАУНТ</Text>
+            </View>
+            <Text style={styles.basicCardDesc}>Отримайте тариф PRO для повного доступу до всіх тренувань та сервісів клубу.</Text>
+            <TouchableOpacity 
+              style={styles.upgradeBtn}
+              onPress={() => navigation.navigate('Membership')}
+            >
+              <Text style={styles.upgradeBtnText}>Отримати PRO Абонемент</Text>
+              <Ionicons name="arrow-forward" size={16} color="#000" />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
 
       {/* Bookings Section */}
       <View style={styles.section}>
@@ -334,6 +367,20 @@ const getStyles = (COLORS) => StyleSheet.create({
   section: { paddingHorizontal: 24, marginTop: 30 },
   sectionTitle: { color: COLORS.text, fontSize: 20, fontWeight: '800', marginBottom: 15 },
   
+  proCard: { backgroundColor: '#1A1A1A', borderRadius: 24, padding: 24, overflow: 'hidden', borderWidth: 1, borderColor: '#FFD700', shadowColor: '#FFD700', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 5 },
+  proCardGlow: { position: 'absolute', top: -50, right: -50, width: 150, height: 150, borderRadius: 75, backgroundColor: 'rgba(255, 215, 0, 0.15)' },
+  proCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
+  proCardTitle: { color: '#FFD700', fontSize: 14, fontWeight: '900', letterSpacing: 1 },
+  proCardPlanName: { color: '#FFFFFF', fontSize: 28, fontWeight: '900', marginBottom: 6 },
+  proCardDesc: { color: '#AAAAAA', fontSize: 13, lineHeight: 18 },
+
+  basicCard: { backgroundColor: Object.hasOwn(COLORS, 'darkerCard') ? COLORS.darkerCard : '#1A1A1A', borderRadius: 24, padding: 24, borderWidth: 1, borderColor: Object.hasOwn(COLORS, 'border') ? COLORS.border : '#333' },
+  basicCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
+  basicCardTitle: { color: COLORS.muted, fontSize: 13, fontWeight: '900', letterSpacing: 1 },
+  basicCardDesc: { color: COLORS.text, fontSize: 15, lineHeight: 22, marginBottom: 20 },
+  upgradeBtn: { backgroundColor: COLORS.primary, paddingVertical: 14, paddingHorizontal: 20, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  upgradeBtnText: { color: '#000', fontSize: 16, fontWeight: '800' },
+
   emptyStateBox: {
     alignItems: 'center',
     justifyContent: 'center',
