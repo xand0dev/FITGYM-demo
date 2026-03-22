@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import apiClient from '../api/client';
 import useAppStore from '../store/useAppStore';
+import { getMonthsWord, formatCurrency, cleanPlanName } from '../utils/formatters';
 
 const { width } = Dimensions.get('window');
 
@@ -107,22 +108,8 @@ export default function MembershipScreen() {
         contentContainerStyle={{ padding: 20 }}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => {
-          const formattedPrice = parseInt(item.amount).toLocaleString('uk-UA');
-          
-          // Fix correct Ukrainian grammar for months
-          const getMonthsWord = (monthsStr) => {
-             const m = parseInt(monthsStr, 10) || 0;
-             const m10 = m % 10;
-             const m100 = m % 100;
-             if (m100 >= 11 && m100 <= 19) return 'МІСЯЦІВ';
-             if (m10 === 1) return 'МІСЯЦЬ';
-             if (m10 >= 2 && m10 <= 4) return 'МІСЯЦІ';
-             return 'МІСЯЦІВ';
-          };
-          
-          // Strip redundant (1 місяць) and (12 місяців) from the name since it's in the badge now
-          // Using [\s\S] to handle newlines that might come from DB
-          const cleanName = item.name.replace(/\s*\([\s\S]*?\)/g, '').trim();
+          const formattedPrice = formatCurrency(item.amount);
+          const cleanName = cleanPlanName(item.name);
 
           return (
           <View style={styles.planCard}>
