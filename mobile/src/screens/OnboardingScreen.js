@@ -60,7 +60,9 @@ export default function OnboardingScreen() {
 
   const scrollToNext = () => {
     if (currentIndex < SLIDES.length - 1) {
-      slidesRef.current.scrollToIndex({ index: currentIndex + 1 });
+      const nextIndex = currentIndex + 1;
+      slidesRef.current.scrollToOffset({ offset: nextIndex * width, animated: true });
+      setCurrentIndex(nextIndex);
     } else {
       // Complete Onboarding if on last slide
       if (!selectedGoal) {

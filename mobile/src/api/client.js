@@ -1,9 +1,13 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
+
+const BASE_URL = Platform.OS === 'web'
+  ? 'http://localhost:8000/api'
+  : 'http://10.0.2.2:8000/api';
 
 const apiClient = axios.create({
-  // Вказуємо твій новий IP для Wi-Fi мережі
-  baseURL: 'http://192.168.0.50:8000/api',
+  baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },

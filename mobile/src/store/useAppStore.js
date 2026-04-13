@@ -62,9 +62,9 @@ const useAppStore = create((set) => ({
   },
 
   completeOnboarding: async () => {
+    set({ hasCompletedOnboarding: true });
     try {
       await SecureStore.setItemAsync('hasCompletedOnboarding', 'true');
-      set({ hasCompletedOnboarding: true });
     } catch (e) {
       console.log('Помилка збереження даних', e);
     }
@@ -175,9 +175,9 @@ const useAppStore = create((set) => ({
       });
 
       const token = response.data.token;
-      await SecureStore.setItemAsync('userToken', token);
       set({ userToken: token });
-      
+      SecureStore.setItemAsync('userToken', token).catch(console.error);
+
     } catch (error) {
       console.log('Помилка входу:', error?.response?.data || error.message);
       const errorMessage = error?.response?.data?.detail 
@@ -202,8 +202,8 @@ const useAppStore = create((set) => ({
 
       if (response.data.token) {
         const token = response.data.token;
-        await SecureStore.setItemAsync('userToken', token);
         set({ userToken: token });
+        SecureStore.setItemAsync('userToken', token).catch(console.error);
       }
     } catch (error) {
       console.log('Помилка реєстрації:', error?.response?.data || error.message);
