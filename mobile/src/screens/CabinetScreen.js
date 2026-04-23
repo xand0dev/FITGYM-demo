@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image, Switch, Vibration } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as SecureStore from 'expo-secure-store';
 import { useTheme } from '../constants/theme';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import useAppStore from '../store/useAppStore';
@@ -25,13 +26,15 @@ export default function CabinetScreen() {
 
       const fetchData = async () => {
         try {
-          const [meRes, bookingsRes] = await Promise.all([
+          const [meRes, bookingsRes, savedAvatar] = await Promise.all([
             apiClient.get('/me/'),
-            apiClient.get('/my-bookings/')
+            apiClient.get('/my-bookings/'),
+            SecureStore.getItemAsync('userAvatarUri'),
           ]);
           if (isActive) {
             setProfile(meRes.data);
             setBookings(bookingsRes.data.results || bookingsRes.data);
+            if (savedAvatar) setAvatarUri(savedAvatar);
           }
         } catch (error) {
           console.log('Помилка завантаження профілю:', error);
@@ -88,7 +91,9 @@ export default function CabinetScreen() {
       quality: 0.8,
     });
     if (!result.canceled) {
-      setAvatarUri(result.assets[0].uri);
+      const uri = result.assets[0].uri;
+      setAvatarUri(uri);
+      await SecureStore.setItemAsync('userAvatarUri', uri);
     }
   };
 
@@ -104,7 +109,9 @@ export default function CabinetScreen() {
       quality: 0.8,
     });
     if (!result.canceled) {
-      setAvatarUri(result.assets[0].uri);
+      const uri = result.assets[0].uri;
+      setAvatarUri(uri);
+      await SecureStore.setItemAsync('userAvatarUri', uri);
     }
   };
 
@@ -177,15 +184,30 @@ export default function CabinetScreen() {
 
       <View style={{ paddingHorizontal: 24, marginTop: 20 }}>
         {profile?.active_membership ? (
-          <View style={styles.proCard}>
-            <View style={styles.proCardGlow} />
-            <View style={styles.proCardHeader}>
-              <Ionicons name="star" size={20} color="#FFD700" />
-              <Text style={styles.proCardTitle}>PRO MEMBER</Text>
-            </View>
-            <Text style={styles.proCardPlanName}>{profile.active_membership.name}</Text>
-            <Text style={styles.proCardDesc}>Дякуємо, що обираєте нас. Ваші тренування безмежні!</Text>
-          </View>
+          (() => {
+            const endDate = profile.active_membership?.end_date;
+            const daysLeft = endDate ? Math.ceil((new Date(endDate) - new Date()) / 86400000) : null;
+            const isExpiringSoon = daysLeft !== null && daysLeft <= 14;
+            return (
+              <View style={[styles.proCard, isExpiringSoon && { borderColor: '#f59e0b', borderWidth: 1.5 }]}>
+                <View style={styles.proCardGlow} />
+                <View style={styles.proCardHeader}>
+                  <Ionicons name="star" size={20} color="#FFD700" />
+                  <Text style={styles.proCardTitle}>PRO MEMBER</Text>
+                </View>
+                <Text style={styles.proCardPlanName}>{profile.active_membership.name}</Text>
+                {endDate && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                    {isExpiringSoon && <Ionicons name="warning-outline" size={14} color="#f59e0b" />}
+                    <Text style={{ color: isExpiringSoon ? '#f59e0b' : 'rgba(255,255,255,0.6)', fontSize: 12 }}>
+                      Дійсний до: {new Date(endDate).toLocaleDateString('uk-UA')}{isExpiringSoon ? ` (${daysLeft} дн.)` : ''}
+                    </Text>
+                  </View>
+                )}
+                <Text style={styles.proCardDesc}>Дякуємо, що обираєте нас. Ваші тренування безмежні!</Text>
+              </View>
+            );
+          })()
         ) : (
           <View style={styles.basicCard}>
             <View style={styles.basicCardHeader}>
@@ -318,7 +340,13 @@ export default function CabinetScreen() {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          onPress={() => Alert.alert('Вийти?', 'Ви впевнені, що хочете вийти?', [
+            { text: 'Скасувати', style: 'cancel' },
+            { text: 'Вийти', style: 'destructive', onPress: logout },
+          ])}
+        >
           <Ionicons name="log-out-outline" size={22} color={COLORS.error} />
           <Text style={styles.logoutText}>Вийти з акаунту</Text>
         </TouchableOpacity>

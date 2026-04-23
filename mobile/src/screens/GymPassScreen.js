@@ -71,15 +71,15 @@ export default function GymPassScreen() {
            </View>
         </Animated.View>
 
-        <TouchableOpacity 
+        <TouchableOpacity
            style={styles.simulationBtn}
            onPress={() => {
              Vibration.vibrate([0, 50, 50, 50]);
-             navigation.navigate('ActiveWorkout');
+             navigation.navigate('Scanner');
            }}
         >
           <Ionicons name="scan-circle" size={24} color={COLORS.text} style={{marginRight: 10}} />
-          <Text style={styles.simulationBtnText}>Симуляція Сканування</Text>
+          <Text style={styles.simulationBtnText}>Сканувати QR-код</Text>
         </TouchableOpacity>
       </View>
     </View>

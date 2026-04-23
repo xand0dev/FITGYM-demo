@@ -6,6 +6,7 @@ import RestTimer from '../components/RestTimer';
 import HIITTimer from '../components/HIITTimer';
 import TempoTrainer from '../components/TempoTrainer';
 import SkeletonLoader from '../components/SkeletonLoader';
+import ErrorView from '../components/ErrorView';
 import apiClient from '../api/client';
 
 export default function WorkoutsScreen() {
@@ -19,6 +20,8 @@ export default function WorkoutsScreen() {
     return d.toISOString().split('T')[0];
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   // Generate next 14 days
   const datesArray = Array.from({ length: 14 }).map((_, i) => {
@@ -34,18 +37,20 @@ export default function WorkoutsScreen() {
     }
   }, [activeTab]);
 
-  const fetchSchedule = async () => {
+  const fetchSchedule = async (refresh = false) => {
     try {
-      setIsLoading(true);
+      if (refresh) setIsRefreshing(true);
+      else setIsLoading(true);
+      setHasError(false);
       const res = await apiClient.get('/schedule/');
-      // Filter out past classes
       const now = new Date();
       const valid = res.data.filter(session => new Date(session.start_at) > now);
       setAllSchedule(valid);
     } catch (e) {
-      console.log('Error fetching schedule', e?.response?.data || e.message);
+      setHasError(true);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -98,7 +103,9 @@ export default function WorkoutsScreen() {
             </ScrollView>
           </View>
 
-          {isLoading ? (
+          {hasError ? (
+            <ErrorView onRetry={() => fetchSchedule()} />
+          ) : isLoading ? (
             <View style={{ paddingHorizontal: 20, paddingTop: 10 }}>
                {[1, 2, 3].map(i => (
                  <View key={i} style={{ backgroundColor: Object.hasOwn(COLORS, 'cardBackground') ? COLORS.cardBackground : '#1A1A1A', borderRadius: 20, padding: 20, marginBottom: 15, borderWidth: 1, borderColor: Object.hasOwn(COLORS, 'border') ? COLORS.border : '#333' }}>
@@ -132,8 +139,8 @@ export default function WorkoutsScreen() {
                   <Text style={{ color: COLORS.muted }}>На цей день немає запланованих занять</Text>
                 </View>
               )}
-              refreshing={isLoading}
-              onRefresh={fetchSchedule}
+              refreshing={isRefreshing}
+              onRefresh={() => fetchSchedule(true)}
             />
           )}
         </View>

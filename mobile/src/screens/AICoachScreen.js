@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform, Vibration, Animated } from 'react-native';
 import { useTheme } from '../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,6 +35,35 @@ const TypeWriterText = ({ text, onComplete, style }) => {
 
   return <Text style={style}>{displayedText}</Text>;
 };
+
+function TypingDots({ color }) {
+  const dots = [useRef(new Animated.Value(0)).current, useRef(new Animated.Value(0)).current, useRef(new Animated.Value(0)).current];
+
+  useEffect(() => {
+    dots.forEach((anim, i) => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(i * 200),
+          Animated.timing(anim, { toValue: -6, duration: 300, useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 0, duration: 300, useNativeDriver: true }),
+          Animated.delay((dots.length - 1 - i) * 200),
+        ])
+      ).start();
+    });
+    return () => dots.forEach(a => a.stopAnimation());
+  }, []);
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 4 }}>
+      {dots.map((anim, i) => (
+        <Animated.View
+          key={i}
+          style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: color, marginHorizontal: 3, transform: [{ translateY: anim }] }}
+        />
+      ))}
+    </View>
+  );
+}
 
 export default function AICoachScreen() {
   const ObjectHasOwn = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
@@ -225,10 +254,8 @@ export default function AICoachScreen() {
               <View style={[styles.aiAvatar, {backgroundColor: COLORS.primary + '20'}]}>
                 <Ionicons name="hardware-chip" size={20} color={COLORS.primary} />
               </View>
-              <View style={[styles.messageBubble, styles.messageBubbleAI, {backgroundColor: ObjectHasOwn(COLORS, 'cardBackground') ? COLORS.cardBackground : '#1a1a1a', flexDirection: 'row', alignItems: 'center', paddingVertical: 15}]}>
-                <View style={styles.typingDot} />
-                <View style={[styles.typingDot, {animationDelay: '100ms'}]} />
-                <View style={[styles.typingDot, {animationDelay: '200ms'}]} />
+              <View style={[styles.messageBubble, styles.messageBubbleAI, {backgroundColor: COLORS.cardBackground, flexDirection: 'row', alignItems: 'center'}]}>
+                <TypingDots color={COLORS.muted} />
               </View>
             </View>
           )}

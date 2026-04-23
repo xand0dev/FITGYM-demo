@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../constants/theme';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import apiClient from '../api/client';
+import useAppStore from '../store/useAppStore';
+import { scheduleClassReminder } from '../utils/notifications';
 
 const { width, height } = Dimensions.get('window');
 
@@ -26,13 +28,16 @@ export default function ClassDetailsScreen() {
   const route = useRoute();
   const { classItem } = route.params;
   const [isBooking, setIsBooking] = useState(false);
+  const { addFitCoins } = useAppStore();
 
   const handleBook = async () => {
     Vibration.vibrate([0, 40, 40, 40]);
     try {
       setIsBooking(true);
-      await apiClient.post('/book/', { session: classItem.id });
-      Alert.alert('Успіх', 'Успішно заброньовано!');
+      await apiClient.post('/my-bookings/', { session: classItem.id });
+      addFitCoins(50);
+      scheduleClassReminder(classItem).catch(() => {});
+      Alert.alert('Успіх', 'Успішно заброньовано! +50 FitCoins 🎉');
       navigation.goBack();
     } catch (error) {
       const msg = error.response?.data ? JSON.stringify(error.response.data) : error.message;

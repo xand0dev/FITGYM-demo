@@ -7,6 +7,7 @@ import * as SecureStore from 'expo-secure-store';
 import apiClient from '../api/client';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import useAppStore from '../store/useAppStore';
+import { getWeightLog, addWeightEntry, getLastN } from '../utils/weightStorage';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -16,24 +17,13 @@ export default function HomeScreen() {
   const styles = getStyles(COLORS, ObjectHasOwn);
   const navigation = useNavigation();
   const { fitnessGoal, streak, updateStreak } = useAppStore();
-  
+
   const [waterAmount, setWaterAmount] = useState(0); // in ml
   const [upcomingClass, setUpcomingClass] = useState(null);
   const [userName, setUserName] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [weightLog, setWeightLog] = useState([]);
   const dailyGoal = 2500; // 2.5L
-
-  // Chart data
-  const chartData = {
-    labels: ['Пн', 'Вв', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'],
-    datasets: [
-      {
-        data: [72.5, 72.3, 72.1, 71.8, 71.9, 71.5, 71.2],
-        color: (opacity = 1) => `rgba(224, 255, 79, ${opacity})`,
-        strokeWidth: 3
-      }
-    ],
-    legend: ["Зміна ваги (кг)"]
-  };
 
   useFocusEffect(
     useCallback(() => {
@@ -41,28 +31,22 @@ export default function HomeScreen() {
       const loadAll = async () => {
         setIsLoading(true);
         try {
-          // Fetch logic for upcoming class & profile parallel
-          const [scheduleRes, meRes] = await Promise.all([
+          const [scheduleRes, meRes, wLog] = await Promise.all([
             apiClient.get('/schedule/').catch(() => ({ data: [] })),
-            apiClient.get('/me/').catch(() => ({ data: null }))
+            apiClient.get('/me/').catch(() => ({ data: null })),
+            getWeightLog(),
           ]);
 
           if (isActive) {
-            // Schedule processing
             if (scheduleRes.data && scheduleRes.data.length > 0) {
               const now = new Date();
-              const upcoming = scheduleRes.data.filter(session => new Date(session.start_at) > now);
-              if (upcoming.length > 0) {
-                setUpcomingClass(upcoming[0]);
-              } else {
-                setUpcomingClass(null);
-              }
+              const upcoming = scheduleRes.data.filter(s => new Date(s.start_at) > now);
+              setUpcomingClass(upcoming.length > 0 ? upcoming[0] : null);
             }
-
-            // Name
             if (meRes.data && meRes.data.full_name) {
               setUserName(meRes.data.full_name.split(' ')[0]);
             }
+            setWeightLog(wLog);
           }
         } catch (e) {
           console.log('Error dashboard data', e);
@@ -78,8 +62,6 @@ export default function HomeScreen() {
     }, [])
   );
   
-  const [isLoading, setIsLoading] = useState(true);
-
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Доброго ранку';
@@ -142,6 +124,37 @@ export default function HomeScreen() {
     if (fitnessGoal === 'keep_fit') return 'Рух - це життя. Збережемо тонус разом 🌟';
     return 'Ось твій прогрес на сьогодні.';
   };
+
+  const last7Weight = getLastN(weightLog, 7);
+  const weightChartNode = last7Weight.length >= 2 ? (
+    <LineChart
+      data={{
+        labels: last7Weight.map(e => e.date.slice(5)),
+        datasets: [{ data: last7Weight.map(e => e.value), color: () => COLORS.primary, strokeWidth: 3 }],
+        legend: ['Вага (кг)'],
+      }}
+      width={screenWidth - 80}
+      height={220}
+      chartConfig={{
+        backgroundColor: 'transparent',
+        backgroundGradientFromOpacity: 0,
+        backgroundGradientToOpacity: 0,
+        decimalPlaces: 1,
+        color: () => COLORS.primary,
+        labelColor: () => COLORS.muted,
+        propsForDots: { r: '5', strokeWidth: '2', stroke: COLORS.primary },
+      }}
+      bezier
+      style={{ marginVertical: 8, borderRadius: 16, alignSelf: 'center' }}
+      withInnerLines={false}
+      withOuterLines={false}
+    />
+  ) : (
+    <View style={{ height: 120, justifyContent: 'center', alignItems: 'center', gap: 10 }}>
+      <Ionicons name="scale-outline" size={40} color={COLORS.muted} />
+      <Text style={{ color: COLORS.muted, fontSize: 14 }}>Додайте перший запис ваги</Text>
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -265,27 +278,31 @@ export default function HomeScreen() {
               <Ionicons name="trending-down" size={24} color={COLORS.primary} />
               <Text style={styles.cardTitle}>Твоя Вага</Text>
             </View>
+            <TouchableOpacity
+              onPress={async () => {
+                Alert.prompt(
+                  'Записати вагу',
+                  'Введіть поточну вагу (кг)',
+                  async (input) => {
+                    const val = parseFloat(input?.replace(',', '.'));
+                    if (val && val >= 20 && val <= 300) {
+                      const updated = await addWeightEntry(val);
+                      setWeightLog(updated);
+                    }
+                  },
+                  'plain-text',
+                  '',
+                  'decimal-pad'
+                );
+              }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+            >
+              <Ionicons name="add-circle-outline" size={20} color={COLORS.primary} />
+              <Text style={{ color: COLORS.primary, fontSize: 13, fontWeight: '600' }}>Записати</Text>
+            </TouchableOpacity>
           </View>
-          
-          <LineChart
-            data={chartData}
-            width={screenWidth - 80}
-            height={220}
-            chartConfig={{
-              backgroundColor: 'transparent',
-              backgroundGradientFromOpacity: 0,
-              backgroundGradientToOpacity: 0,
-              decimalPlaces: 1,
-              color: (opacity = 1) => COLORS.primary,
-              labelColor: (opacity = 1) => COLORS.muted,
-              style: { borderRadius: 16 },
-              propsForDots: { r: "5", strokeWidth: "2", stroke: COLORS.primary }
-            }}
-            bezier
-            style={{ marginVertical: 8, borderRadius: 16, alignSelf: 'center' }}
-            withInnerLines={false}
-            withOuterLines={false}
-          />
+
+          {weightChartNode}
         </View>
 
 
