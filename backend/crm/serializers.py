@@ -240,10 +240,21 @@ class AdminMemberSerializer(serializers.ModelSerializer):
         return instance
 
 class AdminMembershipApplicationSerializer(serializers.ModelSerializer):
-    # Додаткове поле, щоб зручно виводити назву тарифу на фронтенді
     membership_type_name = serializers.CharField(source='membership_type.name', read_only=True, allow_null=True)
 
     class Meta:
         model = MembershipApplication
         fields = ['id', 'name', 'phone', 'membership_type', 'membership_type_name', 'status', 'created_at']
+
+
+# === CHECK-IN ===
+
+class AccessCheckSerializer(serializers.Serializer):
+    member_id = serializers.IntegerField()
+    gym_id    = serializers.IntegerField()
+
+
+class AccessResultSerializer(serializers.Serializer):
+    granted = serializers.BooleanField()
+    reason  = serializers.CharField()
 

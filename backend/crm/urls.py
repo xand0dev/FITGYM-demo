@@ -6,7 +6,8 @@ from .views import (
     WorkoutViewSet, ClassViewSet, InstructorViewSet, MembershipTypeViewSet,
     ClassSessionViewSet, RegisterView, MeView, MyBookingsViewSet, BookingCreateView,
     AdminClassSessionViewSet, AdminMemberViewSet, AdminInstructorViewSet,
-    MembershipApplicationCreateView, AdminMembershipApplicationViewSet
+    MembershipApplicationCreateView, AdminMembershipApplicationViewSet,
+    CheckAccessView,
 )
 
 router = DefaultRouter()
@@ -30,5 +31,6 @@ urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('book/', BookingCreateView.as_view(), name='book-create'),
     path('apply/', MembershipApplicationCreateView.as_view(), name='apply'),
-    path('me/', MeView.as_view(), name='me'), # <-- НАШ УНІВЕРСАЛЬНИЙ ПРОФІЛЬ
+    path('me/', MeView.as_view(), name='me'),
+    path('access/check/', CheckAccessView.as_view(), name='access-check'),
 ]

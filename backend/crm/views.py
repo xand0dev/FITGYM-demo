@@ -10,6 +10,8 @@ from django.utils import timezone
 
 from .permissions import IsAdminUser
 
+from rest_framework import status as drf_status
+
 from .models import (
     Workout, Instructor, ClassSession, MembershipType,
     Member, Booking, MembershipHistory, Class, MembershipApplication
@@ -19,8 +21,10 @@ from .serializers import (
     MembershipTypeSerializer, RegisterSerializer, MemberSerializer,
     BookingSerializer, BookingCreateSerializer, AdminClassSessionSerializer,
     ClassSerializer, AdminInstructorSerializer, AdminMemberSerializer,
-    MembershipApplicationSerializer, AdminMembershipApplicationSerializer
+    MembershipApplicationSerializer, AdminMembershipApplicationSerializer,
+    AccessCheckSerializer, AccessResultSerializer,
 )
+from .services import check_client_access
 
 
 # --- ПУБЛІЧНІ VIEWS ---
@@ -190,3 +194,26 @@ class AdminMembershipApplicationViewSet(viewsets.ModelViewSet):
     queryset = MembershipApplication.objects.all().order_by('-created_at')
     serializer_class = AdminMembershipApplicationSerializer
     permission_classes = [IsAdminUser]
+
+
+# --- CHECK-IN ---
+
+class CheckAccessView(APIView):
+    """
+    POST /api/access/check/
+    Перевіряє чи може клієнт зайти в зал прямо зараз.
+    Записує кожну спробу в Attendance незалежно від результату.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request) -> Response:
+        serializer = AccessCheckSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        result = check_client_access(
+            member_id=serializer.validated_data['member_id'],
+            gym_id=serializer.validated_data['gym_id'],
+        )
+
+        http_status = drf_status.HTTP_200_OK if result.granted else drf_status.HTTP_403_FORBIDDEN
+        return Response(AccessResultSerializer(result).data, status=http_status)
