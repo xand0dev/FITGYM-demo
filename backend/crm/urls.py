@@ -7,7 +7,7 @@ from .views import (
     ClassSessionViewSet, RegisterView, MeView, MyBookingsViewSet, BookingCreateView,
     AdminClassSessionViewSet, AdminMemberViewSet, AdminInstructorViewSet,
     MembershipApplicationCreateView, AdminMembershipApplicationViewSet,
-    CheckAccessView,
+    CheckAccessView, MembershipAssignView,
 )
 
 router = DefaultRouter()
@@ -33,4 +33,5 @@ urlpatterns = [
     path('apply/', MembershipApplicationCreateView.as_view(), name='apply'),
     path('me/', MeView.as_view(), name='me'),
     path('access/check/', CheckAccessView.as_view(), name='access-check'),
+    path('admin/memberships/assign/', MembershipAssignView.as_view(), name='membership-assign'),
 ]

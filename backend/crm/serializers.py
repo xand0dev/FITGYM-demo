@@ -247,6 +247,13 @@ class AdminMembershipApplicationSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'phone', 'membership_type', 'membership_type_name', 'status', 'created_at']
 
 
+# === ASSIGN MEMBERSHIP ===
+
+class MembershipAssignSerializer(serializers.Serializer):
+    member_id = serializers.IntegerField()
+    membership_type_id = serializers.IntegerField()
+
+
 # === CHECK-IN ===
 
 class AccessCheckSerializer(serializers.Serializer):

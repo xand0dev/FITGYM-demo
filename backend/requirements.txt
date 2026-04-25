@@ -1,4 +1,5 @@
 asgiref==3.10.0
+python-dateutil==2.9.0.post0
 Django==4.2.3
 django-cors-headers==4.9.0
 djangorestframework==3.16.1

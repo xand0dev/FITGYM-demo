@@ -8,7 +8,8 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from .permissions import IsAdminUser
+from .permissions import IsAdminUser, IsGymStaff
+from .utils import get_gym_from_request
 
 from rest_framework import status as drf_status
 
@@ -22,7 +23,7 @@ from .serializers import (
     BookingSerializer, BookingCreateSerializer, AdminClassSessionSerializer,
     ClassSerializer, AdminInstructorSerializer, AdminMemberSerializer,
     MembershipApplicationSerializer, AdminMembershipApplicationSerializer,
-    AccessCheckSerializer, AccessResultSerializer,
+    AccessCheckSerializer, AccessResultSerializer, MembershipAssignSerializer,
 )
 from .services import check_client_access
 
@@ -42,21 +43,37 @@ class ClassViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class InstructorViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Instructor.objects.all()
     serializer_class = InstructorSerializer
     permission_classes = [permissions.AllowAny]
 
+    def get_queryset(self):
+        gym_id = self.request.query_params.get('gym_id')
+        if gym_id:
+            return Instructor.objects.filter(gym_id=gym_id)
+        return Instructor.objects.all()
+
 
 class MembershipTypeViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = MembershipType.objects.all()
     serializer_class = MembershipTypeSerializer
     permission_classes = [permissions.AllowAny]
 
+    def get_queryset(self):
+        gym_id = self.request.query_params.get('gym_id')
+        if gym_id:
+            return MembershipType.objects.filter(gym_id=gym_id)
+        return MembershipType.objects.all()
+
 
 class ClassSessionViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = ClassSession.objects.all().order_by('start_at')
     serializer_class = ClassSessionSerializer
     permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        gym_id = self.request.query_params.get('gym_id')
+        qs = ClassSession.objects.all().order_by('start_at')
+        if gym_id:
+            qs = qs.filter(gym_id=gym_id)
+        return qs
 
 
 class MembershipApplicationCreateView(generics.CreateAPIView):
@@ -173,27 +190,99 @@ class BookingCreateView(generics.CreateAPIView):
 # --- АДМІНСЬКІ VIEWS ---
 
 class AdminClassSessionViewSet(viewsets.ModelViewSet):
-    queryset = ClassSession.objects.all().order_by('-start_at')
     serializer_class = AdminClassSessionSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsGymStaff]
+
+    def get_queryset(self):
+        gym = get_gym_from_request(self.request)
+        if gym:
+            return ClassSession.objects.filter(gym=gym).order_by('-start_at')
+        # superuser бачить всі
+        return ClassSession.objects.all().order_by('-start_at')
 
 
 class AdminMemberViewSet(viewsets.ModelViewSet):
-    queryset = Member.objects.all().order_by('-id')
     serializer_class = AdminMemberSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsGymStaff]
+
+    def get_queryset(self):
+        gym = get_gym_from_request(self.request)
+        if gym:
+            return Member.objects.filter(gym=gym).order_by('-id')
+        return Member.objects.all().order_by('-id')
 
 
 class AdminInstructorViewSet(viewsets.ModelViewSet):
-    queryset = Instructor.objects.all().order_by('id')
     serializer_class = AdminInstructorSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsGymStaff]
+
+    def get_queryset(self):
+        gym = get_gym_from_request(self.request)
+        if gym:
+            return Instructor.objects.filter(gym=gym).order_by('id')
+        return Instructor.objects.all().order_by('id')
 
 
 class AdminMembershipApplicationViewSet(viewsets.ModelViewSet):
-    queryset = MembershipApplication.objects.all().order_by('-created_at')
     serializer_class = AdminMembershipApplicationSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsGymStaff]
+
+    def get_queryset(self):
+        gym = get_gym_from_request(self.request)
+        if gym:
+            return MembershipApplication.objects.filter(gym=gym).order_by('-created_at')
+        return MembershipApplication.objects.all().order_by('-created_at')
+
+
+# --- ASSIGN MEMBERSHIP ---
+
+class MembershipAssignView(APIView):
+    """
+    POST /api/admin/memberships/assign/
+    Продає абонемент клієнту: створює MembershipHistory з today → today + period_months.
+    Доступно тільки staff/superuser (IsGymStaff).
+    """
+    permission_classes = [IsGymStaff]
+
+    def post(self, request) -> Response:
+        from datetime import date
+        import calendar
+
+        serializer = MembershipAssignSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        member_id = serializer.validated_data['member_id']
+        membership_type_id = serializer.validated_data['membership_type_id']
+
+        try:
+            member = Member.objects.get(pk=member_id)
+        except Member.DoesNotExist:
+            return Response({'error': 'Клієнта не знайдено.'}, status=drf_status.HTTP_404_NOT_FOUND)
+
+        try:
+            membership_type = MembershipType.objects.get(pk=membership_type_id)
+        except MembershipType.DoesNotExist:
+            return Response({'error': 'Тарифний план не знайдено.'}, status=drf_status.HTTP_404_NOT_FOUND)
+
+        start = date.today()
+        months = membership_type.period_months
+        month = start.month - 1 + months
+        year = start.year + month // 12
+        month = month % 12 + 1
+        day = min(start.day, calendar.monthrange(year, month)[1])
+        end = date(year, month, day)
+
+        MembershipHistory.objects.create(
+            member=member,
+            membership_type=membership_type,
+            start_date=start,
+            end_date=end,
+            status='active',
+        )
+        return Response(
+            {'success': True, 'end_date': end.strftime('%d.%m.%Y')},
+            status=drf_status.HTTP_201_CREATED,
+        )
 
 
 # --- CHECK-IN ---

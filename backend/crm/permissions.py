@@ -7,8 +7,19 @@ class IsAdminUser(permissions.BasePermission):
     """
 
     def has_permission(self, request, view):
-        # 1. Перевіряємо, чи користувач взагалі існує (request.user)
-        # 2. Перевіряємо, чи він залогінений (is_authenticated - неявно перевіряється в request.user, але краще бути певним)
-        # 3. Перевіряємо, чи є у нього статус персоналу (is_staff)
-
         return bool(request.user and request.user.is_staff)
+
+
+class IsGymStaff(permissions.BasePermission):
+    """
+    Дозвіл для staff-користувача залу.
+    SuperUser (is_superuser=True) бачить усі зали.
+    Звичайний staff (is_staff=True) — тільки свій gym.
+    """
+
+    def has_permission(self, request, view) -> bool:
+        if not request.user or not request.user.is_authenticated:
+            return False
+        if request.user.is_superuser:
+            return True
+        return request.user.is_staff
