@@ -28,11 +28,12 @@ export default function Carousel() {
     }, []);
 
     return (
-        <section className="bg-white py-[100px]">
+        <section className="bg-background py-24">
             <div className="container mx-auto px-5 lg:px-8">
-                <div className="mb-10 border-l-[8px] border-primary pl-5">
-                    <h2 className="font-['Montserrat',sans-serif] font-black text-[2.5rem] uppercase m-0">
-                        Наші <span className="text-primary">Тренування</span>
+                <div className="mb-10 border-l-[3px] border-primary pl-5">
+                    <span className="font-heading text-primary text-xs uppercase tracking-[4px]">Галерея</span>
+                    <h2 className="font-display text-[clamp(2.5rem,6vw,4rem)] text-white uppercase tracking-wide mt-1">
+                        Наші <span className="text-gradient-red">Тренування</span>
                     </h2>
                 </div>
 
@@ -70,7 +71,7 @@ export default function Carousel() {
                     {IMAGES.map((_, i) => (
                         <div 
                             key={i} 
-                            className={`w-3 h-3 rounded-full transition-colors duration-300 ${offset / SLIDE_WIDTH === i ? 'bg-primary' : 'bg-[#ddd]'}`}
+                            className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${offset / SLIDE_WIDTH === i ? 'bg-primary shadow-[0_0_8px_rgba(255,0,0,0.5)]' : 'bg-white/15'}`}
                         />
                     ))}
                 </div>

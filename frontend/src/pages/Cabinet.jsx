@@ -26,7 +26,7 @@ export default function Cabinet() {
 
     // Спільний стан для Графіку та Календаря (потрібен для CabinetOverview)
     const [userNotes, setUserNotes] = useState(() => JSON.parse(localStorage.getItem('gym_notes')) || {});
-    const [activity, setActivity] = useState([15, 15, 15, 15, 15, 15, 15]);
+    const [activity, setActivity] = useState([45, 30, 70, 20, 90, 55, 40]);
     const [viewDate, setViewDate] = useState(new Date());
     const [activeDayKey, setActiveDayKey] = useState(null);
     const [tempNote, setTempNote] = useState('');

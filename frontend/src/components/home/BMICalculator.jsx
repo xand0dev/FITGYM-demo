@@ -37,38 +37,41 @@ export default function BMICalculator() {
     // Допоміжна функція для класів рядка таблиці
     const getRowClass = (statusType) => {
         const isActive = result?.status === statusType;
-        return `border-b border-[#ddd] transition-colors duration-300 ${isActive ? 'bg-primary text-white' : 'hover:bg-[#e8e8e8] text-[#666]'}`;
+        return `border-b border-white/[0.06] transition-colors duration-300 ${isActive ? 'bg-primary text-white' : 'hover:bg-white/[0.04] text-white/50'}`;
     };
 
     const getCell1Class = (statusType) => {
         const isActive = result?.status === statusType;
-        return `p-3 text-[1rem] font-semibold ${isActive ? 'text-white' : 'text-black'}`;
+        return `p-3 text-[1rem] font-semibold ${isActive ? 'text-white' : 'text-white/80'}`;
     };
 
     const getCell2Class = (statusType) => {
         const isActive = result?.status === statusType;
-        return `p-3 text-[1rem] ${isActive ? 'text-white' : 'text-[#666]'}`;
+        return `p-3 text-[1rem] ${isActive ? 'text-white' : 'text-white/50'}`;
     };
 
     return (
-        <section id="calculator" className="py-[80px] bg-white border-t border-black/5">
+        <section id="calculator" className="py-24 bg-background">
             <div className="container mx-auto max-w-[1200px] px-5 lg:px-8">
-                <h2 className="text-[clamp(2rem,5vw,2.5rem)] text-center text-black font-black mb-[15px] uppercase tracking-wide">
-                    Визнач свій <span className="text-primary">ІМТ</span>
-                </h2>
-                <p className="text-center text-[#666] text-[1.1rem] mb-[50px] max-w-[700px] mx-auto font-medium">
-                    ІМТ допомагає визначити, чи знаходиться ваша вага в межах норми. Введіть свої дані та отримайте результат.
-                </p>
+                <div className="text-center mb-12">
+                    <span className="font-heading text-primary text-xs uppercase tracking-[4px]">Калькулятор</span>
+                    <h2 className="font-display text-[clamp(2.5rem,6vw,4rem)] text-white uppercase tracking-wide mt-2">
+                        Визнач свій <span className="text-gradient-red">ІМТ</span>
+                    </h2>
+                    <p className="font-body text-white/40 mt-3 max-w-md mx-auto text-sm">
+                        ІМТ допомагає визначити, чи знаходиться ваша вага в межах норми.
+                    </p>
+                </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-10 lg:gap-[50px] items-start">
                     
                     {/* --- ТАБЛИЦЯ --- */}
-                    <div className="bg-[#f4f4f4] rounded-xl p-[30px] shadow-[0_4px_15px_rgba(0,0,0,0.1)]">
+                    <div className="rounded-card border border-white/[0.06] bg-white/[0.02] p-[30px]">
                         <table className="w-full border-collapse mb-4">
                             <thead>
                                 <tr>
-                                    <th className="bg-primary text-white p-3 text-left uppercase text-[0.9rem] font-bold rounded-tl-md">ІМТ</th>
-                                    <th className="bg-primary text-white p-3 text-left uppercase text-[0.9rem] font-bold rounded-tr-md">Ваговий статус</th>
+                                    <th className="bg-primary/20 text-primary p-3 text-left uppercase text-[0.8rem] font-heading font-semibold tracking-wider rounded-tl-btn">ІМТ</th>
+                                    <th className="bg-primary/20 text-primary p-3 text-left uppercase text-[0.8rem] font-heading font-semibold tracking-wider rounded-tr-btn">Ваговий статус</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -90,7 +93,7 @@ export default function BMICalculator() {
                                 </tr>
                             </tbody>
                         </table>
-                        <p className="text-[0.85rem] text-[#888] font-medium pl-2 italic">*ІМТ: Індекс маси тіла</p>
+                        <p className="text-[0.85rem] text-white/30 font-medium pl-2 italic">*ІМТ: Індекс маси тіла</p>
                     </div>
 
                     {/* --- ФОРМА --- */}
@@ -98,12 +101,12 @@ export default function BMICalculator() {
                         <form onSubmit={calculateBMI}>
                             <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 mb-4 sm:mb-5">
                                 <input 
-                                    className="flex-1 w-full p-3.5 bg-[#f4f4f4] border border-[#ddd] text-black rounded-md outline-none transition-all duration-300 focus:border-primary focus:ring-4 focus:ring-primary/20 placeholder-[#888]"
+                                    className="flex-1 w-full p-3.5 bg-white/[0.04] border border-white/[0.08] text-white rounded-btn outline-none transition-all duration-300 focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder-white/30 font-body"
                                     type="number" placeholder="Зріст / см" required min="100" max="250"
                                     value={height} onChange={e => setHeight(e.target.value)}
                                 />
                                 <input 
-                                    className="flex-1 w-full p-3.5 bg-[#f4f4f4] border border-[#ddd] text-black rounded-md outline-none transition-all duration-300 focus:border-primary focus:ring-4 focus:ring-primary/20 placeholder-[#888]"
+                                    className="flex-1 w-full p-3.5 bg-white/[0.04] border border-white/[0.08] text-white rounded-btn outline-none transition-all duration-300 focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder-white/30 font-body"
                                     type="number" placeholder="Вага / кг" required min="30" max="250"
                                     value={weight} onChange={e => setWeight(e.target.value)}
                                 />
@@ -111,12 +114,12 @@ export default function BMICalculator() {
 
                             <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 mb-4 sm:mb-5">
                                 <input 
-                                    className="flex-1 w-full p-3.5 bg-[#f4f4f4] border border-[#ddd] text-black rounded-md outline-none transition-all duration-300 focus:border-primary focus:ring-4 focus:ring-primary/20 placeholder-[#888]"
+                                    className="flex-1 w-full p-3.5 bg-white/[0.04] border border-white/[0.08] text-white rounded-btn outline-none transition-all duration-300 focus:border-primary/50 focus:ring-4 focus:ring-primary/10 placeholder-white/30 font-body"
                                     type="number" placeholder="Вік" required min="16" max="99"
                                     value={age} onChange={e => setAge(e.target.value)}
                                 />
                                 <select 
-                                    className="flex-1 w-full p-3.5 bg-[#f4f4f4] border border-[#ddd] text-black rounded-md outline-none transition-all duration-300 focus:border-primary focus:ring-4 focus:ring-primary/20 invalid:text-[#888]"
+                                    className="flex-1 w-full p-3.5 bg-white/[0.04] border border-white/[0.08] text-white rounded-btn outline-none transition-all duration-300 focus:border-primary/50 focus:ring-4 focus:ring-primary/10 invalid:text-white/30 font-body"
                                     required value={gender} onChange={e => setGender(e.target.value)}
                                 >
                                     <option value="" disabled>Стать</option>
@@ -127,7 +130,7 @@ export default function BMICalculator() {
 
                             <div className="mb-6">
                                 <select 
-                                    className="w-full p-3.5 bg-[#f4f4f4] border border-[#ddd] text-black rounded-md outline-none transition-all duration-300 focus:border-primary focus:ring-4 focus:ring-primary/20 invalid:text-[#888]"
+                                    className="w-full p-3.5 bg-white/[0.04] border border-white/[0.08] text-white rounded-btn outline-none transition-all duration-300 focus:border-primary/50 focus:ring-4 focus:ring-primary/10 invalid:text-white/30 font-body"
                                     required value={activity} onChange={e => setActivity(e.target.value)}
                                 >
                                     <option value="" disabled>Оберіть фіз. активність</option>

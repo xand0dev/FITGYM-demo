@@ -111,15 +111,16 @@ export default function Schedule() {
     const isActionDisabled = isFull || bookMutation.isPending;
 
     return (
-        <section id="schedule" className="py-[80px] bg-white border-t border-black/5">
+        <section id="schedule" className="py-24 bg-background">
             <div className="container mx-auto max-w-[1200px] px-5 lg:px-8">
-                <div className="text-center mb-[40px]">
-                    <h2 className="text-[clamp(2rem,5vw,2.5rem)] font-black uppercase text-black tracking-wide m-0">
-                        Актуальний <span className="text-primary">Розклад</span>
+                <div className="text-center mb-12">
+                    <span className="font-heading text-primary text-xs uppercase tracking-[4px]">Розклад</span>
+                    <h2 className="font-display text-[clamp(2.5rem,6vw,4rem)] text-white uppercase tracking-wide mt-2">
+                        Актуальний <span className="text-gradient-red">Розклад</span>
                     </h2>
                 </div>
                 
-                <div className="bg-white rounded-2xl p-5 md:p-[30px] shadow-[0_10px_40px_rgba(0,0,0,0.08)] border border-[#eee] overflow-hidden">
+                <div className="rounded-card p-5 md:p-[30px] border border-white/[0.06] bg-white/[0.02] overflow-hidden">
                     <FullCalendar
                         ref={calendarRef}
                         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -209,40 +210,195 @@ export default function Schedule() {
 
             {/* Стилі для кастомізації FullCalendar та анімацій модалки */}
             <style>{`
-                /* Анімації */
+                /* Animations */
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
                 .animate-fadeIn { animation: fadeIn 0.3s ease forwards; }
-                
                 @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
                 .animate-popIn { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 
-                /* Оновлений світлий дизайн календаря */
-                .fc-theme-standard td, .fc-theme-standard th { border-color: #eee; }
-                .fc .fc-toolbar-title { font-size: 1.4rem; font-weight: 900; text-transform: uppercase; color: #111; letter-spacing: 1px; }
-                
-                /* Кнопки навігації календаря */
-                .fc .fc-button-primary { 
-                    background-color: #222; border: none; color: #fff; font-weight: 700; 
-                    text-transform: capitalize; border-radius: 6px; padding: 8px 16px; transition: 0.3s; 
-                }
-                .fc .fc-button-primary:hover { background-color: #ff0000; }
-                .fc .fc-button-primary:not(:disabled).fc-button-active, 
-                .fc .fc-button-primary:not(:disabled):active { 
-                    background-color: #ff0000; 
+                /* ===== FULLCALENDAR COMPLETE DARK THEME ===== */
+
+                /* Global background kill — every cell, header, row */
+                .fc,
+                .fc-theme-standard,
+                .fc-theme-standard td,
+                .fc-theme-standard th,
+                .fc-theme-standard .fc-scrollgrid,
+                .fc-scrollgrid-section,
+                .fc-scrollgrid-section > *,
+                .fc-scrollgrid-sync-table,
+                .fc-col-header,
+                .fc-col-header-cell,
+                .fc-timegrid-col,
+                .fc-timegrid-slot,
+                .fc-timegrid-slot-lane,
+                .fc-timegrid-slot-label,
+                .fc-timegrid-body,
+                .fc-timegrid-cols,
+                .fc-timegrid-axis,
+                .fc-timegrid-axis-frame,
+                .fc-timegrid-divider,
+                .fc-timegrid-now-indicator-container,
+                .fc-daygrid-body,
+                .fc-daygrid-day,
+                .fc-daygrid-day-frame,
+                .fc-daygrid-day-top,
+                .fc-daygrid-day-events,
+                .fc-daygrid-event-harness,
+                .fc-daygrid-day-bg,
+                .fc-scrollgrid-sync-inner,
+                .fc-scroller,
+                .fc-scroller-harness,
+                .fc-view,
+                .fc-view-harness,
+                .fc-timegrid,
+                .fc-daygrid {
+                    background: transparent !important;
+                    background-color: transparent !important;
                 }
 
-                .fc-col-header-cell-cushion { color: #666; font-weight: 800; padding: 12px 0 !important; font-size: 0.9rem; }
-                .fc-timegrid-slot-label-cushion { color: #888; font-size: 0.85rem; }
-                
-                /* Події (червоні плашки) */
-                .fc-event { 
-                    cursor: pointer; transition: transform 0.2s; border: none; 
-                    border-radius: 4px; box-shadow: 0 2px 5px rgba(255,0,0,0.3); 
+                /* Borders — subtle white */
+                .fc-theme-standard td,
+                .fc-theme-standard th,
+                .fc-theme-standard .fc-scrollgrid {
+                    border-color: rgba(255,255,255,0.06) !important;
                 }
-                .fc-event:hover { transform: scale(1.02); filter: brightness(1.1); }
-                .fc-day-today { background: rgba(255, 0, 0, 0.03) !important; }
-                .fc-timegrid-now-indicator-line { border-color: #ff0000; }
-                .fc-timegrid-now-indicator-arrow { border-color: #ff0000; background: #ff0000; }
+
+                /* Toolbar title */
+                .fc .fc-toolbar-title {
+                    font-family: 'Oswald', sans-serif;
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    color: rgba(255,255,255,0.7);
+                    letter-spacing: 2px;
+                }
+
+                /* Nav buttons */
+                .fc .fc-button-primary {
+                    background-color: rgba(255,255,255,0.05) !important;
+                    border: 1px solid rgba(255,255,255,0.08) !important;
+                    color: rgba(255,255,255,0.6) !important;
+                    font-weight: 600;
+                    text-transform: capitalize;
+                    border-radius: 8px;
+                    padding: 8px 16px;
+                    transition: 0.3s;
+                    box-shadow: none !important;
+                }
+                .fc .fc-button-primary:hover {
+                    background-color: rgba(255,0,0,0.2) !important;
+                    border-color: rgba(255,0,0,0.3) !important;
+                    color: #fff !important;
+                }
+                .fc .fc-button-primary:not(:disabled).fc-button-active,
+                .fc .fc-button-primary:not(:disabled):active {
+                    background-color: #ff0000 !important;
+                    border-color: #ff0000 !important;
+                    color: #fff !important;
+                }
+                .fc .fc-button:focus {
+                    box-shadow: 0 0 0 2px rgba(255,0,0,0.25) !important;
+                }
+
+                /* Column header (day names) */
+                .fc-col-header-cell {
+                    background: rgba(255,255,255,0.02) !important;
+                }
+                .fc-col-header-cell-cushion {
+                    color: rgba(255,255,255,0.4) !important;
+                    font-family: 'Oswald', sans-serif;
+                    font-weight: 600;
+                    padding: 12px 0 !important;
+                    font-size: 0.8rem;
+                    letter-spacing: 1px;
+                    text-decoration: none !important;
+                }
+
+                /* Time labels */
+                .fc-timegrid-slot-label-cushion {
+                    color: rgba(255,255,255,0.2) !important;
+                    font-size: 0.75rem;
+                }
+                .fc-timegrid-axis-cushion {
+                    color: rgba(255,255,255,0.2) !important;
+                }
+
+                /* Today highlight */
+                .fc-day-today {
+                    background: rgba(255, 0, 0, 0.04) !important;
+                }
+                .fc-col-header-cell.fc-day-today {
+                    background: rgba(255, 0, 0, 0.08) !important;
+                }
+                .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion {
+                    color: #ff0000 !important;
+                }
+
+                /* Day numbers in month view */
+                .fc-daygrid-day-number {
+                    color: rgba(255,255,255,0.5) !important;
+                    text-decoration: none !important;
+                }
+
+                /* Events */
+                .fc-event {
+                    cursor: pointer;
+                    transition: transform 0.2s;
+                    border: none !important;
+                    border-radius: 6px;
+                    box-shadow: 0 2px 8px rgba(255,0,0,0.3);
+                }
+                .fc-event:hover {
+                    transform: scale(1.02);
+                    filter: brightness(1.15);
+                }
+
+                /* Now indicator */
+                .fc-timegrid-now-indicator-line {
+                    border-color: #ff0000 !important;
+                    border-width: 2px !important;
+                }
+                .fc-timegrid-now-indicator-arrow {
+                    border-color: #ff0000 !important;
+                    border-top-color: #ff0000 !important;
+                }
+
+                /* License / watermark message — hide if present */
+                .fc-license-message {
+                    display: none !important;
+                }
+
+                /* Allday section */
+                .fc-timegrid-divider {
+                    border-color: rgba(255,255,255,0.06) !important;
+                    padding: 0 !important;
+                }
+
+                /* Popover (more events) */
+                .fc-popover {
+                    background: #141414 !important;
+                    border-color: rgba(255,255,255,0.1) !important;
+                }
+                .fc-popover-header {
+                    background: rgba(255,255,255,0.05) !important;
+                    color: rgba(255,255,255,0.7) !important;
+                }
+
+                /* Scrollbar styling */
+                .fc .fc-scroller::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .fc .fc-scroller::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .fc .fc-scroller::-webkit-scrollbar-thumb {
+                    background: rgba(255,255,255,0.08);
+                    border-radius: 3px;
+                }
+                .fc .fc-scroller::-webkit-scrollbar-thumb:hover {
+                    background: rgba(255,255,255,0.15);
+                }
             `}</style>
         </section>
     );

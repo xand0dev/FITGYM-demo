@@ -1,20 +1,33 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
+// eslint-disable-next-line no-unused-vars
+import { motion } from 'framer-motion';
+
+const fadeInUp = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+        opacity: 1, y: 0,
+        transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+    }
+};
 
 const CategoryCard = ({ title, img, isLarge, isTall, onClick }) => (
-    <div 
-        className={`group relative overflow-hidden border-[3px] border-black bg-white h-full min-h-[220px] md:min-h-[240px] cursor-pointer ${isLarge ? 'md:col-span-2' : 'col-span-1'} ${isTall ? 'md:row-span-2' : 'row-span-1'}`} 
+    <motion.div
+        variants={fadeInUp}
+        whileHover={{ scale: 1.02, transition: { duration: 0.3 } }}
+        className={`group relative overflow-hidden rounded-card border border-white/10 bg-surface h-full min-h-[220px] md:min-h-[240px] cursor-pointer transition-all duration-300 hover:border-primary/40 ${isLarge ? 'md:col-span-2' : 'col-span-1'} ${isTall ? 'md:row-span-2' : 'row-span-1'}`}
         onClick={onClick}
     >
-        <img src={img} alt={title} className="w-full h-full object-cover grayscale brightness-70 transition-all duration-800 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:grayscale-0 group-hover:brightness-60 group-hover:scale-105" />
-        
-        <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center transition-colors duration-400 group-hover:bg-primary/30">
-            <h3 className="text-[clamp(1.2rem,2vw,2rem)] font-black uppercase text-white tracking-[3px] text-center drop-shadow-[2px_2px_4px_rgba(0,0,0,0.5)]">
+        <img src={img} alt={title} className="w-full h-full object-cover grayscale brightness-50 transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:grayscale-0 group-hover:brightness-60 group-hover:scale-105" />
+
+        <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center transition-all duration-400 group-hover:bg-primary/20">
+            <h3 className="font-heading text-[clamp(1rem,1.8vw,1.6rem)] font-bold uppercase text-white tracking-[3px] text-center drop-shadow-[2px_2px_4px_rgba(0,0,0,0.5)]">
                 {title}
             </h3>
-            <div className="w-0 h-1 bg-primary mt-2.5 transition-all duration-500 group-hover:w-[60%]"></div>
+            <div className="w-0 h-[2px] bg-primary mt-3 transition-all duration-500 group-hover:w-[50%] rounded-full"
+                 style={{ boxShadow: '0 0 8px rgba(255,0,0,0.4)' }} />
         </div>
-    </div>
+    </motion.div>
 );
 
 export default function Categories() {
@@ -31,66 +44,85 @@ export default function Categories() {
     const current = categoriesData.find(c => c.id === selectedId);
 
     return (
-        <section id="categories" className="py-[100px] bg-[#f9f9f9]">
-            <div className="container mx-auto max-w-[1200px] px-5 md:px-[5%]">
-                <div className="mb-[50px] border-l-[8px] border-primary pl-5">
-                    <h2 className="text-[clamp(2rem,5vw,3rem)] font-black uppercase m-0">
-                        ОБЕРИ СВІЙ <span className="text-primary">ШЛЯХ</span>
-                    </h2>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fit,minmax(300px,1fr))] auto-rows-[250px] md:auto-rows-[240px] gap-5">
+        <section id="categories" className="py-24 bg-background relative overflow-hidden">
+            {/* Subtle bg glow */}
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-primary/3 blur-[120px] rounded-full pointer-events-none" />
+
+            <div className="container mx-auto max-w-[1200px] px-5 md:px-[5%] relative z-10">
+                <motion.div
+                    className="mb-12"
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <div className="border-l-[3px] border-primary pl-5">
+                        <span className="font-heading text-primary text-xs uppercase tracking-[4px]">Напрямки</span>
+                        <h2 className="font-display text-[clamp(2.5rem,6vw,4rem)] text-white uppercase tracking-wide mt-1">
+                            ОБЕРИ СВІЙ <span className="text-gradient-red">ШЛЯХ</span>
+                        </h2>
+                    </div>
+                </motion.div>
+
+                <motion.div
+                    className="grid grid-cols-1 md:grid-cols-[repeat(auto-fit,minmax(300px,1fr))] auto-rows-[250px] md:auto-rows-[240px] gap-4"
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, amount: 0.1 }}
+                    transition={{ staggerChildren: 0.1 }}
+                >
                     {categoriesData.map(cat => (
-                        <CategoryCard 
+                        <CategoryCard
                             key={cat.id}
-                            title={cat.title} 
-                            img={cat.img} 
-                            isLarge={cat.isLarge} 
+                            title={cat.title}
+                            img={cat.img}
+                            isLarge={cat.isLarge}
                             isTall={cat.isTall}
-                            onClick={() => setSelectedId(cat.id)} 
+                            onClick={() => setSelectedId(cat.id)}
                         />
                     ))}
-                </div>
+                </motion.div>
             </div>
 
-            {/* ПОВНОЕКРАННЕ ВІКНО З ФОТОМ */}
+            {/* FULLSCREEN MODAL */}
             {current && createPortal(
-                <div className="fixed inset-0 w-screen h-screen z-[100000] flex items-center justify-center bg-black animate-fadeIn" onClick={() => setSelectedId(null)}>
-                    {/* Фонове зображення */}
-                    <div 
-                        className="absolute inset-0 bg-cover bg-center brightness-30 transition-all duration-500" 
+                <motion.div
+                    className="fixed inset-0 w-screen h-screen z-[100000] flex items-center justify-center bg-black/95"
+                    onClick={() => setSelectedId(null)}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                >
+                    {/* Background image */}
+                    <div
+                        className="absolute inset-0 bg-cover bg-center brightness-[0.15]"
                         style={{ backgroundImage: `url(${current.img})` }}
-                    ></div>
-                    
-                    <div className="relative w-full max-w-[1000px] p-[30px] md:p-[60px] text-white animate-slideUp" onClick={e => e.stopPropagation()}>
+                    />
+
+                    <motion.div
+                        className="relative w-full max-w-[1000px] p-[30px] md:p-[60px] text-white"
+                        onClick={e => e.stopPropagation()}
+                        initial={{ opacity: 0, y: 40 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    >
                         <div className="flex justify-between mb-[50px] md:mb-[100px]">
-                            <span className="font-black tracking-[4px] text-primary text-[0.8rem]">FITGYM / КАТЕГОРІЯ</span>
-                            <button className="bg-transparent border-none text-white font-bold cursor-pointer tracking-[1px] hover:text-primary transition-colors" onClick={() => setSelectedId(null)}>ЗАКРИТИ ×</button>
+                            <span className="font-heading text-primary text-xs uppercase tracking-[4px]">FITGYM / КАТЕГОРІЯ</span>
+                            <button className="bg-transparent border-none text-white/60 hover:text-white font-heading uppercase tracking-[2px] cursor-pointer transition-colors text-sm" onClick={() => setSelectedId(null)}>ЗАКРИТИ ×</button>
                         </div>
-                        
+
                         <div>
-                            <h2 className="text-[clamp(3rem,10vw,7rem)] font-black uppercase mb-[30px] leading-[0.85] tracking-[-2px] md:tracking-[-4px]">{current.title}</h2>
-                            <p className="text-[1.3rem] max-w-[600px] leading-[1.6] text-white/80 font-medium">{current.desc}</p>
-                            <div className="mt-[50px]">
-                                <a href="#plans" className="text-white text-[1.8rem] font-black no-underline border-b-[5px] border-primary pb-1 transition-colors duration-300 hover:text-primary" onClick={() => setSelectedId(null)}>Обрати абонемент →</a>
+                            <h2 className="font-display text-[clamp(3rem,10vw,7rem)] text-white uppercase mb-6 leading-[0.85]">{current.title}</h2>
+                            <p className="font-body text-[1.1rem] max-w-[600px] leading-relaxed text-white/60">{current.desc}</p>
+                            <div className="mt-12">
+                                <a href="#plans" className="btn-primary inline-block text-white py-4 px-10 rounded-btn font-heading font-semibold uppercase tracking-[2px] text-sm" onClick={() => setSelectedId(null)}>Обрати абонемент →</a>
                             </div>
                         </div>
-                    </div>
-                </div>,
+                    </motion.div>
+                </motion.div>,
                 document.body
             )}
-
-            {/* Залишаємо тільки keyframes, щоб не мучити tailwind.config.js */}
-            <style>{`
-                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-                .animate-fadeIn { animation: fadeIn 0.5s ease; }
-                
-                @keyframes slideUp { 
-                    from { opacity: 0; transform: translateY(40px); } 
-                    to { opacity: 1; transform: translateY(0); } 
-                }
-                .animate-slideUp { animation: slideUp 0.6s cubic-bezier(0.23, 1, 0.32, 1); }
-            `}</style>
         </section>
     );
 }

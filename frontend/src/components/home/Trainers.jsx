@@ -1,51 +1,83 @@
+// eslint-disable-next-line no-unused-vars
+import { motion } from 'framer-motion';
 import { usePublicData } from '../../hooks/useFitQuery';
+
+const fadeInUp = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+        opacity: 1, y: 0,
+        transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+    }
+};
 
 export default function Trainers() {
     // Дані завантажуються виключно в цьому компоненті
     const { data: trainers = [], isLoading: isTrainersLoading } = usePublicData('trainers', '/api/instructors/');
 
     return (
-        <section id="trainers" className="py-[100px] px-5 bg-white">
-            <div className="container mx-auto max-w-[1200px]">
-                <h2 className="text-center text-[clamp(2.5rem,5vw,3rem)] font-black mb-[60px] uppercase tracking-wide">
-                    Команда <span className="text-primary">профі</span>
-                </h2>
-                
-                <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-[30px]">
+        <section id="trainers" className="py-24 px-5 bg-background relative overflow-hidden">
+            {/* Background glow */}
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary/3 blur-[120px] rounded-full pointer-events-none" />
+
+            <div className="container mx-auto max-w-[1200px] relative z-10">
+                <motion.div
+                    className="text-center mb-14"
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <span className="font-heading text-primary text-xs uppercase tracking-[4px]">Наша команда</span>
+                    <h2 className="font-display text-[clamp(2.5rem,6vw,4rem)] text-white uppercase tracking-wide mt-2">
+                        Команда <span className="text-gradient-red">профі</span>
+                    </h2>
+                </motion.div>
+
+                <motion.div
+                    className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-5"
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, amount: 0.1 }}
+                    transition={{ staggerChildren: 0.12 }}
+                >
                     {isTrainersLoading ? (
-                        // БОЙОВІ СКЕЛЕТОНИ (Tailwind Pulse)
+                        // Skeleton loaders
                         [1, 2, 3, 4].map((skel) => (
-                            <div key={skel} className="border-[3px] border-black bg-white">
-                                <div className="h-[350px] bg-[#f0f0f0] animate-pulse"></div>
-                                <div className="p-[30px] flex flex-col items-center">
-                                    <div className="h-[24px] bg-[#e0e0e0] rounded w-[70%] mb-2.5 animate-pulse"></div>
-                                    <div className="h-[16px] bg-[#e0e0e0] rounded w-[50%] animate-pulse"></div>
+                            <div key={skel} className="glass-card overflow-hidden">
+                                <div className="h-[350px] bg-white/[0.03] animate-pulse" />
+                                <div className="p-6 flex flex-col items-center">
+                                    <div className="h-5 bg-white/[0.06] rounded w-[70%] mb-2.5 animate-pulse" />
+                                    <div className="h-3 bg-white/[0.04] rounded w-[50%] animate-pulse" />
                                 </div>
                             </div>
                         ))
                     ) : (
-                        // РЕАЛЬНІ ДАНІ
                         trainers.map(t => (
-                            <div 
-                                key={t.id} 
-                                className="group border-[3px] border-black bg-white transition-all duration-300 hover:-translate-y-2 hover:shadow-[10px_10px_0px_#ff0000] cursor-pointer" 
-                                data-aos="zoom-in"
+                            <motion.div
+                                key={t.id}
+                                variants={fadeInUp}
+                                whileHover={{ y: -6, transition: { duration: 0.25 } }}
+                                className="group glass-card overflow-hidden transition-all duration-300 hover:border-primary/30 cursor-pointer"
                             >
-                                <div className="h-[350px] bg-[#111] text-white flex items-center justify-center overflow-hidden relative">
-                                    <i className="fas fa-user text-[6rem] opacity-20 transition-transform duration-500 group-hover:scale-110"></i>
+                                <div className="h-[350px] bg-surface text-white flex items-center justify-center overflow-hidden relative">
+                                    {/* Subtle gradient overlay */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-60" />
+                                    <i className="fas fa-user text-[5rem] text-white/[0.06] transition-all duration-500 group-hover:scale-110 group-hover:text-white/[0.1]" />
+                                    {/* Red glow on hover */}
+                                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[60%] h-[30%] bg-primary/0 group-hover:bg-primary/10 blur-[40px] rounded-full transition-all duration-500" />
                                 </div>
-                                <div className="p-[30px] text-center bg-white">
-                                    <h3 className="font-black uppercase m-0 mb-2.5 text-[1.4rem] text-black">
+                                <div className="p-6 text-center relative">
+                                    <h3 className="font-heading text-base font-semibold uppercase tracking-wider text-white mb-2">
                                         {t.full_name || t.name}
                                     </h3>
-                                    <p className="text-primary font-extrabold text-[0.9rem] tracking-[1px] uppercase m-0">
+                                    <p className="font-body text-primary/80 text-xs uppercase tracking-[2px]">
                                         {t.specialties || t.specialization}
                                     </p>
                                 </div>
-                            </div>
+                            </motion.div>
                         ))
                     )}
-                </div>
+                </motion.div>
             </div>
         </section>
     );

@@ -25,7 +25,7 @@ export default function Home() {
     }, []);
 
     return (
-        <main className="bg-white overflow-x-hidden">
+        <main className="bg-background overflow-x-hidden">
             <Hero />
             <Stats />
             <Categories />

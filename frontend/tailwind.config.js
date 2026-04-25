@@ -13,7 +13,15 @@ export default {
         surfaceLight: '#1a1a1a',
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans:    ['Inter', 'sans-serif'],
+        display: ['"Bebas Neue"', 'sans-serif'],
+        heading: ['Oswald', 'sans-serif'],
+        body:    ['Inter', 'sans-serif'],
+      },
+      borderRadius: {
+        'card':  '16px',
+        'btn':   '8px',
+        'badge': '100px',
       }
     },
   },
