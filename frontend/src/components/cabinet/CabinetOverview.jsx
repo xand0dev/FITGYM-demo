@@ -34,21 +34,29 @@ const RingProgress = ({ percent = 0, daysLeft = 0 }) => {
 };
 
 const ActivityBar = ({ value, label, maxValue }) => {
-    const pct = maxValue > 0 ? Math.round((value / maxValue) * 100) : 0;
+    // Binary mode: 100 = trained, 15 = rest. Absolute mode: varied data.
+    const isBinary = maxValue <= 15 || (maxValue === 100 && value === maxValue);
+    const active = value >= 80; // treat 100 as "trained day"
+    const pct = isBinary
+        ? (active ? 100 : 18)
+        : (maxValue > 0 ? Math.round((value / maxValue) * 100) : 0);
+
     return (
         <div className="flex flex-col items-center gap-2 flex-1">
             <div className="relative w-full h-[100px] flex items-end">
                 <div className="absolute inset-0 rounded-btn bg-white/[0.03]" />
                 <div
-                    className="relative w-full rounded-btn bg-primary transition-all duration-700"
+                    className="relative w-full rounded-btn transition-all duration-700"
                     style={{
                         height: `${Math.max(6, pct)}%`,
-                        boxShadow: pct > 60 ? '0 0 12px rgba(255,0,0,0.4)' : 'none',
-                        opacity: 0.7 + (pct / 300)
+                        background: active ? '#ff0000' : 'rgba(255,255,255,0.08)',
+                        boxShadow: active ? '0 0 10px rgba(255,0,0,0.35)' : 'none',
                     }}
                 />
             </div>
-            <span className="font-heading text-[0.6rem] text-white/30 uppercase tracking-wider">{label}</span>
+            <span className={`font-heading text-[0.6rem] uppercase tracking-wider ${active ? 'text-primary' : 'text-white/20'}`}>
+                {label}
+            </span>
         </div>
     );
 };
@@ -79,6 +87,7 @@ export default function CabinetOverview({
     }, [membershipEndRaw]);
 
     const maxActivity = Math.max(...activity, 1);
+    const trainedDays = activity.filter(v => v >= 80).length;
     const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'];
 
     return (
@@ -144,7 +153,7 @@ export default function CabinetOverview({
                             Активність тижня
                         </h4>
                         <span className="font-body text-[0.65rem] text-white/25 uppercase tracking-wider">
-                            {activity.reduce((a, b) => a + b, 0)} хв загалом
+                            {trainedDays} / 7 днів
                         </span>
                     </div>
                     <div className="flex items-end gap-2">
