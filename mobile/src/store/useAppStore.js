@@ -5,6 +5,7 @@ import { Alert } from 'react-native';
 
 const useAppStore = create((set) => ({
   userToken: null,
+  user: null,           // { id, member_id, gym_id, full_name, is_staff, ... }
   hasCompletedOnboarding: false,
   isLoading: true,
   theme: 'dark',
@@ -29,6 +30,11 @@ const useAppStore = create((set) => ({
       
       if (token) {
         set({ userToken: token });
+        // Відновлюємо збережений профіль
+        const savedUser = await SecureStore.getItemAsync('userData');
+        if (savedUser) {
+          try { set({ user: JSON.parse(savedUser) }); } catch (_) {}
+        }
       }
       if (savedTheme) {
         set({ theme: savedTheme });
@@ -169,14 +175,22 @@ const useAppStore = create((set) => ({
 
   login: async (username, password) => {
     try {
-      const response = await apiClient.post('/login/', {
-        username,
-        password,
-      });
-
+      const response = await apiClient.post('/login/', { username, password });
       const token = response.data.token;
+
       set({ userToken: token });
-      SecureStore.setItemAsync('userToken', token).catch(console.error);
+      await SecureStore.setItemAsync('userToken', token);
+
+      // Завантажуємо профіль щоб отримати member_id і gym_id для QR
+      try {
+        const meResponse = await apiClient.get('/me/', {
+          headers: { Authorization: `Token ${token}` },
+        });
+        set({ user: meResponse.data });
+        await SecureStore.setItemAsync('userData', JSON.stringify(meResponse.data));
+      } catch (meError) {
+        console.log('Не вдалося завантажити профіль:', meError.message);
+      }
 
     } catch (error) {
       console.log('Помилка входу:', error?.response?.data || error.message);
@@ -188,7 +202,8 @@ const useAppStore = create((set) => ({
 
   logout: async () => {
     await SecureStore.deleteItemAsync('userToken');
-    set({ userToken: null });
+    await SecureStore.deleteItemAsync('userData');
+    set({ userToken: null, user: null });
   },
 
   register: async (username, name, email, password) => {

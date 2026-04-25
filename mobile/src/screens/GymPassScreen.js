@@ -13,7 +13,7 @@ export default function GymPassScreen() {
   const COLORS = useTheme();
   const styles = getStyles(COLORS, ObjectHasOwn);
   const navigation = useNavigation();
-  const { userToken } = useAppStore();
+  const { userToken, user } = useAppStore();
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -37,8 +37,15 @@ export default function GymPassScreen() {
     ).start();
   }, [pulseAnim]);
 
-  // Generate a mock unique ID string based on userToken or timestamp
-  const passId = `FITGYM-PASS-${userToken ? userToken.substring(0, 8) : Date.now()}`;
+  // QR payload для /api/access/check/ — містить member_id і gym_id
+  const qrPayload = JSON.stringify({
+    member_id: user?.member_id || null,
+    gym_id: user?.gym_id || 1,
+  });
+  const passId = qrPayload;
+  const displayId = user?.member_id
+    ? `ID-${user.member_id} · Зал ${user.gym_id || 1}`
+    : `FITGYM-PASS-${userToken ? userToken.substring(0, 8) : '------'}`;
 
   return (
     <View style={styles.container}>
@@ -67,7 +74,7 @@ export default function GymPassScreen() {
            
            <View style={styles.passDetails}>
              <Text style={styles.passLabel}>Digital ID</Text>
-             <Text style={styles.passValue}>{passId}</Text>
+             <Text style={styles.passValue}>{displayId}</Text>
            </View>
         </Animated.View>
 
