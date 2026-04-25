@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from .models import (
     Workout, Instructor, ClassSession, MembershipType, Class,
-    Member, Booking, Room, Payment, MembershipApplication
+    Member, Booking, Room, Payment, MembershipApplication, Attendance
 )
 
 
@@ -261,6 +261,16 @@ class AdminMembershipApplicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = MembershipApplication
         fields = ['id', 'name', 'phone', 'membership_type', 'membership_type_name', 'status', 'created_at']
+
+
+# === ATTENDANCE LOG ===
+
+class AttendanceSerializer(serializers.ModelSerializer):
+    member_name = serializers.CharField(source='member.user.get_full_name', read_only=True)
+
+    class Meta:
+        model = Attendance
+        fields = ['id', 'member_name', 'timestamp', 'is_access_granted', 'denial_reason']
 
 
 # === ASSIGN MEMBERSHIP ===

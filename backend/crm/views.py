@@ -15,7 +15,7 @@ from rest_framework import status as drf_status
 
 from .models import (
     Workout, Instructor, ClassSession, MembershipType,
-    Member, Booking, MembershipHistory, Class, MembershipApplication
+    Member, Booking, MembershipHistory, Class, MembershipApplication, Attendance
 )
 from .serializers import (
     WorkoutSerializer, InstructorSerializer, ClassSessionSerializer,
@@ -24,6 +24,7 @@ from .serializers import (
     ClassSerializer, AdminInstructorSerializer, AdminMemberSerializer,
     MembershipApplicationSerializer, AdminMembershipApplicationSerializer,
     AccessCheckSerializer, AccessResultSerializer, MembershipAssignSerializer,
+    AttendanceSerializer,
 )
 from .services import check_client_access
 
@@ -119,6 +120,8 @@ class MeView(APIView):
             'is_staff': user.is_staff,
             'is_superuser': user.is_superuser,
             'active_membership': None,
+            'member_id': None,
+            'gym_id': None,
         }
 
         if hasattr(user, 'member'):
@@ -128,6 +131,8 @@ class MeView(APIView):
                 'gender': member.gender,
                 'birth_date': member.birth_date,
                 'status': member.status,
+                'member_id': member.id,
+                'gym_id': member.gym_id,
             })
 
             today = timezone.now().date()
@@ -232,6 +237,24 @@ class AdminMembershipApplicationViewSet(viewsets.ModelViewSet):
         if gym:
             return MembershipApplication.objects.filter(gym=gym).order_by('-created_at')
         return MembershipApplication.objects.all().order_by('-created_at')
+
+
+# --- ATTENDANCE LOG ---
+
+class AdminAttendanceViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    GET /api/admin/attendance/ — журнал усіх check-in спроб по gym.
+    Read-only: аудит-лог не редагується.
+    """
+    serializer_class = AttendanceSerializer
+    permission_classes = [IsGymStaff]
+
+    def get_queryset(self):
+        gym = get_gym_from_request(self.request)
+        qs = Attendance.objects.select_related('member__user')
+        if gym:
+            qs = qs.filter(gym=gym)
+        return qs.order_by('-timestamp')
 
 
 # --- ASSIGN MEMBERSHIP ---
