@@ -9,7 +9,8 @@ import {
     Dumbbell,
     LogOut,
     Crown,
-    ShieldAlert
+    ShieldAlert,
+    ScanLine,
 } from "lucide-react";
 
 export default function AdminSidebar({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, logout }) {
@@ -22,7 +23,8 @@ export default function AdminSidebar({ activeTab, setActiveTab, sidebarOpen, set
         'schedule': Calendar,
         'clients': Users,
         'applications': ClipboardList,
-        'trainers': Dumbbell
+        'trainers': Dumbbell,
+        'attendance': ScanLine,
     };
 
     const MenuButton = ({ id, label, adminOnly = false }) => {
@@ -89,6 +91,7 @@ export default function AdminSidebar({ activeTab, setActiveTab, sidebarOpen, set
                 <MenuButton id="dashboard" label="Огляд" adminOnly={true} />
                 <MenuButton id="schedule" label="Розклад" />
                 <MenuButton id="clients" label="Клієнти" />
+                <MenuButton id="attendance" label="Відвідування" adminOnly={true} />
                 <MenuButton id="applications" label="Заявки" adminOnly={true} />
                 <MenuButton id="trainers" label="Тренери" adminOnly={true} />
             </nav>

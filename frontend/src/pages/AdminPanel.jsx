@@ -9,6 +9,7 @@ import ScheduleTab from '../components/admin/ScheduleTab';
 import ApplicationsTab from '../components/admin/ApplicationsTab';
 import ClientsTab from '../components/admin/ClientsTab';
 import TrainersTab from '../components/admin/TrainersTab';
+import AttendanceTab from '../components/admin/AttendanceTab';
 
 export default function AdminPanel() {
     const { user, logout } = useAuth();
@@ -27,11 +28,15 @@ export default function AdminPanel() {
         refetch: refetchClients
     } = useAuthData('admin-clients', '/api/admin/members/');
 
-    // 👇 ДОДАЛИ ЗАПИТ НА ОТРИМАННЯ ЗАЯВОК
     const {
         data: applications = [],
         refetch: refetchApps
     } = useAuthData('admin-apps', '/api/admin/applications/');
+
+    const {
+        data: attendance = [],
+        refetch: refetchAttendance
+    } = useAuthData('admin-attendance', '/api/admin/attendance/');
 
     useEffect(() => {
         // Замість окремого CSS-класу стилізуємо body прямо через Tailwind
@@ -95,6 +100,10 @@ export default function AdminPanel() {
                             data={clients}
                             onRefresh={forceRefetch}
                         />
+                    )}
+
+                    {activeTab === 'attendance' && (
+                        <AttendanceTab data={attendance} />
                     )}
 
                     {/* РЕНДЕР ТРЕНЕРІВ */}
