@@ -70,12 +70,19 @@ export default function ClientsTab({ data, onRefresh }) {
                 </span>
             </td>
             <td className="p-4 text-center">
-                {/* Placeholder Logic for Active vs Inactive */}
-                {item.id % 2 === 0 ? (
-                    <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider text-green-500 bg-green-500/10 border border-green-500/20">
-                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_#22c55e]"></div>
-                        Активний
-                    </span>
+                {item.active_membership ? (
+                    <div className="flex flex-col items-center gap-1">
+                        <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider text-green-500 bg-green-500/10 border border-green-500/20">
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_#22c55e]"></div>
+                            Активний
+                        </span>
+                        <span className="text-[10px] text-[#666] font-semibold">
+                            {item.active_membership.name}
+                        </span>
+                        <span className="text-[10px] text-[#555]">
+                            до {item.active_membership.end_date}
+                        </span>
+                    </div>
                 ) : (
                     <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider text-[#aaaaaa] bg-white/5 border border-white/10">
                         <div className="w-1.5 h-1.5 rounded-full bg-[#aaaaaa]"></div>
