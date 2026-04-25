@@ -208,13 +208,29 @@ class AdminMemberSerializer(serializers.ModelSerializer):
 
     full_name = serializers.CharField(source='user.get_full_name', read_only=True)
     user_email = serializers.EmailField(source='user.email', read_only=True)
+    active_membership = serializers.SerializerMethodField()
 
     class Meta:
         model = Member
         fields = [
             'id', 'username', 'password', 'first_name', 'last_name', 'email',
-            'full_name', 'user_email', 'contact', 'status', 'birth_date', 'gender'
+            'full_name', 'user_email', 'contact', 'status', 'birth_date', 'gender',
+            'active_membership',
         ]
+
+    def get_active_membership(self, obj) -> dict | None:
+        today = timezone.now().date()
+        active = obj.membershiphistory_set.filter(
+            status='active',
+            start_date__lte=today,
+            end_date__gte=today,
+        ).select_related('membership_type').order_by('-end_date').first()
+        if active:
+            return {
+                'name': active.membership_type.name,
+                'end_date': active.end_date.strftime('%d.%m.%Y'),
+            }
+        return None
 
     def create(self, validated_data):
         username = validated_data.pop('username')
