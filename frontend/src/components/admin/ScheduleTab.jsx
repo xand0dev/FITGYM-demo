@@ -7,8 +7,10 @@ import ukLocale from '@fullcalendar/core/locales/uk';
 import AdminModal from './AdminModal';
 
 import { usePublicData, useAuthData, useFitMutation } from '../../hooks/useFitQuery';
+import { useUI } from '../../context/UIContext';
 
 export default function ScheduleTab() {
+    const { addToast } = useUI();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('create');
     
@@ -87,20 +89,26 @@ export default function ScheduleTab() {
         mutation.mutate(
             { endpoint, data: payload },
             {
-                onSuccess: () => setIsModalOpen(false),
-                onError: (error) => alert('Помилка збереження: ' + error.message)
+                onSuccess: () => {
+                    setIsModalOpen(false);
+                    addToast(`Заняття успішно ${modalMode === 'create' ? 'додано' : 'оновлено'}!`, 'success');
+                },
+                onError: (error) => addToast('Помилка збереження: ' + error.message, 'error')
             }
         );
     };
 
     const handleDelete = () => {
         if (!window.confirm('Знищити це тренування з бази?')) return;
-        
+
         deleteMutation.mutate(
             { endpoint: `/api/admin/schedule/${formData.id}/`, data: null },
             {
-                onSuccess: () => setIsModalOpen(false),
-                onError: (error) => alert('Помилка видалення: ' + error.message)
+                onSuccess: () => {
+                    setIsModalOpen(false);
+                    addToast('Заняття видалено.', 'success');
+                },
+                onError: (error) => addToast('Помилка видалення: ' + error.message, 'error')
             }
         );
     };

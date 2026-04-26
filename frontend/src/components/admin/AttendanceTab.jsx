@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, XCircle, Clock } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Loader2 } from 'lucide-react';
 import PremiumTable from '../ui/PremiumTable';
 
 const formatTime = (isoString) => {
@@ -11,7 +11,7 @@ const formatTime = (isoString) => {
     });
 };
 
-export default function AttendanceTab({ data = [] }) {
+export default function AttendanceTab({ data = [], isLoading = false }) {
     const columns = [
         { label: 'Час', className: 'w-[180px]' },
         { label: 'Клієнт', className: '' },
@@ -63,6 +63,15 @@ export default function AttendanceTab({ data = [] }) {
     const total = data.length;
     const granted = data.filter(i => i.is_access_granted).length;
     const denied = total - granted;
+
+    if (isLoading) {
+        return (
+            <div className="animate-fade-in flex items-center justify-center py-24 text-[#888]">
+                <Loader2 className="w-6 h-6 animate-spin mr-3" />
+                <span className="font-semibold text-sm uppercase tracking-wider">Завантаження журналу...</span>
+            </div>
+        );
+    }
 
     return (
         <div className="animate-fade-in space-y-6">

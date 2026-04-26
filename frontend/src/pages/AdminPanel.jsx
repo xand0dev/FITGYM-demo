@@ -35,6 +35,7 @@ export default function AdminPanel() {
 
     const {
         data: attendance = [],
+        isLoading: isAttendanceLoading,
         refetch: refetchAttendance
     } = useAuthData('admin-attendance', '/api/admin/attendance/');
 
@@ -47,7 +48,8 @@ export default function AdminPanel() {
     const forceRefetch = () => {
         refetchTrainers();
         refetchClients();
-        refetchApps(); // 👈 Не забули оновити і заявки
+        refetchApps();
+        refetchAttendance();
     };
 
     return (
@@ -103,7 +105,7 @@ export default function AdminPanel() {
                     )}
 
                     {activeTab === 'attendance' && (
-                        <AttendanceTab data={attendance} />
+                        <AttendanceTab data={attendance} isLoading={isAttendanceLoading} />
                     )}
 
                     {/* РЕНДЕР ТРЕНЕРІВ */}
