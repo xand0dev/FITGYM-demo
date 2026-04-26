@@ -122,6 +122,7 @@ class MeView(APIView):
             'active_membership': None,
             'member_id': None,
             'gym_id': None,
+            'gym_name': None,
         }
 
         if hasattr(user, 'member'):
@@ -133,6 +134,7 @@ class MeView(APIView):
                 'status': member.status,
                 'member_id': member.id,
                 'gym_id': member.gym_id,
+                'gym_name': member.gym.name if member.gym else None,
             })
 
             today = timezone.now().date()
@@ -153,6 +155,8 @@ class MeView(APIView):
             data.update({
                 'contact': instructor.contact,
                 'specialties': instructor.specialties,
+                'gym_id': instructor.gym_id,
+                'gym_name': instructor.gym.name if instructor.gym else None,
             })
 
         return Response(data)
