@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'rest_framework',
     'corsheaders',
+    'drf_spectacular',
 
     'crm.apps.CrmConfig',
 ]
@@ -117,4 +118,14 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# ── drf-spectacular (Swagger / OpenAPI) ───────────────────────────────────────
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'FITGYM API',
+    'DESCRIPTION': 'REST API для CRM-системи фітнес-залу FITGYM.\n\nАвторизація: Token-based — отримай токен через POST /api/login/, передавай у заголовку `Authorization: Token <token>`.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
 }
