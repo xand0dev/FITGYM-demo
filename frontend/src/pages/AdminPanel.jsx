@@ -30,6 +30,7 @@ export default function AdminPanel() {
 
     const {
         data: applications = [],
+        isLoading: isApplicationsLoading,
         refetch: refetchApps
     } = useAuthData('admin-apps', '/api/admin/applications/');
 
@@ -93,6 +94,7 @@ export default function AdminPanel() {
                         <ApplicationsTab
                             data={applications}
                             onRefresh={forceRefetch}
+                            isLoading={isApplicationsLoading}
                         />
                     )}
 
@@ -101,6 +103,7 @@ export default function AdminPanel() {
                         <ClientsTab
                             data={clients}
                             onRefresh={forceRefetch}
+                            isLoading={isClientsLoading}
                         />
                     )}
 
@@ -113,6 +116,7 @@ export default function AdminPanel() {
                         <TrainersTab
                             data={trainers}
                             onRefresh={forceRefetch}
+                            isLoading={isTrainersLoading}
                         />
                     )}
                 </div>

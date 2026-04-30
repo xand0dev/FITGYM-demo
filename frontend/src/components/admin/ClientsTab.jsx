@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useFitMutation } from '../../hooks/useFitQuery';
 import { useUI } from '../../context/UIContext';
-import { Plus, Edit, Trash2, CreditCard } from 'lucide-react';
+import { Plus, Edit, Trash2, CreditCard, Loader2 } from 'lucide-react';
 import PremiumTable from '../ui/PremiumTable';
 import MembershipSaleModal from './MembershipSaleModal';
 
-export default function ClientsTab({ data, onRefresh }) {
+export default function ClientsTab({ data, onRefresh, isLoading = false }) {
     const { addToast } = useUI();
     const [isSellModalOpen, setIsSellModalOpen] = useState(false);
     const [selectedClient, setSelectedClient] = useState(null);
@@ -121,6 +121,15 @@ export default function ClientsTab({ data, onRefresh }) {
             </td>
         </>
     );
+
+    if (isLoading) {
+        return (
+            <div className="animate-fade-in flex items-center justify-center py-24 text-[#888]">
+                <Loader2 className="w-6 h-6 animate-spin mr-3" />
+                <span className="font-semibold text-sm uppercase tracking-wider">Завантаження...</span>
+            </div>
+        );
+    }
 
     return (
         <div className="animate-fade-in space-y-6">

@@ -6,7 +6,7 @@ import PremiumTable from '../ui/PremiumTable';
 import SlideOverModal from '../ui/SlideOverModal';
 import { cn } from '../../lib/utils';
 
-export default function ApplicationsTab({ data, onRefresh }) {
+export default function ApplicationsTab({ data, onRefresh, isLoading = false }) {
     const { addToast } = useUI();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [formData, setFormData] = useState({});
@@ -118,6 +118,15 @@ export default function ApplicationsTab({ data, onRefresh }) {
         "bg-[#1a1a1a] border border-[#333] focus:border-primary focus:shadow-[0_0_15px_rgba(204,0,0,0.15)] focus:bg-[#222]"
     );
     const labelClasses = "block mb-2 text-xs font-black text-[#aaaaaa] uppercase tracking-wider";
+
+    if (isLoading) {
+        return (
+            <div className="animate-fade-in flex items-center justify-center py-24 text-[#888]">
+                <Loader2 className="w-6 h-6 animate-spin mr-3" />
+                <span className="font-semibold text-sm uppercase tracking-wider">Завантаження...</span>
+            </div>
+        );
+    }
 
     return (
         <div className="animate-fade-in space-y-6">
