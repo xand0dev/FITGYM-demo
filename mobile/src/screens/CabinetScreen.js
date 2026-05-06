@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image, Switch, Vibration } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import * as SecureStore from 'expo-secure-store';
+import SecureStore from '../utils/storage';
 import { useTheme } from '../constants/theme';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import useAppStore from '../store/useAppStore';

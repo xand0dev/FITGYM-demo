@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, SafeA
 import { useTheme } from '../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LineChart, ProgressChart } from 'react-native-chart-kit';
-import * as SecureStore from 'expo-secure-store';
+import SecureStore from '../utils/storage';
 import apiClient from '../api/client';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import useAppStore from '../store/useAppStore';

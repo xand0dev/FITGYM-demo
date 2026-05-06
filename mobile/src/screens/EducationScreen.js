@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Image, Modal, Platform } from 'react-native';
 import { useTheme } from '../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
-import * as SecureStore from 'expo-secure-store';
+import SecureStore from '../utils/storage';
 import apiClient from '../api/client';
 import useAppStore from '../store/useAppStore';
 

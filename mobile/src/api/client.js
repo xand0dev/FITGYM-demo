@@ -1,5 +1,5 @@
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import storage from '../utils/storage';
 import { Platform } from 'react-native';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL
@@ -14,7 +14,7 @@ const apiClient = axios.create({
 
 // Перехоплювач для додавання токена (аналог твого getToken [cite: 2034])
 apiClient.interceptors.request.use(async (config) => {
-  const token = await SecureStore.getItemAsync('userToken');
+  const token = await storage.getItemAsync('userToken');
   if (token) {
     config.headers.Authorization = `Token ${token}`; // Твій формат Token [cite: 2038]
   }

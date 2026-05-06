@@ -1,4 +1,4 @@
-import * as SecureStore from 'expo-secure-store';
+import SecureStore from './storage';
 
 const KEY = 'weightLog';
 

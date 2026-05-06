@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import * as SecureStore from 'expo-secure-store';
+import SecureStore from '../utils/storage';
 import apiClient from '../api/client';
 import { Alert } from 'react-native';
 

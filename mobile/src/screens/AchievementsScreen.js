@@ -4,7 +4,7 @@ import { useTheme } from '../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import apiClient from '../api/client';
-import * as SecureStore from 'expo-secure-store';
+import SecureStore from '../utils/storage';
 
 export default function AchievementsScreen() {
   const ObjectHasOwn = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);

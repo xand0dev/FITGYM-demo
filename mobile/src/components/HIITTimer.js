@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../constants/theme';
-import * as SecureStore from 'expo-secure-store';
+import SecureStore from '../utils/storage';
 
 export default function HIITTimer() {
   const COLORS = useTheme();
