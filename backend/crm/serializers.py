@@ -34,7 +34,8 @@ class InstructorSerializer(serializers.ModelSerializer):
 class MembershipTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = MembershipType
-        fields = ['id', 'name', 'amount', 'period_months', 'description']
+        fields = ['id', 'name', 'amount', 'period_months', 'description',
+                  'time_limit_start', 'time_limit_end']
 
 
 # Серіалізатор для Залів
