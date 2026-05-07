@@ -319,7 +319,7 @@ const getStyles = (COLORS, ObjectHasOwn) => StyleSheet.create({
   
   aiAvatar: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginRight: 10, alignSelf: 'flex-end', marginBottom: 4 },
   
-  messageBubble: { paddingHorizontal: 18, paddingVertical: 14, borderRadius: 24 },
+  messageBubble: { paddingHorizontal: 18, paddingVertical: 14, borderRadius: 24, flexShrink: 1 },
   messageBubbleUser: { borderBottomRightRadius: 6 },
   messageBubbleAI: { borderBottomLeftRadius: 6, borderWidth: 1, borderColor: ObjectHasOwn(COLORS, 'border') ? COLORS.border : '#333' },
   

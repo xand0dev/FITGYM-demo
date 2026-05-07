@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import SecureStore from '../utils/storage';
 import apiClient from '../api/client';
-import { Alert } from 'react-native';
+import Alert from '../utils/dialog';
 
 const useAppStore = create((set) => ({
   userToken: null,

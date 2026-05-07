@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
+import Alert from '../utils/dialog';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../constants/theme';
 import SecureStore from '../utils/storage';

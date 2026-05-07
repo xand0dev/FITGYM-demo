@@ -32,16 +32,17 @@ ExpoSecureStore.default.setValueWithKeyAsync is not a function
 
 ## 🐛 OPEN
 
-### #2 — Аватар у Кабінеті показує "U" замість першої літери юзера
+### ✅ #2 — Аватар у Кабінеті показує "U" замість першої літери (FIXED)
 **Severity:** Minor (косметика)
 **Платформа:** web (можливо й native)
 **Симптом:** На екрані Кабінет аватар показує літеру **"U"** для юзера `legion` — має бути **"L"**.
 **Причина:** Імовірно у `CabinetScreen.js` хардкоднута літера "U" (User?) замість `username[0].toUpperCase()` або з `user.full_name`.
 **Файл:** `fitgym-app/src/screens/CabinetScreen.js`
+**Фікс:** `(profile?.full_name || profile?.username || '?').charAt(0).toUpperCase()`
 
 ---
 
-### #3 — Всі тарифи показують "БЕЗЛІМ" — навіть time-limited
+### ✅ #3 — Всі тарифи показують "БЕЗЛІМ" — навіть time-limited (FIXED)
 **Severity:** Major (вводить клієнта в оману)
 **Платформа:** web + native (баг у компоненті)
 **Симптом:** На `MembershipScreen` всі картки тарифів мають бейдж `N МІСЯЦІВ БЕЗЛІМ`. Тариф **"Ранковий"** має `time_limit_start=06:00, time_limit_end=13:00` (працює лише до 13:00) — але показує "БЕЗЛІМ" як і повний тариф.
@@ -50,24 +51,28 @@ ExpoSecureStore.default.setValueWithKeyAsync is not a function
 - Якщо `time_limit_start` і `time_limit_end` обидва `null` → "БЕЗЛІМ"
 - Якщо є time_limit → показувати `06:00-13:00` або "Ранковий доступ"
 **Файл:** `fitgym-app/src/screens/MembershipScreen.js`
+**Фікс:**
+1. Backend `MembershipTypeSerializer` тепер експортує `time_limit_start`, `time_limit_end`
+2. Frontend `formatTariffBadge(item)` форматує `06:00–13:00` для часових / `БЕЗЛІМ` для повних
 
 ---
 
-### #4 — Тарифи не фільтруються по gym
+### ✅ #4 — Тарифи не фільтруються по gym (FIXED)
 **Severity:** Major (multi-tenancy gap)
 **Симптом:** На `MembershipScreen` дублі тарифів — однаковий "Повний" 1 МІСЯЦЬ 2000₴ показано двічі (для різних gym). Юзер бачить чужі.
 **Причина:** Запит до `/api/membership-types/` без фільтра `?gym_id=`. Бек публічний ендпоінт, повертає всі.
-**Фікс:** додати `?gym_id=${user.gym_id}` у виклик.
+**Фікс:** `fetchData` спочатку завантажує `/me/`, потім `/membership-types/?gym_id=${user.gym_id}`. Для SuperAdmin (`gym_id=null`) лишається без фільтра — це коректна поведінка.
 **Файл:** `fitgym-app/src/screens/MembershipScreen.js`
 
 ---
 
-### #5 — AI Coach: текст у відповіді не переноситься на широкому екрані
+### ✅ #5 — AI Coach: текст у відповіді не переноситься на широкому екрані (FIXED)
 **Severity:** Major (на web ламає UX)
 **Платформа:** web (на native не репродукується)
 **Симптом:** Відповідь Gemini виходить за межі вікна горизонтально, обрізається. На скріні: "...бадьорість та вп" — обрив посередині слова "впевненість" (?).
 **Причина:** У стилях message-bubble відсутній `maxWidth: '80%'` (або подібне). На native ширина екрану 390px і текст переноситься природно — на web без обмеження bubble тягнеться на всю ширину контейнера.
 **Файл:** `fitgym-app/src/screens/AICoachScreen.js`
+**Фікс:** додано `flexShrink: 1` до `messageBubble` стилю — тепер Text переноситься в межах контейнера 85%.
 
 ---
 
@@ -80,14 +85,12 @@ ExpoSecureStore.default.setValueWithKeyAsync is not a function
 
 ---
 
-### #8 — `Alert.alert` для confirmation на web — мовчазний no-op
-**Severity:** Critical (логаут не працює, скасування записів не працює, інші critical UX)
-**Симптом:** На web кліки на критичні кнопки (Логаут, Скасувати запис, Зміна аватара) нічого не роблять — бо `Alert.alert` з кнопками confirm/cancel на web є no-op (повертає `undefined` без рендеру).
-**Знайдено в:** `CabinetScreen.js:345` (логаут), `:55-67` (скасування запису), `:71-78` (вибір фото). Можливо ще у `useAppStore.js:199` (помилка входу).
-**Фікс (варіанти):**
-1. Простий: на web замість `Alert.alert` показувати кастомний modal-toast (можна використати існуючий `addToast` з UIContext, або зробити `confirm()` обгортку).
-2. Швидкий хак: на web замість `Alert.alert(...)` викликати `window.confirm('...') ? onPress() : null`.
-3. Краще: створити `src/utils/dialog.js` що абстрагує `Alert.alert` → web modal.
+### ✅ #8 — `Alert.alert` для confirmation на web — мовчазний no-op (FIXED)
+**Severity:** Critical (логаут не працював, скасування записів не працювало)
+**Симптом:** На web кліки на критичні кнопки нічого не робили — `Alert.alert` на web є no-op.
+**Фікс:** створено `src/utils/dialog.js` — drop-in replacement для RN Alert. На native — делегує до `RNAlert.alert`, на web — fallback на `window.confirm` для 2+ кнопок або `window.alert` для 1.
+**Замінено імпорти у 8 файлах:** `useAppStore.js`, `CabinetScreen.js`, `MembershipScreen.js`, `ProgressScreen.js`, `ClassDetailsScreen.js`, `FitCoinsShopScreen.js`, `HIITTimer.js`, `ProgressScreen.js`.
+**Перевірено:** логаут на web → window.confirm → редирект на Login ✓.
 
 ---
 
@@ -95,6 +98,15 @@ ExpoSecureStore.default.setValueWithKeyAsync is not a function
 **Severity:** Trivial (UX preference)
 **Симптом:** Сьогодні 06.05 (середа). Дата-стрічка на екрані Тренування → Розклад починається з **чт 7** (завтра), а не з сьогодні. Сьогоднішні заняття приховані — навіть якщо вечірні ще будуть.
 **Файл:** `fitgym-app/src/screens/WorkoutsScreen.js` (або компонент календарної стрічки)
+
+---
+
+### ✅ #9 — "Дійсний до: Invalid Date" в PRO MEMBER card (FIXED)
+**Severity:** Major (видно на демо в Кабінеті)
+**Симптом:** На картці абонементу замість дати показано «Invalid Date».
+**Причина:** Backend повертає `end_date` у форматі **DD.MM.YYYY** (наприклад `"16.05.2027"`), а `new Date("16.05.2027")` не парситься JS-двигуном і повертає Invalid Date.
+**Файл:** `fitgym-app/src/screens/CabinetScreen.js:189-204`
+**Фікс:** додано `parseUkDate(s)` функцію що ділить рядок на день/місяць/рік і будує Date з конструктора `new Date(y, m-1, d)`. Має fallback на стандартний парсер.
 
 
 ---

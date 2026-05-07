@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, Dimensions, ScrollView, SafeAreaView,
-  TouchableOpacity, Alert, TextInput, Modal
+  TouchableOpacity, TextInput, Modal
 } from 'react-native';
+import Alert from '../utils/dialog';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import { useTheme } from '../constants/theme';
 import { useFocusEffect } from '@react-navigation/native';

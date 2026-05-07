@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, Modal, Vibration, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Modal, Vibration, Platform, Dimensions } from 'react-native';
+import Alert from '../utils/dialog';
 import { useTheme } from '../constants/theme';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -31,10 +32,11 @@ export default function MembershipScreen() {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const [plansRes, userRes] = await Promise.all([
-        apiClient.get('/membership-types/'),
-        apiClient.get('/me/')
-      ]);
+      // Спочатку — профіль, щоб дізнатися gym_id для фільтру тарифів
+      const userRes = await apiClient.get('/me/');
+      const gymId = userRes.data?.gym_id;
+      const plansUrl = gymId ? `/membership-types/?gym_id=${gymId}` : '/membership-types/';
+      const plansRes = await apiClient.get(plansUrl);
       setPlans(plansRes.data);
       setUserInfo(userRes.data);
     } catch (e) {
@@ -43,6 +45,17 @@ export default function MembershipScreen() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Бейдж: "БЕЗЛІМ" для тарифів без часового обмеження, інакше — діапазон годин
+  const formatTariffBadge = (item) => {
+    const period = `${item.period_months} ${getMonthsWord(item.period_months)}`;
+    if (item.time_limit_start && item.time_limit_end) {
+      const from = String(item.time_limit_start).slice(0, 5);
+      const to = String(item.time_limit_end).slice(0, 5);
+      return `${period} · ${from}–${to}`;
+    }
+    return `${period} БЕЗЛІМ`;
   };
 
   const startCheckout = (planId, planName, planPrice) => {
@@ -115,7 +128,7 @@ export default function MembershipScreen() {
           <View style={styles.planCard}>
             {/* Top Badge */}
             <View style={styles.badgeContainer}>
-              <Text style={styles.badgeText}>{item.period_months} {getMonthsWord(item.period_months)} БЕЗЛІМ</Text>
+              <Text style={styles.badgeText}>{formatTariffBadge(item)}</Text>
             </View>
             
             {/* Title */}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, ImageBackground, ScrollView, Dimensions, Platform, Vibration } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ImageBackground, ScrollView, Dimensions, Platform, Vibration } from 'react-native';
+import Alert from '../utils/dialog';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../constants/theme';
 import { useNavigation, useRoute } from '@react-navigation/native';

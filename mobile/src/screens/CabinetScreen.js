@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image, Switch, Vibration } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Image, Switch, Vibration } from 'react-native';
+import Alert from '../utils/dialog';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import SecureStore from '../utils/storage';
@@ -147,7 +148,7 @@ export default function CabinetScreen() {
                {avatarUri ? (
                  <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
                ) : (
-                 <Text style={styles.avatarText}>{profile?.full_name?.charAt(0) || 'U'}</Text>
+                 <Text style={styles.avatarText}>{(profile?.full_name || profile?.username || '?').charAt(0).toUpperCase()}</Text>
                )}
             </View>
             <View style={styles.editIconBadge}>
@@ -185,8 +186,20 @@ export default function CabinetScreen() {
       <View style={{ paddingHorizontal: 24, marginTop: 20 }}>
         {profile?.active_membership ? (
           (() => {
+            // Бекенд повертає DD.MM.YYYY — JS Date не парсить такий формат
+            const parseUkDate = (s) => {
+              if (!s) return null;
+              const parts = String(s).split('.');
+              if (parts.length === 3) {
+                const [d, m, y] = parts.map(Number);
+                return new Date(y, m - 1, d);
+              }
+              const fallback = new Date(s);
+              return isNaN(fallback) ? null : fallback;
+            };
             const endDate = profile.active_membership?.end_date;
-            const daysLeft = endDate ? Math.ceil((new Date(endDate) - new Date()) / 86400000) : null;
+            const endDateObj = parseUkDate(endDate);
+            const daysLeft = endDateObj ? Math.ceil((endDateObj - new Date()) / 86400000) : null;
             const isExpiringSoon = daysLeft !== null && daysLeft <= 14;
             return (
               <View style={[styles.proCard, isExpiringSoon && { borderColor: '#f59e0b', borderWidth: 1.5 }]}>
@@ -200,7 +213,7 @@ export default function CabinetScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
                     {isExpiringSoon && <Ionicons name="warning-outline" size={14} color="#f59e0b" />}
                     <Text style={{ color: isExpiringSoon ? '#f59e0b' : 'rgba(255,255,255,0.6)', fontSize: 12 }}>
-                      Дійсний до: {new Date(endDate).toLocaleDateString('uk-UA')}{isExpiringSoon ? ` (${daysLeft} дн.)` : ''}
+                      Дійсний до: {endDateObj ? endDateObj.toLocaleDateString('uk-UA') : endDate}{isExpiringSoon ? ` (${daysLeft} дн.)` : ''}
                     </Text>
                   </View>
                 )}
