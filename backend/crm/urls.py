@@ -9,6 +9,7 @@ from .views import (
     MembershipApplicationCreateView, AdminMembershipApplicationViewSet,
     CheckAccessView, MembershipAssignView, AdminAttendanceViewSet,
 )
+from .analytics import AdminAnalyticsView
 
 router = DefaultRouter()
 
@@ -35,4 +36,5 @@ urlpatterns = [
     path('me/', MeView.as_view(), name='me'),
     path('access/check/', CheckAccessView.as_view(), name='access-check'),
     path('admin/memberships/assign/', MembershipAssignView.as_view(), name='membership-assign'),
+    path('admin/analytics/', AdminAnalyticsView.as_view(), name='admin-analytics'),
 ]

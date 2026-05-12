@@ -110,7 +110,7 @@ gym_project/
 │   ├── 06_WEEKLY_SPRINT.md      # Роадмап до захисту 16-23.06
 │   ├── 07_ARCHITECTURE_DIAGRAM.md
 │   ├── 08_THESIS_ARCHITECTURE_SECTION.md
-│   └── 09_THESIS_METHODOLOGY.md # Вижим вимог кафедри
+│   └── 09_THESIS_METHODOLOGY.md # Вижим вимог циклової комісії
 │
 ├── requirements.txt
 ├── manage.py
@@ -263,7 +263,7 @@ OK
 | `06_WEEKLY_SPRINT.md` | Роадмап до 16-23.06 |
 | `07_ARCHITECTURE_DIAGRAM.md` | Mermaid: системна, ER, sequence-діаграми |
 | `08_THESIS_ARCHITECTURE_SECTION.md` | Готовий текст архітектурного розділу |
-| `09_THESIS_METHODOLOGY.md` | Вижим вимог кафедри БФКПЕП |
+| `09_THESIS_METHODOLOGY.md` | Вижим вимог циклової комісії БФКПЕП |
 
 **Правило:** перед складними змінами читай актуальний стан у `03_ACTIVE_STATE.md`. Після значних змін — оновлюй журнал сесій там.
 
