@@ -47,6 +47,38 @@ export default function GymPassScreen() {
     ? `ID-${user.member_id} · Зал ${user.gym_id || 1}`
     : `FITGYM-PASS-${userToken ? userToken.substring(0, 8) : '------'}`;
 
+  // Для адмінів / тренерів (без member_id) перепустка не релевантна
+  const hasMembership = !!user?.member_id;
+
+  if (!hasMembership) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+            <Ionicons name="close" size={28} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Перепустка в Клуб</Text>
+          <View style={{width: 44}} />
+        </View>
+        <View style={[styles.content, { gap: 16 }]}>
+          <Ionicons name="information-circle-outline" size={72} color={COLORS.muted} />
+          <Text style={[styles.subtitle, { textAlign: 'center', marginBottom: 0 }]}>
+            Доступно лише клієнтам клубу
+          </Text>
+          <Text style={{ color: COLORS.muted, fontSize: 14, textAlign: 'center', maxWidth: 280, lineHeight: 20 }}>
+            QR-перепустка генерується для активних членів клубу. Адміністратори та тренери використовують іншу процедуру входу.
+          </Text>
+          <TouchableOpacity
+             style={[styles.simulationBtn, { marginTop: 30 }]}
+             onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.simulationBtnText}>Назад</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>

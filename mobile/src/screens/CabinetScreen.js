@@ -280,6 +280,41 @@ export default function CabinetScreen() {
         )}
       </View>
 
+      {/* Telegram Link Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Telegram-бот</Text>
+        <TouchableOpacity
+          style={styles.settingsGroup}
+          activeOpacity={0.7}
+          onPress={async () => {
+            try {
+              const { data } = await apiClient.get('/me/telegram-code/');
+              if (data.linked) {
+                Alert.alert(
+                  'Telegram уже прив\'язано',
+                  `Акаунт: @${data.telegram_username || 'без_імені'}\nЗ ${new Date(data.linked_at).toLocaleDateString('uk-UA')}`
+                );
+              } else {
+                Alert.alert(
+                  'Код для прив\'язки',
+                  `Твій код: ${data.code}\n\nНадішли цей код боту ${data.bot_username}:\n/link ${data.code}\n\nКод діє 10 хвилин.`
+                );
+              }
+            } catch (e) {
+              Alert.alert('Помилка', e.response?.data?.error || e.message);
+            }
+          }}
+        >
+          <View style={styles.settingRow}>
+            <View style={styles.settingIconBox}>
+              <Ionicons name="paper-plane" size={20} color={COLORS.primary} />
+            </View>
+            <Text style={[styles.settingLabel, { flex: 1 }]}>Прив'язати Telegram</Text>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.muted} />
+          </View>
+        </TouchableOpacity>
+      </View>
+
       {/* Settings Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Налаштування</Text>

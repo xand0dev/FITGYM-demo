@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Modal, Vibration, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Modal, Vibration, Platform, Dimensions, Linking } from 'react-native';
+import { WebView } from 'react-native-webview';
 import Alert from '../utils/dialog';
 import { useTheme } from '../constants/theme';
 import { useNavigation } from '@react-navigation/native';
@@ -24,6 +25,11 @@ export default function MembershipScreen() {
   const [checkoutModalVisible, setCheckoutModalVisible] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState(0); // 0=confirm, 1=processing, 2=success
   const [selectedPlan, setSelectedPlan] = useState(null);
+
+  // LiqPay state
+  const [checkoutUrl, setCheckoutUrl] = useState(null);
+  const [checkoutOrderId, setCheckoutOrderId] = useState(null);
+  const [activatedEndDate, setActivatedEndDate] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -65,36 +71,65 @@ export default function MembershipScreen() {
     Vibration.vibrate(20);
   };
 
+  // Крок 1: ініціація LiqPay checkout → відкриваємо WebView з checkout_url
   const processPayment = async () => {
-    setCheckoutStep(1); // Set to Processing
+    setCheckoutStep(1);
     Vibration.vibrate(30);
-    
-    // Simulate bank/network delay for premium UX feel
-    setTimeout(async () => {
-      try {
-        await apiClient.post('/apply/', {
-          name: userInfo?.full_name || userInfo?.username || 'Клієнт',
-          phone: userInfo?.contact || '+380',
-          membership_type: selectedPlan.id
-        });
-        
-        setCheckoutStep(2); // Set to Success
-        Vibration.vibrate([0, 50, 50, 50]); // Success pattern
-        
-        // Auto-close modal after 2.5 seconds
-        setTimeout(() => {
-          setCheckoutModalVisible(false);
-          navigation.goBack();
-          // Alert just to ensure the user knows it's completely done
-          setTimeout(() => Alert.alert('Вітаємо!', `Ваш тариф "${selectedPlan.name}" активовано! Меню розблоковано.`), 500);
-        }, 2500);
-        
-      } catch (error) {
-        setCheckoutModalVisible(false);
-        const errDesc = error.response?.data?.detail || error.message;
-        Alert.alert('Помилка', `Платіж не пройшов. Причина: ${errDesc}`);
+    try {
+      const { data } = await apiClient.post('/membership/checkout/init/', {
+        membership_type_id: selectedPlan.id,
+      });
+      setCheckoutUrl(data.checkout_url);
+      setCheckoutOrderId(data.order_id);
+      // checkoutStep лишається 1, WebView рендериться поверх
+    } catch (error) {
+      const errDesc = error.response?.data?.error || error.response?.data?.detail || error.message;
+      setCheckoutModalVisible(false);
+      setCheckoutStep(0);
+      Alert.alert('Помилка', `Не вдалося ініціювати платіж: ${errDesc}`);
+    }
+  };
+
+  // Крок 2: WebView надсилає postMessage коли користувач повернувся з LiqPay
+  const handleWebViewMessage = async (event) => {
+    try {
+      const msg = JSON.parse(event.nativeEvent.data);
+      if (msg.type === 'liqpay_result' && msg.order_id) {
+        // Закриваємо WebView
+        setCheckoutUrl(null);
+        await confirmPayment(msg.order_id);
       }
-    }, 2000);
+    } catch (e) {
+      console.log('WebView message parse error:', e);
+    }
+  };
+
+  // Крок 3: підтверджуємо платіж на нашому беку → створюється MembershipHistory
+  const confirmPayment = async (orderId) => {
+    try {
+      const { data } = await apiClient.post('/membership/checkout/confirm/', { order_id: orderId });
+      setActivatedEndDate(data.end_date);
+      setCheckoutStep(2);
+      Vibration.vibrate([0, 50, 50, 50]);
+      setTimeout(() => {
+        setCheckoutModalVisible(false);
+        setCheckoutStep(0);
+        setActivatedEndDate(null);
+        navigation.goBack();
+      }, 3000);
+    } catch (error) {
+      setCheckoutModalVisible(false);
+      setCheckoutStep(0);
+      const errDesc = error.response?.data?.error || error.response?.data?.detail || error.message;
+      Alert.alert('Помилка підтвердження', errDesc);
+    }
+  };
+
+  // Скасування WebView (користувач закрив до оплати)
+  const cancelCheckout = () => {
+    setCheckoutUrl(null);
+    setCheckoutModalVisible(false);
+    setCheckoutStep(0);
   };
 
   if (isLoading) {
@@ -181,17 +216,52 @@ export default function MembershipScreen() {
                 <TouchableOpacity style={styles.payBtn} onPress={processPayment}>
                    <Text style={styles.payBtnText}>Оплатити {selectedPlan?.price} ₴</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.cancelLinkBtn} onPress={() => setCheckoutModalVisible(false)}>
+                <TouchableOpacity style={styles.cancelLinkBtn} onPress={cancelCheckout}>
                    <Text style={styles.cancelLinkText}>Скасувати</Text>
                 </TouchableOpacity>
               </View>
             )}
 
-            {checkoutStep === 1 && (
+            {checkoutStep === 1 && !checkoutUrl && (
               <View style={[styles.sheetContent, {alignItems: 'center', paddingVertical: 60}]}>
                 <ActivityIndicator size="large" color={COLORS.primary} style={{transform: [{scale: 1.5}], marginBottom: 30}} />
-                <Text style={styles.sheetTitle}>Зв'язок з банком...</Text>
-                <Text style={styles.sheetSubtitle}>Будь ласка, зачекайте. Не закривайте додаток.</Text>
+                <Text style={styles.sheetTitle}>З'єднання з LiqPay...</Text>
+                <Text style={styles.sheetSubtitle}>Готуємо безпечне з'єднання.</Text>
+              </View>
+            )}
+
+            {checkoutStep === 1 && checkoutUrl && (
+              <View style={{ height: Dimensions.get('window').height * 0.85 }}>
+                <View style={styles.webViewHeader}>
+                  <Ionicons name="lock-closed" size={16} color="#10b981" />
+                  <Text style={styles.webViewHeaderText}>Захищене з'єднання · LiqPay sandbox</Text>
+                  <TouchableOpacity onPress={cancelCheckout} style={{marginLeft: 'auto'}}>
+                    <Ionicons name="close" size={24} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+                <WebView
+                  source={{ uri: checkoutUrl }}
+                  onMessage={handleWebViewMessage}
+                  startInLoadingState
+                  renderLoading={() => (
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+                      <ActivityIndicator size="large" color={COLORS.primary} />
+                    </View>
+                  )}
+                  onNavigationStateChange={(navState) => {
+                    // Якщо LiqPay редіректнув на наш result endpoint — отримуємо order_id з URL
+                    if (navState.url.includes('/checkout/result/')) {
+                      try {
+                        const url = new URL(navState.url);
+                        const orderId = url.searchParams.get('order_id');
+                        if (orderId) {
+                          setCheckoutUrl(null);
+                          confirmPayment(orderId);
+                        }
+                      } catch {}
+                    }
+                  }}
+                />
               </View>
             )}
 
@@ -201,7 +271,9 @@ export default function MembershipScreen() {
                   <Ionicons name="checkmark" size={60} color="#fff" />
                 </View>
                 <Text style={[styles.sheetTitle, {marginTop: 20}]}>Оплата успішна!</Text>
-                <Text style={styles.sheetSubtitle}>Дякуємо за покупку. Акаунт оновлено.</Text>
+                <Text style={styles.sheetSubtitle}>
+                  Тариф «{selectedPlan?.name}» активовано{activatedEndDate ? ` до ${activatedEndDate}` : ''}.
+                </Text>
               </View>
             )}
           </View>
@@ -295,5 +367,17 @@ const getStyles = (COLORS, ObjectHasOwn) => StyleSheet.create({
   cancelLinkBtn: { paddingVertical: 10, alignItems: 'center' },
   cancelLinkText: { color: COLORS.muted, fontSize: 16, fontWeight: '700' },
   
-  successCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#00C851', justifyContent: 'center', alignItems: 'center', shadowColor: '#00C851', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 10 }
+  successCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#00C851', justifyContent: 'center', alignItems: 'center', shadowColor: '#00C851', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 10 },
+
+  // LiqPay WebView header
+  webViewHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: 20, paddingVertical: 16,
+    backgroundColor: '#0a0a0a',
+    borderTopLeftRadius: 30, borderTopRightRadius: 30,
+    borderBottomWidth: 1, borderBottomColor: '#222',
+  },
+  webViewHeaderText: {
+    color: '#aaa', fontSize: 13, fontWeight: '700',
+  },
 });
