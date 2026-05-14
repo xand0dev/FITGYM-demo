@@ -9,3 +9,12 @@ pytz==2026.1.post1
 sqlparse==0.5.3
 typing_extensions==4.15.0
 tzdata==2025.2
+
+# --- Telegram bot (optional, потрібно лише для `python manage.py runbot`) ---
+python-telegram-bot==21.10
+qrcode[pil]==8.0
+
+# --- PostgreSQL + Faker (optional, для prod і seed) ---
+dj-database-url==2.3.0
+Faker==33.3.0
+# psycopg[binary]==3.2.3   # uncomment для PostgreSQL connector

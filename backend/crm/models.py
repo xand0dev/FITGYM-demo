@@ -205,3 +205,26 @@ class Attendance(models.Model):
     def __str__(self) -> str:
         status = "✓" if self.is_access_granted else "✗"
         return f"{status} {self.member} @ {self.gym} — {self.timestamp.strftime('%Y-%m-%d %H:%M')}"
+
+
+# === ПРИВ'ЯЗКА TELEGRAM-АКАУНТУ ДО КЛІЄНТА ===
+class TelegramLink(models.Model):
+    """
+    Зв'язує Telegram chat_id з Member. Створюється коли клієнт пише
+    `/link <CODE>` боту, де CODE отримано в мобільному застосунку.
+
+    До прив'язки запис існує з chat_id=0 і заповненим link_code (стан pending).
+    """
+    member = models.OneToOneField(
+        Member, on_delete=models.CASCADE, related_name='telegram_link'
+    )
+    chat_id = models.BigIntegerField(default=0, db_index=True)
+    telegram_username = models.CharField(max_length=64, blank=True)
+    linked_at = models.DateTimeField(null=True, blank=True)
+
+    # Тимчасовий 6-значний код прив'язки. Очищується після успішного /link.
+    link_code = models.CharField(max_length=6, blank=True, null=True, db_index=True)
+    link_code_expires_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self) -> str:
+        return f"TG {self.chat_id} ↔ {self.member}" if self.chat_id else f"TG pending ↔ {self.member}"

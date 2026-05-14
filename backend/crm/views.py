@@ -15,7 +15,8 @@ from rest_framework import status as drf_status
 
 from .models import (
     Workout, Instructor, ClassSession, MembershipType,
-    Member, Booking, MembershipHistory, Class, MembershipApplication, Attendance
+    Member, Booking, MembershipHistory, Class, MembershipApplication, Attendance,
+    TelegramLink,
 )
 from .serializers import (
     WorkoutSerializer, InstructorSerializer, ClassSessionSerializer,
@@ -310,6 +311,169 @@ class MembershipAssignView(APIView):
             {'success': True, 'end_date': end.strftime('%d.%m.%Y')},
             status=drf_status.HTTP_201_CREATED,
         )
+
+
+# --- SELF-SERVICE GYM REGISTRATION ---
+
+class GymRegisterView(APIView):
+    """
+    POST /api/gyms/register/
+    Self-service реєстрація нового залу.
+
+    Запит:
+      {
+        "gym_name": "Pulse Fitness",
+        "city": "Київ",
+        "timezone": "Europe/Kyiv",  // optional, default Europe/Kyiv
+        "owner_full_name": "Іван Петренко",
+        "owner_email": "ivan@pulse.ua",
+        "owner_phone": "+380...",
+        "username": "ivan_admin",
+        "password": "..."
+      }
+
+    Створює транзакційно:
+      - Gym (новий тенант)
+      - User (is_staff=True) — власник/адмін цього залу
+      - DRF Token
+      - 3 дефолтні MembershipType (Місячний, Піврічний, Річний)
+
+    Повертає: {token, gym_id, gym_name, user_id}
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        from django.db import transaction
+        from .models import Gym, MembershipType, Member  # local import щоб уникнути циклів
+
+        data = request.data
+        required = ['gym_name', 'owner_full_name', 'owner_email', 'username', 'password']
+        missing = [f for f in required if not data.get(f)]
+        if missing:
+            return Response(
+                {'error': f'Відсутні обов\'язкові поля: {", ".join(missing)}'},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
+
+        username = data['username'].strip()
+        if User.objects.filter(username=username).exists():
+            return Response(
+                {'error': 'Користувач з таким логіном вже існує. Оберіть інший.'},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
+
+        if Gym.objects.filter(name__iexact=data['gym_name'].strip()).exists():
+            return Response(
+                {'error': 'Зал з такою назвою вже зареєстровано.'},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            # 1. Створити Gym
+            gym = Gym.objects.create(
+                name=data['gym_name'].strip(),
+                owner_contact=data.get('owner_phone', ''),
+                timezone=data.get('timezone', 'Europe/Kyiv'),
+                is_active=True,
+            )
+
+            # 2. Створити User-власника як staff
+            full_name = data['owner_full_name'].strip()
+            first_name, _, last_name = full_name.partition(' ')
+            user = User.objects.create_user(
+                username=username,
+                email=data['owner_email'].strip(),
+                password=data['password'],
+                first_name=first_name,
+                last_name=last_name,
+                is_staff=True,
+            )
+
+            # 3. Привʼязати власника як Member залу (щоб MeView коректно повертав gym_id)
+            Member.objects.create(
+                user=user,
+                gym=gym,
+                contact=data.get('owner_phone', ''),
+                status='active',
+            )
+
+            # 4. Дефолтні тарифи
+            defaults = [
+                {'name': 'Місячний', 'amount': 1500, 'period_months': 1,
+                 'description': 'Стандартний доступ на 1 місяць'},
+                {'name': 'Піврічний', 'amount': 7500, 'period_months': 6,
+                 'description': 'Стандартний доступ на 6 місяців'},
+                {'name': 'Річний', 'amount': 13000, 'period_months': 12,
+                 'description': 'Стандартний доступ на 12 місяців'},
+            ]
+            for d in defaults:
+                MembershipType.objects.create(gym=gym, **d)
+
+            # 5. Token
+            token, _ = Token.objects.get_or_create(user=user)
+
+        return Response({
+            'token': token.key,
+            'user_id': user.pk,
+            'gym_id': gym.pk,
+            'gym_name': gym.name,
+            'username': user.username,
+        }, status=drf_status.HTTP_201_CREATED)
+
+
+# --- TELEGRAM LINK CODE ---
+
+class TelegramLinkCodeView(APIView):
+    """
+    GET /api/me/telegram-code/
+    Генерує/повертає 6-значний код прив'язки Telegram-чату до Member.
+    Код діє 10 хвилин. Якщо вже є активний — повертає його.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        from datetime import timedelta
+        import random
+
+        member = Member.objects.filter(user=request.user).first()
+        if member is None:
+            return Response(
+                {'error': 'Прив\'язка Telegram доступна лише клієнтам клубу.'},
+                status=drf_status.HTTP_403_FORBIDDEN,
+            )
+
+        link, _ = TelegramLink.objects.get_or_create(member=member)
+
+        # Якщо вже є валідний код — повертаємо
+        now = timezone.now()
+        if (link.link_code and link.link_code_expires_at
+                and link.link_code_expires_at > now and link.chat_id == 0):
+            return Response({
+                'code': link.link_code,
+                'expires_in_sec': int((link.link_code_expires_at - now).total_seconds()),
+                'bot_username': '@FitgymBot',  # TODO: env var
+            })
+
+        # Якщо вже привʼязано — повідомляємо
+        if link.chat_id != 0:
+            return Response({
+                'linked': True,
+                'telegram_username': link.telegram_username,
+                'linked_at': link.linked_at,
+            })
+
+        # Генеруємо новий код
+        code = f'{random.randint(0, 999999):06d}'
+        link.link_code = code
+        link.link_code_expires_at = now + timedelta(minutes=10)
+        link.chat_id = 0
+        link.save()
+
+        return Response({
+            'code': code,
+            'expires_in_sec': 600,
+            'bot_username': '@FitgymBot',
+        })
 
 
 # --- CHECK-IN ---

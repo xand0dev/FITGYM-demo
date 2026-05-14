@@ -8,8 +8,12 @@ from .views import (
     AdminClassSessionViewSet, AdminMemberViewSet, AdminInstructorViewSet,
     MembershipApplicationCreateView, AdminMembershipApplicationViewSet,
     CheckAccessView, MembershipAssignView, AdminAttendanceViewSet,
+    TelegramLinkCodeView, GymRegisterView,
 )
 from .analytics import AdminAnalyticsView
+from .payments import (
+    LiqPayCheckoutInitView, LiqPayCheckoutConfirmView, LiqPayCheckoutResultView,
+)
 
 router = DefaultRouter()
 
@@ -34,7 +38,13 @@ urlpatterns = [
     path('book/', BookingCreateView.as_view(), name='book-create'),
     path('apply/', MembershipApplicationCreateView.as_view(), name='apply'),
     path('me/', MeView.as_view(), name='me'),
+    path('me/telegram-code/', TelegramLinkCodeView.as_view(), name='telegram-code'),
+    path('gyms/register/', GymRegisterView.as_view(), name='gym-register'),
     path('access/check/', CheckAccessView.as_view(), name='access-check'),
     path('admin/memberships/assign/', MembershipAssignView.as_view(), name='membership-assign'),
     path('admin/analytics/', AdminAnalyticsView.as_view(), name='admin-analytics'),
+    # LiqPay sandbox payment flow
+    path('membership/checkout/init/', LiqPayCheckoutInitView.as_view(), name='liqpay-init'),
+    path('membership/checkout/confirm/', LiqPayCheckoutConfirmView.as_view(), name='liqpay-confirm'),
+    path('membership/checkout/result/', LiqPayCheckoutResultView.as_view(), name='liqpay-result'),
 ]
