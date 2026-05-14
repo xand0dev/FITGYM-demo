@@ -7,6 +7,7 @@ import Layout from './components/layout/Layout';
 import Home from './pages/Home';
 import Cabinet from './pages/Cabinet';
 import AdminPanel from './pages/AdminPanel';
+import GymRegister from './pages/GymRegister';
 import NotFound from './pages/NotFound';
 
 // UI та Авторизація
@@ -58,6 +59,10 @@ function App() {
               <PrivateRoute adminOnly={true}>
                   <AnimatedPage><AdminPanel /></AnimatedPage>
               </PrivateRoute>
+          } />
+
+          <Route path="/register-gym" element={
+              <AnimatedPage><GymRegister /></AnimatedPage>
           } />
 
           {/* Маршрут для помилки 404 */}

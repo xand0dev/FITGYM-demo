@@ -11,6 +11,7 @@ import {
     Crown,
     ShieldAlert,
     ScanLine,
+    QrCode,
 } from "lucide-react";
 
 export default function AdminSidebar({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, logout }) {
@@ -25,6 +26,7 @@ export default function AdminSidebar({ activeTab, setActiveTab, sidebarOpen, set
         'applications': ClipboardList,
         'trainers': Dumbbell,
         'attendance': ScanLine,
+        'qr-scanner': QrCode,
     };
 
     const MenuButton = ({ id, label, adminOnly = false }) => {
@@ -89,6 +91,7 @@ export default function AdminSidebar({ activeTab, setActiveTab, sidebarOpen, set
             {/* Navigation Navigation */}
             <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto custom-scrollbar">
                 <MenuButton id="dashboard" label="Огляд" adminOnly={true} />
+                <MenuButton id="qr-scanner" label="QR Сканер" adminOnly={true} />
                 <MenuButton id="schedule" label="Розклад" />
                 <MenuButton id="clients" label="Клієнти" />
                 <MenuButton id="attendance" label="Відвідування" adminOnly={true} />

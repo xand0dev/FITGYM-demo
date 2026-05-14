@@ -10,6 +10,7 @@ import ApplicationsTab from '../components/admin/ApplicationsTab';
 import ClientsTab from '../components/admin/ClientsTab';
 import TrainersTab from '../components/admin/TrainersTab';
 import AttendanceTab from '../components/admin/AttendanceTab';
+import QRScannerTab from '../components/admin/QRScannerTab';
 
 export default function AdminPanel() {
     const { user, logout } = useAuth();
@@ -110,6 +111,8 @@ export default function AdminPanel() {
                     {activeTab === 'attendance' && (
                         <AttendanceTab data={attendance} isLoading={isAttendanceLoading} />
                     )}
+
+                    {activeTab === 'qr-scanner' && <QRScannerTab />}
 
                     {/* РЕНДЕР ТРЕНЕРІВ */}
                     {activeTab === 'trainers' && (
