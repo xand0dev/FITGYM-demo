@@ -140,6 +140,40 @@ export default function MembershipScreen() {
     );
   }
 
+  // Гард для адмінів/тренерів — у них немає Member-профілю, купувати немає сенсу
+  const isClient = !!userInfo?.member_id;
+
+  if (!isClient && userInfo) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={COLORS.text === '#000000' ? '#ffffff' : COLORS.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Купити Абонемент</Text>
+          <View style={{width: 40}} />
+        </View>
+        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 30, gap: 16 }]}>
+          <Ionicons name="shield-checkmark-outline" size={72} color={COLORS.muted} />
+          <Text style={{ color: COLORS.text, fontSize: 22, fontWeight: '900', textAlign: 'center' }}>
+            Доступно лише клієнтам
+          </Text>
+          <Text style={{ color: COLORS.muted, fontSize: 14, textAlign: 'center', maxWidth: 280, lineHeight: 20 }}>
+            Адміністратори та тренери продають абонементи клієнтам через CRM-панель FITGYM, а не купують самостійно.
+          </Text>
+          <TouchableOpacity
+             style={{ marginTop: 20, paddingVertical: 14, paddingHorizontal: 28, backgroundColor: COLORS.primary, borderRadius: 12 }}
+             onPress={() => navigation.goBack()}
+          >
+            <Text style={{ color: '#fff', fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 }}>
+              Назад
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>

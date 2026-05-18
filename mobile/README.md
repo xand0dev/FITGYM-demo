@@ -1,97 +1,191 @@
-# 🏋️‍♂️ FITGYM Mobile App
+# FITGYM Mobile
 
-[![React Native](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactnative.dev/)
-[![Expo](https://img.shields.io/badge/Expo-1B1F23?style=for-the-badge&logo=expo&logoColor=white)](https://expo.dev/)
-[![Zustand](https://img.shields.io/badge/Zustand-Bear-brown?style=for-the-badge)](https://github.com/pmndrs/zustand)
-[![Jest](https://img.shields.io/badge/Jest-C21325?style=for-the-badge&logo=jest&logoColor=white)](https://jestjs.io/)
+> React Native + Expo SDK 54 застосунок клієнтів фітнес-клубу FITGYM.
+> Працює на Android, iOS і в браузері (web-mode).
 
-FITGYM — це сучасний, високопродуктивний мобільний застосунок преміум-класу для екосистеми фітнес-клубів. Розроблений з акцентом на **Offline-to-Online (O2O)** взаємодію, додаток поєднує в собі глибоку інтеграцію з REST API, смарт-бронювання, штучний інтелект та гейміфікацію для максимального залучення користувачів (Retention Rate).
+[![Expo SDK](https://img.shields.io/badge/Expo_SDK-54-000020)]() [![React_Native](https://img.shields.io/badge/RN-0.76-61dafb)]() [![Zustand](https://img.shields.io/badge/State-Zustand-orange)]() [![Tests](https://img.shields.io/badge/Mobile_bugs-9%2F9_fixed-brightgreen)]()
 
 ---
 
-## 🌟 Ключовий Функціонал & Архітектурні Рішення
+## 📍 Це частина монорепо FITGYM
 
-### 🏛 Архітектура та Стан (State Management)
-- **Zustand & SecureStore:** Глобальний стейт-менеджмент реалізовано через `zustand` з персистентним рівнем (persistent storage) на базі `expo-secure-store`. Це забезпечує миттєве відновлення користувацьких сесій, історії ШІ-чатів та кешування стріків (Streaks) навіть після холодного перезапуску.
-- **Complex Routing:** Багаторівнева навігаційна система (Auth Stack, Bottom Tabs, Modals) побудована на `@react-navigation/native`, що розділяє логіку авторизованих та неавторизованих користувачів.
+| Репо | Призначення |
+|---|---|
+| FITGYM-backend | Django + DRF REST API |
+| FITGYM-frontend | React + Vite веб-адмінка + лендинг |
+| **FITGYM-mobile** (цей репо) | React Native + Expo застосунок клієнтів |
 
-### 🛡 Безпека та Валідація
-- **JWT Інтеграція:** Комунікація з бекендом (Django REST Framework) захищена Bearer-токенами за допомогою axios-інтерцепторів.
-- **Strict Forms:** Всі форми (вхід, реєстрація) контролюються через `react-hook-form` у зв'язці зі схемною валідацією `yup` (email regex, перевірка збігу паролів, обов'язкові поля).
-
-### 🤖 Інтеграція Штучного Інтелекту
-- Вбудованый **AI Fitness Coach**, що працює на базі `Google Gemini 2.5 Flash API`.
-- Підтримка контекстних діалогів: ШІ запам'ятовує обрану користувачем фітнес-ціль (Схуднення/Маса) та використовує її як системний промпт для генерації персоналізованих порад.
-- Анімований Typewriter-UI для імітації "живого" спілкування.
-
-### 📱 Premium Native UX
-- **Haptic Feedback:** Інтеграція `expo-haptics` створює тактильний супровід для всіх мікроінтеракцій (від вибору дати в календарі до успішної симуляції Apple Pay).
-- **Skeleton Views:** Акуратні пульсуючі лоадери замість класичних спінерів для безшовного UX під час очікування відповіді API.
-- **O2O Check-in:** Динамічна генерація QR-кодів клубних карток (`react-native-qrcode-svg`) з анімаціями пульсації для пропуску через турнікети клубу.
+Тягне дані з REST API бекенду (`.env: EXPO_PUBLIC_API_URL`).
 
 ---
 
-## 🗓 Реалізація Роботи з Даними (Data Flow)
+## ⚡ Швидкий старт
 
-- **Фільтрація та Пагінація:** Спеціалізований горизонтальний скролл-календар для `WorkoutsScreen`, який локально сортує та відфільтровує розклад занять (отриманих з `/api/schedule/`) за вибраним днем, виключаючи минулі тренування.
-- **Динамічний UI Мутатор:** Налаштування тем (Dark/Light) та глобальної акцентної генерації кольорів (Accent Color Picker) розповсюджується на всі компоненти миттєво через Zustand.
-
----
-
-## 🛠 Технологічний Стек
-
-| Категорія | Технології |
-| :--- | :--- |
-| **Mobile Framework** | React Native (v0.74+), Expo SDK 51 |
-| **State Management** | Zustand |
-| **Networking** | Axios (Custom Client & Interceptors) |
-| **Forms & Schema** | React Hook Form, Yup |
-| **Local Storage** | Expo Secure Store, AsyncStorage |
-| **Testing** | Jest, Jest-Expo |
-| **Native API** | ImagePicker, Haptics, Notifications |
-
----
-
-## 🚀 Встановлення та Розгортання (Setup)
-
-Додаток налаштований для швидкого запуску в середовищі розробки.
-
-1. **Клонування та залежності:**
-   ```bash
-   git clone <repository_url>
-   cd fitgym-app
-   npm install
-   ```
-
-2. **Налаштування середовища (Environment Variables):**
-   Створіть файл `.env` у корені проекту та додайте ключі доступу:
-   ```env
-   EXPO_PUBLIC_GEMINI_API_KEY=your_gemini_api_key_here
-   ```
-
-3. **Конфігурація Бекенду:**
-   У файлі `src/api/client.js` вкажіть IPv4 адресу вашого локального комп'ютера (де запущено Django-сервер):
-   ```javascript
-   baseURL: 'http://192.168.1.100:8000/api',
-   ```
-
-4. **Запуск сервера розробки Expo:**
-   ```bash
-   npx expo start --clear
-   ```
-
----
-
-## 🧪 Тестування (Quality Assurance)
-
-Проект дотримується принципів TDD (клієнтська частина) для перевірки критичної бізнес-логіки. Написано покриття для форматувальників та парсерів, які опрацьовують вхідні дані з сервера (наприклад, правильна граматика українських числівників для абонементів).
-
-Для запуску юніт-тестів:
 ```bash
-npm run test
+npm install
+cp .env.example .env       # встав свій API_URL + GEMINI_API_KEY
+
+npx expo start             # → QR + меню (a=Android, w=web)
+npx expo start --android   # одразу на Android emulator
+npx expo start --web       # у браузері (http://localhost:8081)
+npm test                   # Jest тести
 ```
 
-*Expected output: 5 passing tests (Formatters Utilities).*
+Стандартний `EXPO_PUBLIC_API_URL`:
+- **Android emulator:** `http://10.0.2.2:8000/api`
+- **iOS simulator / Web:** `http://localhost:8000/api`
+- **Реальний телефон:** `http://<IP_твого_ПК>:8000/api` (`192.168.X.X`)
 
 ---
-*Документація підготовлена для фінального захисту навчального/дипломного проекту.* 🎓
+
+## 🏗️ Архітектура
+
+### Управління станом
+- **Глобальний:** Zustand store (`src/store/useAppStore.js`)
+- **Персистентність:** Expo SecureStore на native, localStorage на web (через `src/utils/storage.js`)
+- **HTTP:** Axios з token-interceptor (`src/api/client.js`)
+
+### Навігація
+React Navigation 7, два кореневих стеки:
+- **Auth Stack:** Onboarding (4 слайди) → Login / Register
+- **Main Stack:** Tab Navigator (Головна, Тренування, Інструменти, Довідник, Кабінет) + 9 модальних екранів
+
+### Cross-platform compat
+Власні обгортки замість прямих API:
+- `src/utils/storage.js` — SecureStore (native) / localStorage (web)
+- `src/utils/dialog.js` — `Alert.alert` (native) / `window.confirm` (web)
+- `src/utils/weightStorage.js` — журнал ваги через ту ж обгортку
+
+---
+
+## 📂 Структура
+
+```
+src/
+├── api/
+│   └── client.js                # Axios з token-interceptor
+│
+├── screens/                     # 17 екранів
+│   ├── OnboardingScreen.js      # 4 слайди + вибір фітнес-цілі
+│   ├── LoginScreen.js
+│   ├── RegisterScreen.js
+│   ├── HomeScreen.js            # 🏠 Cards + гідратація + Твоя Вага
+│   ├── WorkoutsScreen.js        # 🏋️ Розклад + бронювання
+│   ├── ToolsScreen.js           # 🧮 BMI, КБЖУ, 1РМ калькулятори
+│   ├── EducationScreen.js       # 📚 Довідник + Стрічка
+│   ├── CabinetScreen.js         # 👤 Профіль + Telegram link + теми
+│   ├── ProgressScreen.js
+│   ├── MembershipScreen.js      # 💳 Тарифи + LiqPay sandbox checkout
+│   ├── GymPassScreen.js         # 🎫 Динамічна QR-перепустка
+│   ├── ScannerScreen.js         # 📷 QR scanner для ресепшн (mobile-only)
+│   ├── AICoachScreen.js         # 🤖 Gemini 2.5 Flash чат
+│   ├── ClassDetailsScreen.js
+│   ├── ActiveWorkoutScreen.js
+│   ├── AchievementsScreen.js
+│   └── FitCoinsShopScreen.js
+│
+├── store/
+│   └── useAppStore.js           # Zustand з персистентністю
+│
+├── navigation/
+│   └── AppNavigator.js          # Stack + Tabs
+│
+├── components/                  # HIITTimer, SkeletonLoader, тощо
+├── constants/                   # theme, colors
+└── utils/                       # storage, dialog, weightStorage, formatters
+```
+
+---
+
+## 🔥 Ключові функціональні можливості
+
+### 💳 LiqPay checkout (через WebView)
+1. Клієнт обирає тариф → `POST /api/membership/checkout/init/`
+2. Backend повертає LiqPay checkout URL
+3. Mobile відкриває URL у `<WebView>` (sandbox-картка `4242 4242 4242 4242`)
+4. На return URL → `POST /api/membership/checkout/confirm/`
+5. Створюється `MembershipHistory` → success screen
+
+### 🎫 QR Pass (GymPass)
+- QR-код містить `{"member_id": 5, "gym_id": 1}` (динамічно з `useAppStore.user`)
+- Для адмінів без member_id → показує «Доступно лише клієнтам клубу»
+
+### 🤖 AI Coach (Gemini 2.5 Flash)
+- Multi-turn history (зберігається у Zustand)
+- Персоналізація під `fitnessGoal` + `streak`
+- Streaming-like ефект "друкарської машинки"
+- Ключ у `.env: EXPO_PUBLIC_GEMINI_API_KEY` (для демо є fallback)
+
+### 📲 Telegram-бот прив'язка
+- Cabinet → «Прив'язати Telegram» → `GET /api/me/telegram-code/`
+- Backend генерує 6-значний код (10 хв TTL)
+- Користувач у боті: `/link 123456` → акаунт прив'язано
+
+---
+
+## 🛠️ Стек
+
+| Шар | Технологія | Версія |
+|---|---|---|
+| Framework | React Native | 0.76 |
+| Build tool | Expo | SDK 54 |
+| State | Zustand | 5 |
+| Persistence | Expo SecureStore + localStorage fallback | — |
+| Navigation | React Navigation | 7 (Stack + Tabs) |
+| HTTP | Axios | 1.x |
+| Forms | React Hook Form + Yup | — |
+| Charts | react-native-chart-kit | — |
+| Camera | expo-camera + jsQR | — |
+| QR Generation | react-native-qrcode-svg | — |
+| WebView | react-native-webview | 13.15 |
+| AI | Google Gemini 2.5 Flash REST | — |
+
+---
+
+## 🐛 Web-compatibility fixes (9/9)
+
+Знайдено + виправлено під час Playwright-тестування на web:
+
+1. ~~`expo-secure-store` ламав login на web~~ — `src/utils/storage.js` обгортка
+2. ~~Аватар показував `U` замість username initial~~ — fallback на `username`
+3. ~~Всі тарифи показували «БЕЗЛІМ»~~ — backend + frontend форматер для `time_limit_*`
+4. ~~Тарифи з усіх залів~~ — фільтр `?gym_id=`
+5. ~~AI Coach текст не переносив на широкому екрані~~ — `flexShrink: 1`
+6. ~~QR Pass показував `null` для адмінів~~ — admin guard
+7. Розклад починається з сьогодні ✓
+8. ~~`Alert.alert` мовчав на web~~ — `src/utils/dialog.js` з `window.confirm`
+9. ~~«Invalid Date» на PRO MEMBER card~~ — `parseUkDate()` для DD.MM.YYYY
+
+Деталі у `mobile_bugs_2026-04-30.md`.
+
+---
+
+## 🎨 Стандарти
+
+- **Один-source-of-truth для теми:** `src/constants/theme.js`
+- **Безпечні діалоги:** `import Alert from '../utils/dialog'` (не з react-native)
+- **Безпечне сховище:** `import SecureStore from '../utils/storage'` (не з expo-secure-store)
+- **Persistence у Zustand:** через `useAppStore.persist()` рендериться SecureStore/localStorage автоматично
+
+---
+
+## 🚀 Production build
+
+```bash
+npx eas build --platform android   # APK / AAB через EAS
+npx eas build --platform ios       # потрібен Apple Developer account
+```
+
+Конфіг у `eas.json`. Запитати API_URL з env при білді.
+
+---
+
+## 👥 Команда
+
+| Роль | Хто |
+|---|---|
+| Mobile / Frontend | Товстуха Поліна Іванівна |
+| Backend / Tech Lead | Рясний Олександр Григорійович |
+| Науковий керівник | Гіневська Наталія Миколаївна |
+
+*Бердичівський фаховий коледж промисловості, економіки та права · Спеціальність 121 · 2026*

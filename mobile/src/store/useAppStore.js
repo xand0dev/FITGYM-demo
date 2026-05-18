@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import SecureStore from '../utils/storage';
 import apiClient from '../api/client';
 import Alert from '../utils/dialog';
+import { registerForPushNotificationsAsync } from '../utils/notifications';
 
 const useAppStore = create((set) => ({
   userToken: null,
@@ -35,6 +36,8 @@ const useAppStore = create((set) => ({
         if (savedUser) {
           try { set({ user: JSON.parse(savedUser) }); } catch (_) {}
         }
+        // Реєструємо push-токен (best-effort, не блокує старт)
+        registerForPushNotificationsAsync().catch(() => {});
       }
       if (savedTheme) {
         set({ theme: savedTheme });
@@ -191,6 +194,9 @@ const useAppStore = create((set) => ({
       } catch (meError) {
         console.log('Не вдалося завантажити профіль:', meError.message);
       }
+
+      // Реєструємо Expo push-токен на бекенді (best-effort)
+      registerForPushNotificationsAsync().catch(() => {});
 
     } catch (error) {
       console.log('Помилка входу:', error?.response?.data || error.message);
