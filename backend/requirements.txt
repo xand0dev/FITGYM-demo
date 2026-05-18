@@ -14,7 +14,10 @@ tzdata==2025.2
 python-telegram-bot==21.10
 qrcode[pil]==8.0
 
+# --- Expo push notifications (для `python manage.py notify_expiring`) ---
+exponent-server-sdk==2.1.0
+
 # --- PostgreSQL + Faker (optional, для prod і seed) ---
 dj-database-url==2.3.0
 Faker==33.3.0
-# psycopg[binary]==3.2.3   # uncomment для PostgreSQL connector
+psycopg[binary]==3.2.3

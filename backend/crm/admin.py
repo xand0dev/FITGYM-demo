@@ -13,6 +13,9 @@ from .models import (
     Payment,
     MembershipApplication,
     Attendance,
+    WalletTransaction,
+    DeviceToken,
+    NotificationLog,
 )
 
 
@@ -31,6 +34,42 @@ class AttendanceAdmin(admin.ModelAdmin):
     readonly_fields = ('member', 'gym', 'timestamp', 'is_access_granted', 'denial_reason')
 
     def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(WalletTransaction)
+class WalletTransactionAdmin(admin.ModelAdmin):
+    list_display = ('member', 'kind', 'amount', 'balance_after', 'created_at')
+    list_filter = ('kind', 'gym')
+    search_fields = ('member__user__username', 'description', 'gateway_transaction_id')
+    readonly_fields = ('gym', 'member', 'amount', 'kind', 'balance_after',
+                       'description', 'gateway_transaction_id', 'created_at')
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(DeviceToken)
+class DeviceTokenAdmin(admin.ModelAdmin):
+    list_display = ('user', 'platform', 'is_active', 'created_at', 'last_seen')
+    list_filter = ('platform', 'is_active', 'gym')
+    search_fields = ('user__username', 'expo_push_token')
+
+
+@admin.register(NotificationLog)
+class NotificationLogAdmin(admin.ModelAdmin):
+    list_display = ('member', 'kind', 'membership_history', 'sent_at')
+    list_filter = ('kind',)
+    search_fields = ('member__user__username',)
+    readonly_fields = ('member', 'membership_history', 'kind', 'sent_at')
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
         return False
 
 

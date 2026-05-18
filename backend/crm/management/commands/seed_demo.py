@@ -131,16 +131,19 @@ class Command(BaseCommand):
 
         # ─── Інструктори ───
         instructors_per_gym = {}
-        for g in gyms:
+        for gi, g in enumerate(gyms):
             ilist = []
             for i in range(opts['trainers_per_gym']):
                 fn = random.choice(UA_FIRST_NAMES)
                 ln = random.choice(UA_LAST_NAMES)
-                username = f"trainer_{g.pk}_{i}"
-                user, _ = User.objects.get_or_create(
+                username = f"trainer{gi + 1}_{i}"  # стабільний: trainer1_0, trainer2_5
+                user, created = User.objects.get_or_create(
                     username=username,
                     defaults={'first_name': fn, 'last_name': ln, 'is_staff': False},
                 )
+                if created:
+                    user.set_password('demo')
+                    user.save()
                 inst, _ = Instructor.objects.get_or_create(
                     user=user, gym=g,
                     defaults={'specialties': ', '.join(random.sample(
@@ -152,15 +155,21 @@ class Command(BaseCommand):
 
         # ─── Members ───
         members_per_gym = {g.pk: [] for g in gyms}
+        # Round-robin розподіл по залах: гарантує що client1_0..N і client2_0..N існують
         for i in range(opts['members']):
             fn = random.choice(UA_FIRST_NAMES)
             ln = random.choice(UA_LAST_NAMES)
-            gym = random.choice(gyms)
-            username = f"client_{gym.pk}_{i}"
-            user, _ = User.objects.get_or_create(
+            gi = i % len(gyms)              # 0, 1, 0, 1, ...
+            local_i = i // len(gyms)        # 0, 0, 1, 1, 2, 2, ...
+            gym = gyms[gi]
+            username = f"client{gi + 1}_{local_i}"
+            user, created = User.objects.get_or_create(
                 username=username,
                 defaults={'first_name': fn, 'last_name': ln},
             )
+            if created:
+                user.set_password('demo')
+                user.save()
             m, _ = Member.objects.get_or_create(
                 user=user, gym=gym,
                 defaults={
@@ -302,5 +311,11 @@ class Command(BaseCommand):
             f"  Бронювання:  {Booking.objects.count()}\n"
             f"  Attendance:  {Attendance.objects.count()}\n"
             f"  Заявки:      {MembershipApplication.objects.count()}\n"
+            f"\n"
+            f"  Demo logins (пароль 'demo' для всіх):\n"
+            f"    Клієнти:  client1_0..client1_{(opts['members']-1)//2}  (FITGYM Бердичів)\n"
+            f"              client2_0..client2_{(opts['members']-1)//2}  (FITGYM Київ)\n"
+            f"    Тренери:  trainer1_0..trainer1_{opts['trainers_per_gym']-1}\n"
+            f"              trainer2_0..trainer2_{opts['trainers_per_gym']-1}\n"
             f"==========================================\n"
         ))

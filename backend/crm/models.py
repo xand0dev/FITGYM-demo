@@ -43,6 +43,8 @@ class Member(models.Model):
     gender = models.CharField(max_length=10, blank=True, null=True)
     birth_date = models.DateField(blank=True, null=True)
     status = models.CharField(max_length=20, default='active')
+    # Внутрішній рахунок клієнта (депозит для pay-per-class / поповнень)
+    deposit_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
@@ -164,6 +166,38 @@ class Payment(models.Model):
         return f"{self.member} - {self.amount} ({self.get_status_display()})"
 
 
+# === ГАМАНЕЦЬ КЛІЄНТА — АУДИТ-ЛОГ РУХУ КОШТІВ (append-only) ===
+class WalletTransaction(models.Model):
+    """
+    Незмінний журнал руху коштів по депозиту клієнта.
+    `amount` завжди додатнє — напрям визначає `kind`.
+    `balance_after` фіксує баланс одразу після операції.
+    """
+    KIND_CHOICES = [
+        ('topup', 'Поповнення'),
+        ('charge', 'Списання'),
+        ('refund', 'Повернення'),
+        ('adjust', 'Коригування адміном'),
+    ]
+
+    gym = models.ForeignKey(Gym, on_delete=models.CASCADE, null=True, blank=True,
+                            related_name='wallet_transactions')
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='wallet_transactions')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    kind = models.CharField(max_length=10, choices=KIND_CHOICES)
+    balance_after = models.DecimalField(max_digits=10, decimal_places=2)
+    description = models.CharField(max_length=255, blank=True)
+    gateway_transaction_id = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self) -> str:
+        sign = '-' if self.kind == 'charge' else '+'
+        return f"{sign}{self.amount} {self.member} (баланс: {self.balance_after})"
+
+
 # === ЗАЯВКИ НА АБОНЕМЕНТ (ЛІДИ) ===
 class MembershipApplication(models.Model):
     STATUS_CHOICES = [
@@ -228,3 +262,46 @@ class TelegramLink(models.Model):
 
     def __str__(self) -> str:
         return f"TG {self.chat_id} ↔ {self.member}" if self.chat_id else f"TG pending ↔ {self.member}"
+
+
+# === EXPO PUSH-ТОКЕН ПРИСТРОЮ ===
+class DeviceToken(models.Model):
+    """Expo push-токен пристрою користувача. Один user → багато пристроїв."""
+    PLATFORM_CHOICES = [
+        ('ios', 'iOS'),
+        ('android', 'Android'),
+        ('web', 'Web'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='device_tokens')
+    gym = models.ForeignKey(Gym, on_delete=models.CASCADE, null=True, blank=True,
+                            related_name='device_tokens')
+    expo_push_token = models.CharField(max_length=255, unique=True)
+    platform = models.CharField(max_length=10, choices=PLATFORM_CHOICES, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_seen = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"{self.user.username} · {self.platform or '—'} · {'on' if self.is_active else 'off'}"
+
+
+# === ЛОГ НАДІСЛАНИХ PUSH (ідемпотентність) ===
+class NotificationLog(models.Model):
+    """
+    Append-only лог відправлених сповіщень. Запобігає повторному надсиланню
+    того самого нагадування (напр. «абонемент закінчується») за один membership.
+    """
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='notification_logs')
+    membership_history = models.ForeignKey(
+        MembershipHistory, on_delete=models.CASCADE, null=True, blank=True
+    )
+    kind = models.CharField(max_length=40)
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-sent_at']
+        unique_together = [('member', 'membership_history', 'kind')]
+
+    def __str__(self) -> str:
+        return f"{self.kind} → {self.member} @ {self.sent_at:%Y-%m-%d}"

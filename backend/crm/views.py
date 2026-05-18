@@ -16,7 +16,7 @@ from rest_framework import status as drf_status
 from .models import (
     Workout, Instructor, ClassSession, MembershipType,
     Member, Booking, MembershipHistory, Class, MembershipApplication, Attendance,
-    TelegramLink,
+    TelegramLink, DeviceToken,
 )
 from .serializers import (
     WorkoutSerializer, InstructorSerializer, ClassSessionSerializer,
@@ -25,9 +25,57 @@ from .serializers import (
     ClassSerializer, AdminInstructorSerializer, AdminMemberSerializer,
     MembershipApplicationSerializer, AdminMembershipApplicationSerializer,
     AccessCheckSerializer, AccessResultSerializer, MembershipAssignSerializer,
-    AttendanceSerializer,
+    AttendanceSerializer, DeviceTokenSerializer,
 )
 from .services import check_client_access
+
+from django.core.cache import cache
+from rest_framework.authtoken.views import ObtainAuthToken
+
+
+# ─── RATE-LIMITED LOGIN ───────────────────────────────────────────────────────
+
+class RateLimitedObtainAuthToken(ObtainAuthToken):
+    """
+    Cache-based rate limit на /api/login/ для захисту від brute-force.
+
+    Логіка:
+    - 5 невдалих спроб з одного IP за 5 хвилин → блокування на 5 хвилин
+    - Успішний логін очищує лічильник для IP
+    """
+    MAX_ATTEMPTS = 5
+    WINDOW_SEC = 300  # 5 хвилин
+
+    def _client_ip(self, request):
+        xff = request.META.get('HTTP_X_FORWARDED_FOR')
+        return xff.split(',')[0].strip() if xff else request.META.get('REMOTE_ADDR', 'unknown')
+
+    def post(self, request, *args, **kwargs):
+        from rest_framework.exceptions import ValidationError
+
+        ip = self._client_ip(request)
+        cache_key = f'login_fail:{ip}'
+        attempts = cache.get(cache_key, 0)
+
+        if attempts >= self.MAX_ATTEMPTS:
+            return Response(
+                {'error': 'Забагато невдалих спроб входу. Спробуйте через 5 хвилин.'},
+                status=drf_status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
+        try:
+            response = super().post(request, *args, **kwargs)
+            success = (response.status_code == 200)
+        except ValidationError:
+            success = False
+            raise  # повторно — DRF сам сформує 400
+        finally:
+            if success:
+                cache.delete(cache_key)
+            else:
+                cache.set(cache_key, attempts + 1, timeout=self.WINDOW_SEC)
+
+        return response
 
 
 # --- ПУБЛІЧНІ VIEWS ---
@@ -124,6 +172,7 @@ class MeView(APIView):
             'member_id': None,
             'gym_id': None,
             'gym_name': None,
+            'deposit_balance': None,
         }
 
         if hasattr(user, 'member'):
@@ -136,6 +185,7 @@ class MeView(APIView):
                 'member_id': member.id,
                 'gym_id': member.gym_id,
                 'gym_name': member.gym.name if member.gym else None,
+                'deposit_balance': member.deposit_balance,
             })
 
             today = timezone.now().date()
@@ -474,6 +524,39 @@ class TelegramLinkCodeView(APIView):
             'expires_in_sec': 600,
             'bot_username': '@FitgymBot',
         })
+
+
+# --- EXPO PUSH-ТОКЕН ---
+
+class DeviceTokenView(APIView):
+    """
+    POST /api/me/device-token/  { "expo_push_token": "ExponentPushToken[...]",
+                                  "platform": "android" }
+
+    Upsert Expo push-токена поточного користувача. Один токен — один пристрій;
+    повторний POST оновлює власника/платформу/активність.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request) -> Response:
+        serializer = DeviceTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        token_value = serializer.validated_data['expo_push_token']
+        platform = serializer.validated_data.get('platform', '') or ''
+
+        member = Member.objects.filter(user=request.user).first()
+        gym = member.gym if member else None
+
+        DeviceToken.objects.update_or_create(
+            expo_push_token=token_value,
+            defaults={
+                'user': request.user,
+                'gym': gym,
+                'platform': platform,
+                'is_active': True,
+            },
+        )
+        return Response({'success': True}, status=drf_status.HTTP_200_OK)
 
 
 # --- CHECK-IN ---
