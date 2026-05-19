@@ -27,7 +27,11 @@ from .serializers import (
     AccessCheckSerializer, AccessResultSerializer, MembershipAssignSerializer,
     AttendanceSerializer, DeviceTokenSerializer,
 )
-from .services import check_client_access
+from .serializers import GymInviteCreateSerializer, GymInviteAcceptSerializer
+from .services import (
+    check_client_access, create_gym_invite, get_valid_invite, accept_gym_invite,
+)
+from django.core.exceptions import ValidationError as DjangoValidationError
 
 from django.core.cache import cache
 from rest_framework.authtoken.views import ObtainAuthToken
@@ -468,6 +472,123 @@ class GymRegisterView(APIView):
             'gym_id': gym.pk,
             'gym_name': gym.name,
             'username': user.username,
+        }, status=drf_status.HTTP_201_CREATED)
+
+
+# --- GYMOWNER INVITE-LINK ---
+
+# Мапінг коду ValidationError у HTTP-статус для invite-флоу
+_INVITE_ERR_STATUS = {
+    'not_found': drf_status.HTTP_404_NOT_FOUND,
+    'used': drf_status.HTTP_400_BAD_REQUEST,
+    'expired': drf_status.HTTP_410_GONE,
+    'invalid': drf_status.HTTP_400_BAD_REQUEST,
+}
+
+
+def _invite_error_response(exc: DjangoValidationError) -> Response:
+    code = getattr(exc, 'code', None) or 'invalid'
+    msg = exc.messages[0] if exc.messages else 'Помилка запрошення.'
+    return Response({'error': msg}, status=_INVITE_ERR_STATUS.get(code,
+                    drf_status.HTTP_400_BAD_REQUEST))
+
+
+class GymInviteCreateView(APIView):
+    """
+    POST /api/admin/invites/  { "role": "member"|"staff", "ttl_hours": 72 }
+    Створює одноразове запрошення до залу поточного staff-користувача.
+    SuperAdmin (без залу) має передати "gym_id".
+    """
+    permission_classes = [IsGymStaff]
+
+    def post(self, request) -> Response:
+        from .models import Gym
+
+        s = GymInviteCreateSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+
+        gym = get_gym_from_request(request)
+        if gym is None:
+            gym_id = s.validated_data.get('gym_id')
+            if not gym_id:
+                return Response(
+                    {'error': 'SuperAdmin має вказати gym_id.'},
+                    status=drf_status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                gym = Gym.objects.get(pk=gym_id)
+            except Gym.DoesNotExist:
+                return Response(
+                    {'error': 'Зал не знайдено.'},
+                    status=drf_status.HTTP_404_NOT_FOUND,
+                )
+
+        try:
+            invite = create_gym_invite(
+                gym=gym,
+                role=s.validated_data['role'],
+                created_by=request.user,
+                ttl_hours=s.validated_data['ttl_hours'],
+            )
+        except DjangoValidationError as exc:
+            return _invite_error_response(exc)
+
+        return Response({
+            'code': invite.code,
+            'invite_url': request.build_absolute_uri(f'/invite/{invite.code}'),
+            'role': invite.role,
+            'gym_name': gym.name,
+            'expires_at': invite.expires_at,
+        }, status=drf_status.HTTP_201_CREATED)
+
+
+class GymInvitePreviewView(APIView):
+    """GET /api/invites/<code>/ — прев'ю запрошення для екрану реєстрації."""
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, code: str) -> Response:
+        try:
+            invite = get_valid_invite(code)
+        except DjangoValidationError as exc:
+            return _invite_error_response(exc)
+        return Response({
+            'valid': True,
+            'gym_name': invite.gym.name,
+            'role': invite.role,
+        })
+
+
+class GymInviteAcceptView(APIView):
+    """
+    POST /api/invites/<code>/accept/
+    { "username", "password", "full_name"?, "email"?, "contact"? }
+    Реєструє користувача за запрошенням і повертає токен.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, code: str) -> Response:
+        s = GymInviteAcceptSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+
+        try:
+            user, invite = accept_gym_invite(
+                code=code,
+                username=s.validated_data['username'],
+                password=s.validated_data['password'],
+                full_name=s.validated_data.get('full_name', ''),
+                email=s.validated_data.get('email', ''),
+                contact=s.validated_data.get('contact', ''),
+            )
+        except DjangoValidationError as exc:
+            return _invite_error_response(exc)
+
+        token, _ = Token.objects.get_or_create(user=user)
+        return Response({
+            'token': token.key,
+            'user_id': user.pk,
+            'gym_id': invite.gym_id,
+            'gym_name': invite.gym.name,
+            'role': invite.role,
         }, status=drf_status.HTTP_201_CREATED)
 
 

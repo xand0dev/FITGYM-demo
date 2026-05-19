@@ -286,6 +286,22 @@ class WalletTransactionSerializer(serializers.ModelSerializer):
                   'description', 'gateway_transaction_id', 'created_at']
 
 
+# === ЗАПРОШЕННЯ ДО ЗАЛУ ===
+
+class GymInviteCreateSerializer(serializers.Serializer):
+    role = serializers.ChoiceField(choices=['staff', 'member'], default='member')
+    ttl_hours = serializers.IntegerField(required=False, default=72, min_value=1)
+    gym_id = serializers.IntegerField(required=False)  # лише для superuser
+
+
+class GymInviteAcceptSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=150)
+    password = serializers.CharField(min_length=8, style={'input_type': 'password'})
+    full_name = serializers.CharField(required=False, allow_blank=True, default='')
+    email = serializers.EmailField(required=False, allow_blank=True, default='')
+    contact = serializers.CharField(required=False, allow_blank=True, default='')
+
+
 # === EXPO PUSH-ТОКЕН ===
 
 class DeviceTokenSerializer(serializers.Serializer):

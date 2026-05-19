@@ -16,6 +16,7 @@ from .models import (
     WalletTransaction,
     DeviceToken,
     NotificationLog,
+    GymInvite,
 )
 
 
@@ -71,6 +72,14 @@ class NotificationLogAdmin(admin.ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return False
+
+
+@admin.register(GymInvite)
+class GymInviteAdmin(admin.ModelAdmin):
+    list_display = ('code', 'gym', 'role', 'created_by', 'expires_at', 'used_at', 'created_at')
+    list_filter = ('role', 'gym')
+    search_fields = ('code', 'gym__name', 'created_by__username')
+    readonly_fields = ('code', 'created_at', 'used_at')
 
 
 admin.site.register(Workout)

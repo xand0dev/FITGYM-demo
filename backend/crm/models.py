@@ -305,3 +305,37 @@ class NotificationLog(models.Model):
 
     def __str__(self) -> str:
         return f"{self.kind} → {self.member} @ {self.sent_at:%Y-%m-%d}"
+
+
+# === ОДНОРАЗОВЕ ЗАПРОШЕННЯ ДО ЗАЛУ (GymOwner invite-link) ===
+class GymInvite(models.Model):
+    """
+    Одноразове запрошення: власник/staff залу генерує посилання, нова людина
+    реєструється по `code` і автоматично прив'язується до цього залу як
+    staff (адмін/тренер) або member — без участі SuperAdmin.
+
+    Стан: активний (used_at=None і expires_at у майбутньому) → використаний
+    (used_at заповнено) або протермінований.
+    """
+    ROLE_CHOICES = [
+        ('staff', 'Персонал залу'),
+        ('member', 'Клієнт'),
+    ]
+
+    gym = models.ForeignKey(Gym, on_delete=models.CASCADE, related_name='invites')
+    code = models.CharField(max_length=64, unique=True, db_index=True)
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='member')
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='created_gym_invites',
+    )
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self) -> str:
+        state = 'used' if self.used_at else 'active'
+        return f"Invite {self.code[:8]}… → {self.gym} ({self.role}, {state})"

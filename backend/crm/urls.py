@@ -9,6 +9,7 @@ from .views import (
     MembershipApplicationCreateView, AdminMembershipApplicationViewSet,
     CheckAccessView, MembershipAssignView, AdminAttendanceViewSet,
     TelegramLinkCodeView, GymRegisterView, DeviceTokenView,
+    GymInviteCreateView, GymInvitePreviewView, GymInviteAcceptView,
 )
 from .analytics import AdminAnalyticsView
 from .payments import (
@@ -46,6 +47,10 @@ urlpatterns = [
     path('me/telegram-code/', TelegramLinkCodeView.as_view(), name='telegram-code'),
     path('me/device-token/', DeviceTokenView.as_view(), name='device-token'),
     path('gyms/register/', GymRegisterView.as_view(), name='gym-register'),
+    # GymOwner invite-link
+    path('admin/invites/', GymInviteCreateView.as_view(), name='gym-invite-create'),
+    path('invites/<str:code>/accept/', GymInviteAcceptView.as_view(), name='gym-invite-accept'),
+    path('invites/<str:code>/', GymInvitePreviewView.as_view(), name='gym-invite-preview'),
     path('access/check/', CheckAccessView.as_view(), name='access-check'),
     path('admin/memberships/assign/', MembershipAssignView.as_view(), name='membership-assign'),
     path('admin/analytics/', AdminAnalyticsView.as_view(), name='admin-analytics'),

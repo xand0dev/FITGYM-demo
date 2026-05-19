@@ -1,15 +1,21 @@
 from __future__ import annotations
+import uuid
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Optional
 
 import pytz
 
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.utils import timezone
 
-from .models import Attendance, Gym, Member, MembershipHistory, WalletTransaction
+from .models import (
+    Attendance, Gym, GymInvite, Instructor, Member, MembershipHistory,
+    WalletTransaction,
+)
 
 
 @dataclass
@@ -141,3 +147,98 @@ def charge_wallet(
         m.deposit_balance = current - amount
         m.save(update_fields=['deposit_balance'])
         return _record_wallet_txn(m, amount, kind, description, '', m.deposit_balance)
+
+
+# ── запрошення до залу (GymOwner invite-link) ─────────────────────────────────
+
+def create_gym_invite(
+    gym: Gym, role: str = 'member', created_by: Optional[User] = None,
+    ttl_hours: int = 72,
+) -> GymInvite:
+    """Створює одноразове запрошення до залу з не-вгадуваним кодом."""
+    if role not in dict(GymInvite.ROLE_CHOICES):
+        raise ValidationError('Невідома роль запрошення.')
+    if ttl_hours <= 0 or ttl_hours > 24 * 30:
+        raise ValidationError('Невалідний термін дії запрошення.')
+
+    return GymInvite.objects.create(
+        gym=gym,
+        code=uuid.uuid4().hex,
+        role=role,
+        created_by=created_by,
+        expires_at=timezone.now() + timedelta(hours=ttl_hours),
+    )
+
+
+def get_valid_invite(code: str) -> GymInvite:
+    """
+    Повертає активне запрошення або кидає ValidationError з кодом стану:
+    'not_found' / 'used' / 'expired' (для мапінгу на 404 / 400 / 410).
+    """
+    try:
+        invite = GymInvite.objects.select_related('gym').get(code=code)
+    except GymInvite.DoesNotExist:
+        raise ValidationError('Запрошення не знайдено.', code='not_found')
+
+    if invite.used_at is not None:
+        raise ValidationError('Запрошення вже використано.', code='used')
+    if invite.expires_at <= timezone.now():
+        raise ValidationError('Термін дії запрошення вичерпано.', code='expired')
+    return invite
+
+
+def accept_gym_invite(
+    code: str, username: str, password: str, full_name: str = '',
+    email: str = '', contact: str = '',
+) -> tuple[User, GymInvite]:
+    """
+    Реєструє нового користувача за кодом запрошення і прив'язує його до залу
+    запрошення. role='staff' → User.is_staff + Instructor; 'member' → Member.
+    Атомарно; одноразовість гарантується `select_for_update` + `used_at`.
+    """
+    username = (username or '').strip()
+    if not username or not password:
+        raise ValidationError('Логін і пароль обов\'язкові.', code='invalid')
+    if User.objects.filter(username=username).exists():
+        raise ValidationError('Користувач з таким логіном вже існує.', code='invalid')
+
+    first_name, _, last_name = (full_name or '').strip().partition(' ')
+
+    with transaction.atomic():
+        try:
+            invite = (
+                GymInvite.objects.select_for_update()
+                .select_related('gym')
+                .get(code=code)
+            )
+        except GymInvite.DoesNotExist:
+            raise ValidationError('Запрошення не знайдено.', code='not_found')
+
+        if invite.used_at is not None:
+            raise ValidationError('Запрошення вже використано.', code='used')
+        if invite.expires_at <= timezone.now():
+            raise ValidationError('Термін дії запрошення вичерпано.', code='expired')
+
+        is_staff = invite.role == 'staff'
+        user = User.objects.create_user(
+            username=username,
+            email=email.strip(),
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+            is_staff=is_staff,
+        )
+
+        if invite.role == 'staff':
+            Instructor.objects.create(
+                user=user, gym=invite.gym, specialties='', contact=contact,
+            )
+        else:
+            Member.objects.create(
+                user=user, gym=invite.gym, contact=contact, status='active',
+            )
+
+        invite.used_at = timezone.now()
+        invite.save(update_fields=['used_at'])
+
+    return user, invite

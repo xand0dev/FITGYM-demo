@@ -125,7 +125,7 @@ REST_FRAMEWORK = {
 SPECTACULAR_SETTINGS = {
     'TITLE': 'FITGYM API',
     'DESCRIPTION': 'REST API для CRM-системи фітнес-залу FITGYM.\n\nАвторизація: Token-based — отримай токен через POST /api/login/, передавай у заголовку `Authorization: Token <token>`.',
-    'VERSION': '1.0.0',
+    'VERSION': '1.1.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'COMPONENT_SPLIT_REQUEST': True,
 }

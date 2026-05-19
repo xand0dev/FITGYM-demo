@@ -9,9 +9,11 @@ from decimal import Decimal
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 
+from django.utils import timezone as dj_tz
+
 from .models import (
     Gym, Member, MembershipType, MembershipHistory, Attendance,
-    WalletTransaction, DeviceToken, NotificationLog,
+    WalletTransaction, DeviceToken, NotificationLog, GymInvite, Instructor,
 )
 from .services import check_client_access, top_up_wallet, charge_wallet
 from .notifications import notify_expiring_subscriptions, send_push
@@ -940,3 +942,146 @@ class PushNotificationTests(TestCase):
         self.assertEqual(sent_msg.to, 'ExponentPushToken[z]')
         self.assertEqual(sent_msg.title, 'Title')
         ticket.validate_response.assert_called_once()
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  GymOwner invite-link — B-16
+# ════════════════════════════════════════════════════════════════════════════
+
+class GymInviteTests(TestCase):
+
+    def setUp(self):
+        self.client = APIClient()
+        self.gym_a = Gym.objects.create(name="Invite Gym A", timezone="Europe/Kyiv")
+        self.gym_b = Gym.objects.create(name="Invite Gym B", timezone="Europe/Kyiv")
+
+        # staff залу A (gym береться з request через Member.gym)
+        self.staff = User.objects.create_user(username='inv_staff', password='p', is_staff=True)
+        Member.objects.create(user=self.staff, gym=self.gym_a)
+        self.staff_token = Token.objects.create(user=self.staff)
+
+        # звичайний клієнт (не staff)
+        self.regular = User.objects.create_user(username='inv_reg', password='p')
+        Member.objects.create(user=self.regular, gym=self.gym_a)
+        self.reg_token = Token.objects.create(user=self.regular)
+
+        # superuser (без залу)
+        self.superu = User.objects.create_superuser(username='inv_super', password='p')
+        self.super_token = Token.objects.create(user=self.superu)
+
+    def _staff(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.staff_token.key}')
+
+    # ── create ───────────────────────────────────────────────────────────────
+
+    def test_create_requires_auth(self):
+        r = self.client.post('/api/admin/invites/', {'role': 'member'}, format='json')
+        self.assertEqual(r.status_code, 401)
+
+    def test_create_forbidden_for_regular_user(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.reg_token.key}')
+        r = self.client.post('/api/admin/invites/', {'role': 'member'}, format='json')
+        self.assertEqual(r.status_code, 403)
+
+    def test_staff_creates_invite_for_own_gym(self):
+        self._staff()
+        r = self.client.post('/api/admin/invites/', {'role': 'member'}, format='json')
+        self.assertEqual(r.status_code, 201)
+        self.assertIn('code', r.data)
+        self.assertEqual(r.data['gym_name'], self.gym_a.name)
+        inv = GymInvite.objects.get(code=r.data['code'])
+        # gym-isolation: зал береться з request, не з вводу → залу A, не B
+        self.assertEqual(inv.gym, self.gym_a)
+        self.assertEqual(inv.created_by, self.staff)
+
+    def test_superuser_must_pass_gym_id(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.super_token.key}')
+        r = self.client.post('/api/admin/invites/', {'role': 'staff'}, format='json')
+        self.assertEqual(r.status_code, 400)
+        r2 = self.client.post('/api/admin/invites/',
+                              {'role': 'staff', 'gym_id': self.gym_b.id}, format='json')
+        self.assertEqual(r2.status_code, 201)
+        self.assertEqual(GymInvite.objects.get(code=r2.data['code']).gym, self.gym_b)
+
+    # ── preview ──────────────────────────────────────────────────────────────
+
+    def test_preview_valid_invite(self):
+        self._staff()
+        code = self.client.post('/api/admin/invites/',
+                                {'role': 'member'}, format='json').data['code']
+        self.client.credentials()  # анонім
+        r = self.client.get(f'/api/invites/{code}/')
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.data['valid'])
+        self.assertEqual(r.data['gym_name'], self.gym_a.name)
+        self.assertEqual(r.data['role'], 'member')
+
+    def test_preview_unknown_code_404(self):
+        r = self.client.get('/api/invites/deadbeef/')
+        self.assertEqual(r.status_code, 404)
+
+    # ── accept ───────────────────────────────────────────────────────────────
+
+    def _make_invite(self, role='member', hours=72):
+        return GymInvite.objects.create(
+            gym=self.gym_a, code=__import__('uuid').uuid4().hex, role=role,
+            created_by=self.staff,
+            expires_at=dj_tz.now() + timedelta(hours=hours),
+        )
+
+    def test_accept_member_creates_member_and_token(self):
+        inv = self._make_invite(role='member')
+        r = self.client.post(f'/api/invites/{inv.code}/accept/', {
+            'username': 'newclient', 'password': 'secret123',
+            'full_name': 'Іван Новий', 'contact': '+380991112233',
+        }, format='json')
+        self.assertEqual(r.status_code, 201)
+        self.assertIn('token', r.data)
+        self.assertEqual(r.data['gym_id'], self.gym_a.id)
+        u = User.objects.get(username='newclient')
+        self.assertFalse(u.is_staff)
+        self.assertTrue(Member.objects.filter(user=u, gym=self.gym_a).exists())
+        inv.refresh_from_db()
+        self.assertIsNotNone(inv.used_at)
+        # токен робочий
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {r.data["token"]}')
+        me = self.client.get('/api/me/')
+        self.assertEqual(me.data['gym_id'], self.gym_a.id)
+
+    def test_accept_staff_creates_instructor(self):
+        inv = self._make_invite(role='staff')
+        r = self.client.post(f'/api/invites/{inv.code}/accept/', {
+            'username': 'newtrainer', 'password': 'secret123', 'full_name': 'Петро Тренер',
+        }, format='json')
+        self.assertEqual(r.status_code, 201)
+        u = User.objects.get(username='newtrainer')
+        self.assertTrue(u.is_staff)
+        self.assertTrue(Instructor.objects.filter(user=u, gym=self.gym_a).exists())
+
+    def test_accept_rejects_reused_code(self):
+        inv = self._make_invite()
+        self.client.post(f'/api/invites/{inv.code}/accept/',
+                         {'username': 'u1', 'password': 'secret123'}, format='json')
+        r = self.client.post(f'/api/invites/{inv.code}/accept/',
+                             {'username': 'u2', 'password': 'secret123'}, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertFalse(User.objects.filter(username='u2').exists())
+
+    def test_accept_rejects_expired_invite(self):
+        inv = self._make_invite(hours=-1)  # вже протермінований
+        r = self.client.post(f'/api/invites/{inv.code}/accept/',
+                             {'username': 'u3', 'password': 'secret123'}, format='json')
+        self.assertEqual(r.status_code, 410)
+
+    def test_accept_rejects_duplicate_username(self):
+        inv = self._make_invite()
+        r = self.client.post(f'/api/invites/{inv.code}/accept/',
+                             {'username': 'inv_staff', 'password': 'secret123'}, format='json')
+        self.assertEqual(r.status_code, 400)
+        inv.refresh_from_db()
+        self.assertIsNone(inv.used_at)  # код не спалено через помилку валідації
+
+    def test_accept_unknown_code_404(self):
+        r = self.client.post('/api/invites/nope/accept/',
+                             {'username': 'u4', 'password': 'secret123'}, format='json')
+        self.assertEqual(r.status_code, 404)
