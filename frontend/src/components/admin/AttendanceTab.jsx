@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircle, XCircle, Clock, Loader2 } from 'lucide-react';
 import PremiumTable from '../ui/PremiumTable';
+import ExportCsvButton from './ExportCsvButton';
 
 const formatTime = (isoString) => {
     if (!isoString) return '—';
@@ -91,6 +92,11 @@ export default function AttendanceTab({ data = [], isLoading = false }) {
                     <div className="px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-xs font-black text-red-400 uppercase tracking-wider">
                         ✗ {denied}
                     </div>
+                    <ExportCsvButton
+                        endpoint="/api/admin/export/attendance.csv"
+                        filename={`fitgym_attendance_${new Date().toISOString().slice(0,10)}.csv`}
+                        label="CSV"
+                    />
                 </div>
             </div>
 

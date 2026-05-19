@@ -4,6 +4,7 @@ import { useUI } from '../../context/UIContext';
 import { Plus, Edit, Trash2, CreditCard, Loader2 } from 'lucide-react';
 import PremiumTable from '../ui/PremiumTable';
 import MembershipSaleModal from './MembershipSaleModal';
+import ExportCsvButton from './ExportCsvButton';
 
 export default function ClientsTab({ data, onRefresh, isLoading = false }) {
     const { addToast } = useUI();
@@ -138,13 +139,20 @@ export default function ClientsTab({ data, onRefresh, isLoading = false }) {
                 <h3 className="text-xl font-black uppercase tracking-wider text-[#ffffff] flex items-center gap-2">
                     Довідник: <span className="text-primary">Клієнти</span>
                 </h3>
-                <button
-                    onClick={() => handleEdit(null)} // Hook up real create modal later
-                    className="px-5 py-2.5 rounded-lg bg-primary text-white font-black text-sm flex items-center justify-center gap-2 uppercase tracking-wide transition-all duration-300 hover:bg-[#cc0000] hover:-translate-y-0.5 shadow-[0_4px_15px_rgba(255,0,0,0.3)] disabled:opacity-50"
-                >
-                    <Plus className="w-4 h-4" />
-                    <span>Додати запис</span>
-                </button>
+                <div className="flex items-center gap-2">
+                    <ExportCsvButton
+                        endpoint="/api/admin/export/members.csv"
+                        filename={`fitgym_members_${new Date().toISOString().slice(0,10)}.csv`}
+                        label="Експорт CSV"
+                    />
+                    <button
+                        onClick={() => handleEdit(null)} // Hook up real create modal later
+                        className="px-5 py-2.5 rounded-lg bg-primary text-white font-black text-sm flex items-center justify-center gap-2 uppercase tracking-wide transition-all duration-300 hover:bg-[#cc0000] hover:-translate-y-0.5 shadow-[0_4px_15px_rgba(255,0,0,0.3)] disabled:opacity-50"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>Додати запис</span>
+                    </button>
+                </div>
             </div>
 
             {/* Table */}

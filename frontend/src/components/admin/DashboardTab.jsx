@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import GlassCard from '../ui/GlassCard';
 import { useAuthData } from '../../hooks/useFitQuery';
+import ExportCsvButton from './ExportCsvButton';
 
 const COLORS = ['#cc0000', '#ff3333', '#990000', '#4d0000'];
 
@@ -289,7 +290,14 @@ export default function DashboardTab({ clientsCount, trainersCount }) {
                 <GlassCard className="p-6">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-sm text-[#ffffff] m-0 font-black uppercase tracking-wider">Динаміка виручки (Півріччя, тис. ₴)</h3>
-                        <ChangePct pct={revenueHalfYearChange} label="за півроку" />
+                        <div className="flex items-center gap-2">
+                            <ChangePct pct={revenueHalfYearChange} label="за півроку" />
+                            <ExportCsvButton
+                                endpoint="/api/admin/export/revenue.csv"
+                                filename={`fitgym_revenue_${new Date().toISOString().slice(0,10)}.csv`}
+                                label="CSV"
+                            />
+                        </div>
                     </div>
                     <div className="w-full h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
