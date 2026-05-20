@@ -21,3 +21,9 @@ exponent-server-sdk==2.1.0
 dj-database-url==2.3.0
 Faker==33.3.0
 psycopg[binary]==3.2.3
+
+# --- Static files (prod) ---
+whitenoise==6.8.2
+
+# --- WSGI server (Railway/Docker) ---
+gunicorn==23.0.0
