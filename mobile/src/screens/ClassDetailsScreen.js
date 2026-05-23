@@ -35,7 +35,7 @@ export default function ClassDetailsScreen() {
     Vibration.vibrate([0, 40, 40, 40]);
     try {
       setIsBooking(true);
-      await apiClient.post('/my-bookings/', { session: classItem.id });
+      await apiClient.post('/book/', { session: classItem.id });
       addFitCoins(50);
       scheduleClassReminder(classItem).catch(() => {});
       Alert.alert('Успіх', 'Успішно заброньовано! +50 FitCoins 🎉');
