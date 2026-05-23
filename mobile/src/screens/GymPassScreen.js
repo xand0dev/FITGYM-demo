@@ -110,16 +110,19 @@ export default function GymPassScreen() {
            </View>
         </Animated.View>
 
-        <TouchableOpacity
-           style={styles.simulationBtn}
-           onPress={() => {
-             Vibration.vibrate([0, 50, 50, 50]);
-             navigation.navigate('Scanner');
-           }}
-        >
-          <Ionicons name="scan-circle" size={24} color={COLORS.text} style={{marginRight: 10}} />
-          <Text style={styles.simulationBtnText}>Сканувати QR-код</Text>
-        </TouchableOpacity>
+        {/* Кнопка сканера — лише для staff/тренерів. Клієнтам не потрібна. */}
+        {user?.is_staff && (
+          <TouchableOpacity
+             style={styles.simulationBtn}
+             onPress={() => {
+               Vibration.vibrate([0, 50, 50, 50]);
+               navigation.navigate('Scanner');
+             }}
+          >
+            <Ionicons name="scan-circle" size={24} color={COLORS.text} style={{marginRight: 10}} />
+            <Text style={styles.simulationBtnText}>Сканувати QR-код</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
