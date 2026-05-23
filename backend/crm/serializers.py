@@ -61,24 +61,36 @@ class ClassSessionSerializer(serializers.ModelSerializer):
 class RegisterSerializer(serializers.ModelSerializer):
     name = serializers.CharField(write_only=True, required=True)
     password = serializers.CharField(write_only=True, required=True, min_length=8)
+    gym_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
 
     class Meta:
         model = User
-        fields = ('email', 'username', 'password', 'name')
+        fields = ('email', 'username', 'password', 'name', 'gym_id')
         extra_kwargs = {
             'username': {'required': True},
             'email': {'required': True}
         }
 
     def create(self, validated_data):
+        from .models import Gym
         name = validated_data.pop('name')
+        gym_id = validated_data.pop('gym_id', None)
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
             password=validated_data['password'],
             first_name=name
         )
-        Member.objects.create(user=user)
+        # Дефолтний зал — якщо клієнт не вказав, прив'язуємо до першого активного.
+        # Це робить self-register одразу робочим: клієнт бачить тарифи свого
+        # дефолтного залу, може забронювати заняття, купити абонемент.
+        # Якщо потрібен інший зал — або передати gym_id у POST, або скористатись
+        # GymInvite-link від адміна потрібного залу.
+        if gym_id is not None:
+            gym = Gym.objects.filter(pk=gym_id, is_active=True).first()
+        else:
+            gym = Gym.objects.filter(is_active=True).order_by('pk').first()
+        Member.objects.create(user=user, gym=gym)
         return user
 
 

@@ -27,7 +27,7 @@ from django.utils import timezone
 from crm.models import (
     Attendance, Booking, Class, ClassSession, Gym, Instructor,
     Member, MembershipApplication, MembershipHistory, MembershipType,
-    Workout,
+    Room, Workout,
 )
 
 
@@ -87,6 +87,7 @@ class Command(BaseCommand):
             Gym.objects.all().delete()
             Class.objects.all().delete()
             Workout.objects.all().delete()
+            Room.objects.all().delete()
 
         # ─── Workouts (категорії) ───
         for name in ["Кардіо", "Силові", "Гнучкість", "Бойові мистецтва"]:
@@ -97,6 +98,18 @@ class Command(BaseCommand):
         for cname, _ in CLASS_NAMES:
             c, _ = Class.objects.get_or_create(name=cname, defaults={'default_capacity': 20})
             classes.append(c)
+
+        # ─── Rooms (приміщення) ───
+        rooms = []
+        for rname, capacity in [
+            ('Основний зал', 30),
+            ('Зал Йоги', 20),
+            ('Кардіо-зона', 25),
+            ('Силова зона', 20),
+            ('Басейн', 15),
+        ]:
+            r, _ = Room.objects.get_or_create(name=rname, defaults={'capacity': capacity})
+            rooms.append(r)
 
         # ─── Gyms ───
         gyms = []
@@ -217,10 +230,12 @@ class Command(BaseCommand):
                     ct = random.choice(classes)
                     inst = random.choice(instructors_per_gym[g.pk]) if instructors_per_gym[g.pk] else None
                     start = timezone.make_aware(datetime.combine(target, time(h, 0)))
+                    room = random.choice(rooms) if rooms else None
                     ClassSession.objects.get_or_create(
                         gym=g, class_type=ct, start_at=start,
                         defaults={
                             'instructor': inst,
+                            'room': room,
                             'end_at': start + timedelta(hours=1),
                             'capacity': random.choice([10, 15, 20, 25]),
                         },
