@@ -43,8 +43,6 @@ class Member(models.Model):
     gender = models.CharField(max_length=10, blank=True, null=True)
     birth_date = models.DateField(blank=True, null=True)
     status = models.CharField(max_length=20, default='active')
-    # Внутрішній рахунок клієнта (депозит для pay-per-class / поповнень)
-    deposit_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
@@ -166,38 +164,6 @@ class Payment(models.Model):
         return f"{self.member} - {self.amount} ({self.get_status_display()})"
 
 
-# === ГАМАНЕЦЬ КЛІЄНТА — АУДИТ-ЛОГ РУХУ КОШТІВ (append-only) ===
-class WalletTransaction(models.Model):
-    """
-    Незмінний журнал руху коштів по депозиту клієнта.
-    `amount` завжди додатнє — напрям визначає `kind`.
-    `balance_after` фіксує баланс одразу після операції.
-    """
-    KIND_CHOICES = [
-        ('topup', 'Поповнення'),
-        ('charge', 'Списання'),
-        ('refund', 'Повернення'),
-        ('adjust', 'Коригування адміном'),
-    ]
-
-    gym = models.ForeignKey(Gym, on_delete=models.CASCADE, null=True, blank=True,
-                            related_name='wallet_transactions')
-    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='wallet_transactions')
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    kind = models.CharField(max_length=10, choices=KIND_CHOICES)
-    balance_after = models.DecimalField(max_digits=10, decimal_places=2)
-    description = models.CharField(max_length=255, blank=True)
-    gateway_transaction_id = models.CharField(max_length=100, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['-created_at']
-
-    def __str__(self) -> str:
-        sign = '-' if self.kind == 'charge' else '+'
-        return f"{sign}{self.amount} {self.member} (баланс: {self.balance_after})"
-
-
 # === ЗАЯВКИ НА АБОНЕМЕНТ (ЛІДИ) ===
 class MembershipApplication(models.Model):
     STATUS_CHOICES = [
@@ -239,103 +205,3 @@ class Attendance(models.Model):
     def __str__(self) -> str:
         status = "✓" if self.is_access_granted else "✗"
         return f"{status} {self.member} @ {self.gym} — {self.timestamp.strftime('%Y-%m-%d %H:%M')}"
-
-
-# === ПРИВ'ЯЗКА TELEGRAM-АКАУНТУ ДО КЛІЄНТА ===
-class TelegramLink(models.Model):
-    """
-    Зв'язує Telegram chat_id з Member. Створюється коли клієнт пише
-    `/link <CODE>` боту, де CODE отримано в мобільному застосунку.
-
-    До прив'язки запис існує з chat_id=0 і заповненим link_code (стан pending).
-    """
-    member = models.OneToOneField(
-        Member, on_delete=models.CASCADE, related_name='telegram_link'
-    )
-    chat_id = models.BigIntegerField(default=0, db_index=True)
-    telegram_username = models.CharField(max_length=64, blank=True)
-    linked_at = models.DateTimeField(null=True, blank=True)
-
-    # Тимчасовий 6-значний код прив'язки. Очищується після успішного /link.
-    link_code = models.CharField(max_length=6, blank=True, null=True, db_index=True)
-    link_code_expires_at = models.DateTimeField(null=True, blank=True)
-
-    def __str__(self) -> str:
-        return f"TG {self.chat_id} ↔ {self.member}" if self.chat_id else f"TG pending ↔ {self.member}"
-
-
-# === EXPO PUSH-ТОКЕН ПРИСТРОЮ ===
-class DeviceToken(models.Model):
-    """Expo push-токен пристрою користувача. Один user → багато пристроїв."""
-    PLATFORM_CHOICES = [
-        ('ios', 'iOS'),
-        ('android', 'Android'),
-        ('web', 'Web'),
-    ]
-
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='device_tokens')
-    gym = models.ForeignKey(Gym, on_delete=models.CASCADE, null=True, blank=True,
-                            related_name='device_tokens')
-    expo_push_token = models.CharField(max_length=255, unique=True)
-    platform = models.CharField(max_length=10, choices=PLATFORM_CHOICES, blank=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    last_seen = models.DateTimeField(auto_now=True)
-
-    def __str__(self) -> str:
-        return f"{self.user.username} · {self.platform or '—'} · {'on' if self.is_active else 'off'}"
-
-
-# === ЛОГ НАДІСЛАНИХ PUSH (ідемпотентність) ===
-class NotificationLog(models.Model):
-    """
-    Append-only лог відправлених сповіщень. Запобігає повторному надсиланню
-    того самого нагадування (напр. «абонемент закінчується») за один membership.
-    """
-    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='notification_logs')
-    membership_history = models.ForeignKey(
-        MembershipHistory, on_delete=models.CASCADE, null=True, blank=True
-    )
-    kind = models.CharField(max_length=40)
-    sent_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['-sent_at']
-        unique_together = [('member', 'membership_history', 'kind')]
-
-    def __str__(self) -> str:
-        return f"{self.kind} → {self.member} @ {self.sent_at:%Y-%m-%d}"
-
-
-# === ОДНОРАЗОВЕ ЗАПРОШЕННЯ ДО ЗАЛУ (GymOwner invite-link) ===
-class GymInvite(models.Model):
-    """
-    Одноразове запрошення: власник/staff залу генерує посилання, нова людина
-    реєструється по `code` і автоматично прив'язується до цього залу як
-    staff (адмін/тренер) або member — без участі SuperAdmin.
-
-    Стан: активний (used_at=None і expires_at у майбутньому) → використаний
-    (used_at заповнено) або протермінований.
-    """
-    ROLE_CHOICES = [
-        ('staff', 'Персонал залу'),
-        ('member', 'Клієнт'),
-    ]
-
-    gym = models.ForeignKey(Gym, on_delete=models.CASCADE, related_name='invites')
-    code = models.CharField(max_length=64, unique=True, db_index=True)
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='member')
-    created_by = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, blank=True,
-        related_name='created_gym_invites',
-    )
-    expires_at = models.DateTimeField()
-    used_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['-created_at']
-
-    def __str__(self) -> str:
-        state = 'used' if self.used_at else 'active'
-        return f"Invite {self.code[:8]}… → {self.gym} ({self.role}, {state})"

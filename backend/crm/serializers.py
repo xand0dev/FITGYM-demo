@@ -5,8 +5,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from .models import (
     Workout, Instructor, ClassSession, MembershipType, Class,
-    Member, Booking, Room, Payment, MembershipApplication, Attendance,
-    WalletTransaction,
+    Member, Booking, Room, Payment, MembershipApplication, Attendance
 )
 
 
@@ -35,8 +34,7 @@ class InstructorSerializer(serializers.ModelSerializer):
 class MembershipTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = MembershipType
-        fields = ['id', 'name', 'amount', 'period_months', 'description',
-                  'time_limit_start', 'time_limit_end']
+        fields = ['id', 'name', 'amount', 'period_months', 'description']
 
 
 # Серіалізатор для Залів
@@ -285,42 +283,6 @@ class AttendanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Attendance
         fields = ['id', 'member_name', 'timestamp', 'is_access_granted', 'denial_reason']
-
-
-# === ГАМАНЕЦЬ КЛІЄНТА ===
-
-class WalletTransactionSerializer(serializers.ModelSerializer):
-    kind_display = serializers.CharField(source='get_kind_display', read_only=True)
-
-    class Meta:
-        model = WalletTransaction
-        fields = ['id', 'amount', 'kind', 'kind_display', 'balance_after',
-                  'description', 'gateway_transaction_id', 'created_at']
-
-
-# === ЗАПРОШЕННЯ ДО ЗАЛУ ===
-
-class GymInviteCreateSerializer(serializers.Serializer):
-    role = serializers.ChoiceField(choices=['staff', 'member'], default='member')
-    ttl_hours = serializers.IntegerField(required=False, default=72, min_value=1)
-    gym_id = serializers.IntegerField(required=False)  # лише для superuser
-
-
-class GymInviteAcceptSerializer(serializers.Serializer):
-    username = serializers.CharField(max_length=150)
-    password = serializers.CharField(min_length=8, style={'input_type': 'password'})
-    full_name = serializers.CharField(required=False, allow_blank=True, default='')
-    email = serializers.EmailField(required=False, allow_blank=True, default='')
-    contact = serializers.CharField(required=False, allow_blank=True, default='')
-
-
-# === EXPO PUSH-ТОКЕН ===
-
-class DeviceTokenSerializer(serializers.Serializer):
-    expo_push_token = serializers.CharField(max_length=255)
-    platform = serializers.ChoiceField(
-        choices=['ios', 'android', 'web'], required=False, allow_blank=True,
-    )
 
 
 # === ASSIGN MEMBERSHIP ===

@@ -1,9 +1,8 @@
 # gym_project/urls.py
 from django.contrib import admin
 from django.urls import path, include
+from rest_framework.authtoken import views as authtoken_views
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
-
-from crm.views import RateLimitedObtainAuthToken
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -11,8 +10,8 @@ urlpatterns = [
     # Всі маршрути з crm/urls.py будуть починатися з 'api/'
     path('api/', include('crm.urls')),
 
-    # АДРЕСА ДЛЯ ЛОГІНУ — rate-limited (5 невдалих спроб → 5 хв блок)
-    path('api/login/', RateLimitedObtainAuthToken.as_view()),
+    # АДРЕСА ДЛЯ ЛОГІНУ
+    path('api/login/', authtoken_views.obtain_auth_token),
 
     # ── Swagger / OpenAPI ─────────────────────────────────────────────────────
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
