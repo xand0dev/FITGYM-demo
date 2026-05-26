@@ -22,6 +22,7 @@ import GymPassScreen from '../screens/GymPassScreen';
 import FitCoinsShopScreen from '../screens/FitCoinsShopScreen';
 import AICoachScreen from '../screens/AICoachScreen';
 import ScannerScreen from '../screens/ScannerScreen';
+import WalletScreen from '../screens/WalletScreen';
 import { useTheme } from '../constants/theme';
 import useAppStore from '../store/useAppStore';
 
@@ -101,6 +102,7 @@ export default function AppNavigator() {
             <Stack.Screen name="Membership" component={MembershipScreen} />
             <Stack.Screen name="Achievements" component={AchievementsScreen} />
             <Stack.Screen name="Scanner" component={ScannerScreen} />
+            <Stack.Screen name="Wallet" component={WalletScreen} />
           </>
         )}
       </Stack.Navigator>

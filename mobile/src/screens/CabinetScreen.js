@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Image, Switch, Vibration } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Image, Switch, Vibration, Linking } from 'react-native';
 import Alert from '../utils/dialog';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -279,6 +279,68 @@ export default function CabinetScreen() {
           })
         )}
       </View>
+
+      {/* Wallet Section */}
+      {profile?.member_id && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Гаманець</Text>
+          <TouchableOpacity
+            style={styles.settingsGroup}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('Wallet')}
+          >
+            <View style={styles.settingRow}>
+              <View style={[styles.settingIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+                <Ionicons name="wallet" size={20} color="#10b981" />
+              </View>
+              <View style={{ flex: 1, marginLeft: 15 }}>
+                <Text style={[styles.settingText, { marginLeft: 0 }]}>Мій гаманець</Text>
+                <Text style={{ color: COLORS.muted, fontSize: 12, marginTop: 2, fontWeight: '600' }}>
+                  Баланс і поповнення
+                </Text>
+              </View>
+              <Text style={{ color: '#10b981', fontSize: 15, fontWeight: '900', marginRight: 8 }}>
+                {profile?.deposit_balance != null ? `${Math.round(Number(profile.deposit_balance) || 0)} ₴` : '— ₴'}
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.muted} />
+            </View>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Admin Zone Section */}
+      {(profile?.is_staff || profile?.is_superuser) && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Адмін-зона</Text>
+          <TouchableOpacity
+            style={styles.settingsGroup}
+            activeOpacity={0.7}
+            onPress={() => {
+              const adminWebUrl = process.env.EXPO_PUBLIC_ADMIN_WEB_URL;
+              const djangoAdminUrl = 'https://fitgym-backend-ivk9.onrender.com/admin/';
+              const url = profile.is_superuser
+                ? djangoAdminUrl
+                : (adminWebUrl || djangoAdminUrl);
+              Linking.openURL(url).catch((e) => {
+                Alert.alert('Помилка', `Не вдалося відкрити адмінку: ${e.message}`);
+              });
+            }}
+          >
+            <View style={styles.settingRow}>
+              <View style={[styles.settingIconBox, { backgroundColor: 'rgba(255, 215, 0, 0.15)' }]}>
+                <Ionicons name="shield-checkmark" size={20} color="#FFD700" />
+              </View>
+              <View style={{ flex: 1, marginLeft: 15 }}>
+                <Text style={[styles.settingText, { marginLeft: 0 }]}>Відкрити адмінку</Text>
+                <Text style={{ color: COLORS.muted, fontSize: 12, marginTop: 2, fontWeight: '600' }}>
+                  {profile.is_superuser ? 'Django Admin (SuperAdmin)' : 'CRM-панель залу'}
+                </Text>
+              </View>
+              <Ionicons name="open-outline" size={20} color={COLORS.muted} />
+            </View>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Telegram Link Section */}
       <View style={styles.section}>
