@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "fitgym-app",
+    "slug": "fitgym-app",
+    "version": "1.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "androidStatusBar": {
+      "barStyle": "light-content",
+      "backgroundColor": "#080808"
+    },
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#080808"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.fitgym.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Потрібен доступ до камери для сканування QR-кодів та зміни фото профілю.",
+        "NSPhotoLibraryUsageDescription": "Потрібен доступ до галереї для зміни фото профілю.",
+        "NSPhotoLibraryAddUsageDescription": "Потрібен доступ для збереження фото."
+      }
+    },
+    "android": {
+      "package": "com.fitgym.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#080808"
+      },
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "d6ef161c-7c01-479f-a235-1d15dbfe0576"
+      }
+    },
+    "owner": "xand2345345"
+  }
+}
