@@ -30,7 +30,8 @@ backend/venv/
 # ── Dev junk / dumps ─────────────────────────────────────────
 *_code_context.txt
 full_project_code.txt
-bundle_code.py
+bundle_code.*
+**/bundle_code.*
 **/api_log.txt
 **/test_gemini.js
 **/test_out.txt
