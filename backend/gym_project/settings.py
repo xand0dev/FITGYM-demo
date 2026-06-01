@@ -4,9 +4,11 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ── Security ─────────────────────────────────────────────────────────────────
-SECRET_KEY = os.environ.get('SECRET_KEY', 'REDACTED_SECRET_KEY')
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
+# Production MUST set SECRET_KEY via env. Local dev gets an ephemeral random key.
+from django.core.management.utils import get_random_secret_key
+SECRET_KEY = os.environ.get('SECRET_KEY') or get_random_secret_key()
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
 if DEBUG:
