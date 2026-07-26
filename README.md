@@ -1,79 +1,103 @@
-# FITGYM
+# FITGYM — multi-tenant CRM for fitness clubs
 
-> **Gym operations platform · Public booking · Staff workflow**
+> **Клієнти · Абонементи · Розклад · Записи · Відвідування · Операції клубу**
 
 **Публічна вітрина приватного продукту. Вихідний код FITGYM у цьому
 репозиторії не публікується.**
 
-FITGYM допомагає фітнес-клубу перевести шлях від розкладу до підтвердженого
-запису в один керований процес. Поточний showcase показує MVP, підготовлений
-для пілоту з **Berdychiv Sky**.
+FITGYM — це CRM-платформа, у якій кожен фітнес-клуб працює у власному
+ізольованому tenant-просторі зі своїми клієнтами, персоналом, розкладом,
+абонементами та правилами доступу.
 
-![Sky public booking flow](assets/sky-public-booking-flow.png)
+![FITGYM CRM overview](assets/fitgym-crm-overview.png)
 
-## Що показує demo
+## Що це за продукт
 
-### Клієнт: запис без акаунта
+FITGYM об’єднує щоденну роботу клубу в одному контурі:
 
-Клієнт переходить із посилання в Instagram, бачить актуальні заняття,
-обирає потрібне, залишає ім’я й телефон та отримує чесне повідомлення про
-прийняту заявку.
+- **клуби й ролі** — окремі tenant-простори для власника, адміністратора,
+  тренера та клієнта;
+- **клієнтська база** — профілі, заявки, абонементи та історія взаємодії;
+- **розклад і записи** — заняття, тренери, зали, capacity та бронювання;
+- **контроль доступу** — QR-pass, check-in і журнал дозволених/відхилених
+  відвідувань;
+- **робота адміністратора** — продажі, операції в залі, експорт і audit log;
+- **клієнтський застосунок** — абонемент, записи, QR-перепустка й особистий
+  кабінет;
+- **брендовані surfaces** — окремий вигляд і сценарії клубу поверх спільного
+  захищеного ядра.
 
-- mobile-first branded сторінка;
-- rolling-розклад на найближчі 14 днів;
-- час, тренер, формат і доступні місця;
-- проста форма без реєстрації та пароля;
-- окремі success, full, duplicate, empty й offline/error states.
-
-▶️ [Переглянути 19-секундне відео клієнтського сценарію](assets/sky-public-booking-demo.mp4)
-
-### Адміністратор: заявки під контролем
-
-Нові записи потрапляють в окрему admin-вкладку. Адміністратор бачить клієнта,
-заняття, тренера, місткість і залишок місць, після чого підтверджує або відхиляє
-заявку.
-
-![Sky admin booking records](assets/sky-admin-booking-records.png)
-
-- red badge для нових записів;
-- статуси, періоди та пошук за ім’ям або телефоном;
-- desktop table і responsive cards;
-- confirm/reject із повторною серверною перевіркою capacity;
-- захист від подвійної дії та зрозумілі race/error states.
-
-▶️ [Переглянути 36-секундне відео admin workflow](assets/sky-admin-booking-records-demo.mp4)
-
-## Як побудований потік
+## Multi-tenant архітектура
 
 ```mermaid
 flowchart LR
-    Client["Клієнт з Instagram"] --> Sky["Branded /sky landing"]
-    Sky --> API["FITGYM API"]
-    Staff["Адміністратор клубу"] --> Admin["FITGYM Admin"]
-    Admin --> API
-    API --> DB[("Tenant-aware database")]
-    API --> Guard["Anti-abuse & capacity checks"]
+    GymA["Клуб A · власний бренд"] --> Core["FITGYM API"]
+    GymB["Клуб B · власний бренд"] --> Core
+    Staff["Admin / Trainer"] --> Core
+    Client["Web / Mobile client"] --> Core
+    Core --> Roles["Role & ownership checks"]
+    Core --> Data[("Tenant-scoped data")]
+    Core --> Audit["Audit & operational rules"]
 ```
 
-Продукт має спільне tenant-aware ядро, а брендовані сторінки та правила клубу
-підключаються як окремий tenant layer — без копіювання backend чи бази даних.
+Один backend не означає спільний доступ до даних. Tenant, роль і ownership
+перевіряються сервером, а бренд і дозволені сценарії підключаються як
+конфігурація конкретного клубу — без копіювання продукту чи бази даних.
+
+## CRM-модулі
+
+| Контур | Що контролює |
+|---|---|
+| Клієнти | Профілі, статуси, контакти й історія |
+| Абонементи | Тарифи, строки дії, часові обмеження та заявки |
+| Розклад | Заняття, тренери, зали, місця й бронювання |
+| Відвідування | QR-перевірка, check-in та причини відмови |
+| Операції в залі | Поточні відвідувачі, додаткові покупки й завершення візиту |
+| Контроль | Dashboard, CSV export і незмінний журнал дій |
+| Client experience | Mobile/web кабінет, записи та QR-pass |
+
+## Case study: Berdychiv Sky
+
+Sky — не окремий продукт і не межа FITGYM. Це поточний пілотний кейс, у якому
+до CRM додано короткий acquisition flow:
+
+**Instagram bio → branded `/sky` → актуальний розклад → заявка на заняття →
+confirm/reject у CRM.**
+
+### Клієнт: запис без акаунта
+
+Клієнт бачить rolling-розклад на найближчі 14 днів, обирає заняття, залишає
+ім’я й телефон та отримує чесне повідомлення про прийняту заявку.
+
+![Sky public booking flow](assets/sky-public-booking-flow.png)
+
+▶️ [Переглянути 19-секундне відео клієнтського сценарію](assets/sky-public-booking-demo.mp4)
+
+### Адміністратор: заявка стає керованим CRM-записом
+
+Нові записи потрапляють в окрему admin-вкладку зі статусами, пошуком,
+capacity, confirm/reject і повторною серверною перевіркою вільних місць.
+
+![Sky admin booking records](assets/sky-admin-booking-records.png)
+
+▶️ [Переглянути 36-секундне відео admin workflow](assets/sky-admin-booking-records-demo.mp4)
 
 ## Security by design
 
 - tenant, role та ownership перевіряються сервером;
-- pending-заявка не резервує місце;
-- confirm повторно перевіряє capacity у транзакції;
-- phone normalization, consent, honeypot і rate limits;
-- Turnstile-перевірка для публічного booking flow;
-- staff-функції недоступні звичайному клієнту або тренеру без відповідної ролі.
+- booking і capacity rules виконуються в backend, а не лише в UI;
+- phone normalization, consent, honeypot і rate limits для public flow;
+- Turnstile-перевірка для гостьових заявок;
+- staff-функції доступні лише відповідним ролям;
+- operational actions залишають audit trail.
 
-## Статус
+## Поточний статус showcase
 
 | Частина | Стан |
 |---|---|
-| Sky guest booking flow | Реалізовано та перевірено локально |
-| Admin records workflow | Реалізовано та перевірено локально |
-| Responsive QA | 390 / 1024 / 1440 px |
+| Multi-tenant CRM core | Існуюче приватне product codebase |
+| Admin і client workflows | Реалізовані, проходять окремі release gates |
+| Sky acquisition case | Поточний MVP, локальний QA green |
 | Public pilot | Pre-launch, контрольований production smoke ще попереду |
 | Product source code | Private |
 
@@ -82,12 +106,8 @@ Live URL навмисно не публікується, доки production lau
 
 ## Про цей репозиторій
 
-Тут зберігаються лише:
-
-- актуальний опис продукту;
-- синтетичні screenshots;
-- короткі demo-відео;
-- безпечна high-level схема.
+Тут зберігаються лише актуальний опис продукту, synthetic screenshots,
+короткі demo-відео та безпечна high-level схема.
 
 Тут **немає** source code, credentials, `.env`, seed data, production
 конфігурації, внутрішньої документації або реальних даних клієнтів.
